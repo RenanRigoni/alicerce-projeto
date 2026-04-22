@@ -1,0 +1,277 @@
+import { createClient } from '@/lib/supabase/server'
+import { Card } from '@/components/ui/Card'
+
+export default async function AdminDashboard() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: meProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user!.id)
+    .single()
+
+  const isRecepcao = meProfile?.role === 'recepcao'
+
+  const [
+    { count: totalPacientes },
+    { data: familiasDados },
+    { count: totalTerapeutas },
+    { data: altasPendentes },
+    { data: relatóriosRecentes },
+    { data: feriados },
+    { data: comunicados },
+  ] = await Promise.all([
+    supabase.from('pacientes').select('*', { count: 'exact', head: true }).eq('status', 'ativo'),
+    // Responsáveis com pelo menos 1 paciente ativo
+    supabase
+      .from('paciente_responsaveis')
+      .select('responsavel_id, pacientes!inner(status)')
+      .eq('pacientes.status', 'ativo'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'terapeuta').eq('ativo', true),
+    supabase
+      .from('solicitacoes_alta')
+      .select('id, criado_em, motivo, pacientes(nome), profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
+      .eq('status', 'pendente')
+      .order('criado_em', { ascending: true }),
+    !isRecepcao
+      ? supabase
+          .from('relatorios')
+          .select('id, paciente_id, identificacao, status, criado_em, pacientes!inner(nome)')
+          .not('paciente_id', 'is', null)
+          .order('criado_em', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] }),
+    supabase
+      .from('feriados')
+      .select('data, descricao')
+      .gte('data', new Date().toISOString().slice(0, 10))
+      .order('data')
+      .limit(3),
+    supabase
+      .from('comunicados')
+      .select('id, titulo, conteudo, criado_em')
+      .order('criado_em', { ascending: false })
+      .limit(3),
+  ])
+
+  // Conta responsáveis únicos com paciente ativo
+  const totalFamilias = new Set((familiasDados ?? []).map((f: any) => f.responsavel_id)).size
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1
+          className="text-2xl font-semibold"
+          style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
+        >
+          Visão geral
+        </h1>
+        <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+          {isRecepcao ? 'Painel da recepção' : 'Painel administrativo'}
+        </p>
+      </div>
+
+      {/* Banner de altas pendentes */}
+      {altasPendentes && altasPendentes.length > 0 && (
+        <div
+          className="rounded-2xl px-5 py-4"
+          style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
+        >
+          <div className="flex items-center gap-2.5 mb-3">
+            <span
+              className="w-5 h-5 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0"
+              style={{ background: '#F59E0B' }}
+            >
+              {altasPendentes.length}
+            </span>
+            <span className="text-sm font-semibold" style={{ color: '#92400E' }}>
+              {altasPendentes.length === 1 ? 'Solicitação de alta pendente' : 'Solicitações de alta pendentes'}
+            </span>
+          </div>
+          <ul className="space-y-2">
+            {altasPendentes.map((a: any) => (
+              <li key={a.id} className="flex items-center justify-between gap-3">
+                <div className="text-sm" style={{ color: '#78350F' }}>
+                  <span className="font-medium">{a.pacientes?.nome}</span>
+                  <span style={{ color: '#B45309' }}> · por {a.profiles?.nome}</span>
+                </div>
+                <a
+                  href="/admin/alta"
+                  className="text-xs font-medium rounded-lg px-3 py-1 transition-colors flex-shrink-0"
+                  style={{ color: '#92400E', border: '1px solid #FCD34D', background: 'transparent' }}
+                >
+                  Analisar
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Cards de totais */}
+      <div className="grid grid-cols-3 gap-4">
+        <a href="/admin/pacientes">
+          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
+            <div
+              className="text-3xl font-bold mb-1 group-hover:scale-105 transition-transform duration-200 inline-block"
+              style={{ color: 'var(--color-rose-main)', fontFamily: 'var(--font-lora)' }}
+            >
+              {totalPacientes ?? 0}
+            </div>
+            <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Pacientes ativos</div>
+          </Card>
+        </a>
+        <a href="/admin/responsaveis">
+          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
+            <div
+              className="text-3xl font-bold mb-1 group-hover:scale-105 transition-transform duration-200 inline-block"
+              style={{ color: 'var(--color-peach-main)', fontFamily: 'var(--font-lora)' }}
+            >
+              {totalFamilias}
+            </div>
+            <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Famílias ativas</div>
+          </Card>
+        </a>
+        <a href="/admin/terapeutas">
+          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
+            <div
+              className="text-3xl font-bold mb-1 group-hover:scale-105 transition-transform duration-200 inline-block"
+              style={{ color: 'var(--color-sage-main)', fontFamily: 'var(--font-lora)' }}
+            >
+              {totalTerapeutas ?? 0}
+            </div>
+            <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Terapeutas</div>
+          </Card>
+        </a>
+      </div>
+
+      {/* Relatórios recentes */}
+      {!isRecepcao && (
+        <Card>
+          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-ink-mid)' }}>
+            Relatórios recentes
+          </h2>
+          {relatóriosRecentes && relatóriosRecentes.length > 0 ? (
+            <ul className="space-y-2">
+              {relatóriosRecentes.map((r: any) => (
+                <li key={r.id}>
+                  <a
+                    href={`/portal/paciente/${r.paciente_id}/relatorio/${r.id}`}
+                    className="flex items-center justify-between text-sm rounded-xl px-3 py-2 -mx-3 transition-colors hover:bg-[var(--color-rose-blush)]"
+                    style={{ color: 'var(--color-ink)' }}
+                  >
+                    <span style={{ color: 'var(--color-ink-mid)' }}>
+                      <span style={{ color: 'var(--color-ink)', fontWeight: 500 }}>{r.pacientes?.nome ?? '—'}</span>
+                      {' — '}{r.identificacao ?? 'Sem título'}
+                    </span>
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ml-2"
+                      style={r.status === 'publicado'
+                        ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
+                        : { background: '#FFFBEB', color: '#92400E' }
+                      }
+                    >
+                      {r.status}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhum relatório ainda.</p>
+          )}
+        </Card>
+      )}
+
+      {/* Próximos feriados */}
+      {feriados && feriados.length > 0 && (
+        <Card>
+          <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-ink-mid)' }}>
+            Próximos feriados
+          </h2>
+          <div className="space-y-2.5">
+            {feriados.map((f: any) => (
+              <div key={f.data} className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-rose-soft)' }} />
+                <div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>{f.descricao}</span>
+                  <span className="text-xs ml-2" style={{ color: 'var(--color-ink-soft)' }}>
+                    {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', {
+                      weekday: 'long', day: '2-digit', month: 'long',
+                    })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Comunicados recentes */}
+      {comunicados && comunicados.length > 0 && (
+        <Card>
+          <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-ink-mid)' }}>
+            Comunicados recentes
+          </h2>
+          <div className="space-y-4">
+            {comunicados.map((c: any) => (
+              <div
+                key={c.id}
+                className="pb-4 last:pb-0 border-b last:border-0"
+                style={{ borderColor: 'var(--color-border-soft)' }}
+              >
+                <div className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>{c.titulo}</div>
+                <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-soft)' }}>{c.conteudo}</p>
+                <div className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
+                  {new Date(c.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Ações rápidas */}
+      <Card>
+        <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-ink-mid)' }}>Ações rápidas</h2>
+        <div className="flex flex-wrap gap-2.5">
+          <a
+            href="/admin/pacientes/novo"
+            className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
+            style={{ background: 'var(--color-rose-main)' }}
+          >
+            + Novo paciente
+          </a>
+          <a
+            href="/admin/usuarios/novo"
+            className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
+            style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+          >
+            + Novo usuário
+          </a>
+          <a
+            href="/admin/agendamentos/novo"
+            className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
+            style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+          >
+            + Agendamento
+          </a>
+          <a
+            href="/admin/comunicados"
+            className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
+            style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
+          >
+            Comunicados
+          </a>
+          <a
+            href="/admin/feriados"
+            className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
+            style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
+          >
+            Feriados
+          </a>
+        </div>
+      </Card>
+    </div>
+  )
+}

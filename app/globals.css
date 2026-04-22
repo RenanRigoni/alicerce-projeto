@@ -1,26 +1,165 @@
 @import "tailwindcss";
 
+/* ─── Design tokens ─────────────────────────────────────────── */
+@theme {
+  /* Cores principais */
+  --color-cream:       #FDF8F3;
+  --color-warm-white:  #FFFCF9;
+  --color-sand:        #F5EDE0;
+
+  /* Rosa — paleta principal */
+  --color-rose-blush:  #FCECEA;
+  --color-rose-soft:   #F0B8B2;
+  --color-rose-main:   #D4716A;
+  --color-rose-deep:   #B55A54;
+  --color-rose-muted:  #E8C4C0;
+
+  /* Sage — terapeutas */
+  --color-sage-light:  #EBF3E8;
+  --color-sage-soft:   #C4DEC0;
+  --color-sage-main:   #6FA869;
+  --color-sage-deep:   #4E8A49;
+
+  /* Lavanda — acentos */
+  --color-lavender-light: #F0EDF8;
+  --color-lavender-main:  #9B8EC4;
+
+  /* Pêssego — portal (pais) */
+  --color-peach-light: #FEF0E8;
+  --color-peach-main:  #E8A07A;
+
+  /* Texto */
+  --color-ink:         #2C2018;
+  --color-ink-mid:     #6B5B4E;
+  --color-ink-soft:    #A8978E;
+  --color-ink-faint:   #D4C8C3;
+
+  /* Bordas */
+  --color-border:      #EAE0D8;
+  --color-border-soft: #F2EBE5;
+
+  /* Fontes */
+  --font-lora:    var(--font-lora-var), 'Lora', Georgia, serif;
+  --font-dm-sans: var(--font-dm-sans-var), 'DM Sans', system-ui, sans-serif;
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-dm-sans);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* ─── Inputs ─────────────────────────────────────────────────── */
+@layer base {
+  input,
+  select,
+  textarea {
+    color: var(--color-ink);
+    background-color: var(--color-warm-white);
+    -webkit-text-fill-color: var(--color-ink);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-soft);
+    -webkit-text-fill-color: var(--color-ink-soft);
+  }
+
+  select option {
+    color: var(--color-ink);
+    background-color: var(--color-warm-white);
+  }
+}
+
+/* ─── Inputs globais ─────────────────────────────────────────── */
+@layer components {
+  .input-base {
+    width: 100%;
+    border-radius: 12px;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-border);
+    color: var(--color-ink);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .input-base:focus {
+    border-color: var(--color-rose-soft);
+    box-shadow: 0 0 0 3px var(--color-rose-blush);
+  }
+  .input-base::placeholder {
+    color: var(--color-ink-soft);
+  }
+
+  /* Aplica ao estilo padrão de inputs no projeto */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="date"],
+  input[type="number"],
+  select,
+  textarea {
+    border-radius: 12px;
+    border-color: var(--color-border);
+    background-color: var(--color-warm-white);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="date"]:focus,
+  input[type="number"]:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--color-rose-soft) !important;
+    box-shadow: 0 0 0 3px var(--color-rose-blush) !important;
+    ring-width: 0 !important;
+  }
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-rose-muted);
+}
+
+/* ─── Animações ──────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.4s ease both;
+}
+
+.animate-fade-up-1 { animation-delay: 0.05s; }
+.animate-fade-up-2 { animation-delay: 0.10s; }
+.animate-fade-up-3 { animation-delay: 0.15s; }
+.animate-fade-up-4 { animation-delay: 0.20s; }
+.animate-fade-up-5 { animation-delay: 0.25s; }

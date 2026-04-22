@@ -1,0 +1,566 @@
+Preciso que você aplique uma nova rodada de correções e ajustes no sistema.
+
+Contexto:
+Você já conhece a lógica geral do site, os tipos de usuários e os fluxos principais. Algumas correções citadas em uma tela devem ser aplicadas globalmente quando forem componentes compartilhados, principalmente em relação a prévias, cards, relatórios, orientações, notificações e títulos de boxes.
+
+Objetivo:
+Corrigir bugs, padronizar a exibição das telas, melhorar fluxos de leitura de comunicados, relatórios e orientações, corrigir permissões de edição e ajustar o fluxo de solicitação de alta.
+
+Antes de aplicar:
+- Preserve o design system atual.
+- Não remova funcionalidades que já estão corretas.
+- Reaproveite componentes quando fizer sentido.
+- Padronize os títulos das seções fora das boxes.
+- Corrija os fluxos considerando ADMIN, RECEPÇÃO, TERAPEUTA e RESPONSÁVEL.
+- Caso algum ajuste possa impactar permissões ou regras de negócio, avalie antes de aplicar.
+
+==================================================
+1. CORREÇÕES NA TELA ADMIN
+==================================================
+
+1.1 Relatórios Recentes na página inicial
+
+Problema:
+Na página inicial do ADMIN, existe a seção “Relatórios Recentes”.
+
+Quando clico no nome do paciente ou no relatório, o relatório não abre.
+
+Correção esperada:
+- O item de relatório recente deve ser clicável.
+- Ao clicar, deve abrir o relatório correspondente.
+- Esse comportamento deve funcionar também em outras telas onde relatórios recentes forem exibidos.
+
+1.2 Remover funcionalidade de Auditoria
+
+Problema:
+A guia de Auditoria não está fazendo sentido no sistema atual.
+
+Hoje, qualquer visualização feita por qualquer usuário aparece como registro de auditoria, o que polui a funcionalidade e não traz utilidade prática.
+
+Correção esperada:
+- Remover completamente a guia de Auditoria do sistema.
+- Remover a navegação para Auditoria.
+- Remover telas/componentes relacionados à Auditoria.
+- Se houver registros internos necessários para segurança, manter apenas no backend, sem exibição visual para o usuário.
+
+==================================================
+2. CORREÇÕES GLOBAIS PARA TODOS OS USUÁRIOS
+==================================================
+
+2.1 Comunicados Recentes na tela inicial
+
+Problema:
+Na tela inicial, em “Comunicados Recentes”, o sistema deve mostrar apenas uma prévia do comunicado.
+
+Correção esperada:
+- Exibir apenas a prévia/resumo do comunicado.
+- O comunicado deve ser clicável.
+- Ao clicar, abrir a visualização completa do comunicado.
+- A visualização completa deve permitir leitura de:
+  - texto completo
+  - imagens
+  - vídeos
+  - anexos, se existirem
+
+2.2 Campo “Prévia” ao cadastrar conteúdos
+
+Sempre que ADMIN, RECEPÇÃO ou TERAPEUTA cadastrar algum conteúdo que será exibido em listagens, deve existir um campo chamado:
+
+PRÉVIA
+
+Esse campo deve ser usado para uma frase curta de resumo.
+
+Aplicar essa regra para:
+- Comunicados
+- Relatórios
+- Orientações
+- Atualizações
+- Informativos
+- Outros conteúdos exibidos em cards ou listagens
+
+Objetivo:
+Evitar que textos longos apareçam diretamente na tela inicial ou em listagens.
+
+2.3 Padronização dos títulos das seções
+
+Problema:
+Algumas seções exibem o título dentro da box, enquanto outras exibem o título fora da box.
+
+A tela inicial da TERAPEUTA está visualmente melhor, pois os títulos ficam fora da box.
+
+Exemplo de título fora da box:
+
+<h2 class="text-xs font-semibold uppercase tracking-wider mb-3" style="color: var(--color-ink-soft);">Próximos compromissos</h2>
+
+Correção esperada:
+- Padronizar todas as seções do sistema para exibir o título fora da box.
+- A box deve conter apenas o conteúdo.
+- O título deve ficar acima da box, como um cabeçalho de seção.
+
+Aplicar para:
+- Relatórios Recentes
+- Comunicados Recentes
+- Próximos Feriados
+- Próximos Compromissos
+- Meus Pacientes
+- Orientações
+- Notificações
+- Qualquer outra seção semelhante
+
+2.4 Próximos feriados
+
+Problema:
+Na tela inicial dos usuários, “Próximos feriados” aparece com o título dentro da box.
+
+Correção esperada:
+- O título “Próximos feriados” deve ficar fora da box.
+- Abaixo do título deve aparecer a box com os detalhes dos feriados.
+- O padrão deve ser igual ao usado em “Próximos compromissos” e “Meus pacientes”.
+
+==================================================
+3. CORREÇÕES NA TELA DO RESPONSÁVEL
+==================================================
+
+3.1 Relatórios Recentes na tela inicial
+
+Problema:
+Na tela inicial do RESPONSÁVEL, não aparece a seção “Relatórios Recentes”.
+
+Correção esperada:
+- Exibir “Relatórios Recentes” na tela inicial do Responsável.
+- Os relatórios devem ser clicáveis.
+- Ao clicar, abrir o relatório correspondente.
+- Seguir a mesma correção feita para a tela ADMIN.
+
+3.2 Box de Notificação Não Lida
+
+Na tela inicial do Responsável, deve existir uma box chamada:
+
+NOTIFICAÇÃO NÃO LIDA
+
+Essa box deve aparecer quando houver algum conteúdo ainda não lido pelo responsável.
+
+Tipos de conteúdo que podem gerar notificação:
+- orientação
+- atualização
+- relatório
+- informativo
+- comunicado
+- outros avisos relevantes
+
+Comportamento esperado:
+- Se houver notificação não lida, mostrar a box na tela inicial.
+- A box deve ser clicável.
+- Ao clicar, abrir a notificação ou a lista de notificações não lidas.
+- Depois que o responsável ler a notificação, ela deve ser marcada como lida.
+- Quando não houver mais notificações pendentes, remover a box “NOTIFICAÇÃO NÃO LIDA” da tela inicial.
+
+3.3 Orientações dos Terapeutas
+
+Problema:
+Na tela do Responsável, “Orientações dos Terapeutas” não está clicável.
+
+Correção esperada:
+- Cada orientação deve ser clicável.
+- Ao clicar, abrir a orientação completa.
+- Na listagem, exibir apenas título e prévia.
+
+3.4 Ver acompanhamento > Guia Relatórios
+
+Problema:
+Ao acessar “Ver acompanhamento”, na guia Relatórios, o relatório aparece de forma muito completa diretamente na listagem.
+
+Correção esperada:
+- Na listagem da guia Relatórios, mostrar apenas:
+  - título
+  - prévia
+  - data
+  - botão VER
+  - botão PDF, se existir PDF disponível
+
+Regra:
+- O conteúdo completo deve ser acessado pelo botão VER.
+- O PDF deve ser acessado pelo botão PDF, quando houver PDF.
+
+3.5 Ver acompanhamento > Guia Orientações
+
+Na guia Orientações, aplicar a mesma lógica dos relatórios.
+
+Correção esperada:
+- Mostrar apenas título e prévia na listagem.
+- Adicionar botão VER para abrir a orientação completa.
+- Exibir botão PDF apenas se a terapeuta tiver anexado um PDF.
+- Se não houver PDF, a orientação deve ser acessada apenas pelo botão VER.
+
+3.6 Ver acompanhamento > Guia Histórico
+
+Problema:
+Na guia Histórico, as atualizações não estão clicáveis.
+
+Correção esperada:
+- Todas as atualizações disponíveis no Histórico devem ser clicáveis.
+- Ao clicar, abrir os detalhes completos da atualização.
+
+3.7 Ver acompanhamento > Primeira guia exibida
+
+Problema:
+Ao clicar em “Ver acompanhamento”, a primeira tela exibida para o responsável precisa ser mais informativa.
+
+Correção esperada:
+- A primeira guia exibida deve ser chamada “GERAL”.
+- Essa guia deve mostrar primeiro os dados gerais do paciente.
+- Abaixo, deve mostrar os dados clínicos do paciente.
+- Essa estrutura deve ser semelhante à exibida no login do Terapeuta.
+- As demais guias podem permanecer como estão.
+
+==================================================
+4. CORREÇÕES NA TELA DO TERAPEUTA
+==================================================
+
+4.1 Tela inicial do Terapeuta
+
+Problema:
+Na tela inicial do Terapeuta existem os textos:
+- “Minha agenda”
+- “Seus próximos compromissos e pacientes”
+
+Esses textos estão ambíguos, pois a agenda já está resumida na tela inicial e também existe o botão “Agenda” no topo.
+
+Correção esperada:
+- Remover “Minha agenda”.
+- Remover “Seus próximos compromissos e pacientes”.
+- Manter apenas os blocos objetivos da tela inicial.
+- Preservar o botão “Agenda” no topo.
+
+4.2 Solicitar alta para paciente
+
+Problema:
+No perfil do paciente, quando clico em “Solicitar alta para este paciente”, a página cai em:
+
+404 - This page could not be found.
+
+Correção esperada:
+Corrigir o fluxo de solicitação de alta.
+
+Fluxo esperado:
+
+1. Terapeuta clica em “Solicitar alta para este paciente”.
+2. O sistema abre um formulário.
+3. O formulário deve permitir que a terapeuta preencha:
+   - justificativa da alta
+   - evolução do paciente
+   - detalhes clínicos pertinentes
+   - observações adicionais, se necessário
+
+4. Ao enviar, a solicitação deve aparecer para o ADMIN como:
+   NOTIFICAÇÃO NÃO LIDA
+
+5. O ADMIN acessa a notificação e visualiza o relatório/justificativa enviado pela terapeuta.
+
+6. O ADMIN terá dois caminhos:
+   - AUTORIZADO
+   - RECUSADO
+
+Se AUTORIZADO:
+- O paciente deve ser marcado como Alta.
+- O sistema deve registrar a decisão.
+- A terapeuta deve ser notificada da aprovação.
+
+Se RECUSADO:
+- O ADMIN deve preencher uma retórica/justificativa da recusa.
+- O ADMIN deve orientar quais caminhos devem ser seguidos pela terapeuta antes de solicitar alta novamente.
+- A terapeuta deve receber na tela inicial uma NOTIFICAÇÃO NÃO LIDA.
+- Ao clicar, a terapeuta deve visualizar a justificativa da recusa.
+- A terapeuta poderá solicitar alta novamente a qualquer momento, após seguir as orientações.
+
+4.3 Permissão de edição de dados do paciente e responsável
+
+Problema:
+A terapeuta ainda não consegue editar os dados do Paciente ou do Responsável.
+
+Regra:
+A terapeuta pode alterar dados cadastrais quando encontrar inconsistências.
+
+A terapeuta PODE editar:
+- nome
+- telefone
+- endereço
+- e-mail
+- dados básicos
+- informações cadastrais incorretas
+
+A terapeuta NÃO pode:
+- excluir paciente
+- deletar paciente
+- desativar paciente
+- excluir responsável
+- desativar responsável
+- criar novo usuário
+- cadastrar novo paciente
+- cadastrar novo responsável
+
+Correção esperada:
+- Liberar edição de dados para Terapeuta.
+- Manter bloqueadas ações de exclusão, desativação e criação.
+
+4.4 Perfil do paciente > Relatórios
+
+Problema:
+Dentro do perfil do paciente, existe uma guia chamada “Relatório e docs”.
+
+Correção esperada:
+- Renomear a guia para apenas “Relatórios”.
+- Remover a separação entre “Relatórios” e “Documentos e arquivos”.
+- Manter apenas uma área chamada “Relatórios”.
+
+4.5 Novo relatório com anexo PDF
+
+Problema:
+Ao clicar em “NOVO” dentro de Relatórios, há muitos campos desnecessários.
+
+Regra:
+A terapeuta poderá anexar um PDF que já contém todo o relatório completo.
+
+Correção esperada:
+No formulário de novo relatório, manter apenas:
+- Campo para upload/anexo de PDF ou arquivo
+- Campo “PRÉVIA”
+- Campo “Adicionais”
+
+Remover os demais campos obrigatórios que não forem necessários.
+
+Observação:
+O campo “Adicionais” serve apenas para observações complementares, pois o PDF já conterá o relatório completo.
+
+4.6 Relatórios clicáveis e editáveis
+
+Cada relatório existente na guia Relatórios deve ser clicável.
+
+Ao abrir um relatório:
+- Exibir os detalhes do relatório.
+- Exibir o PDF/anexo, se houver.
+- Permitir edição, se necessário.
+
+Adicionar um botão:
+EDITAR
+
+4.7 Erro ao anexar arquivos
+
+Problema:
+Não está sendo possível anexar arquivos.
+
+Foram testados:
+- PDF
+- foto de aproximadamente 70kb
+
+Ambos deram erro.
+
+Correção esperada:
+- Verificar o fluxo de upload.
+- Corrigir anexos de PDF.
+- Corrigir anexos de imagem.
+- Garantir que arquivos pequenos sejam aceitos.
+- Validar permissões, tamanho máximo permitido, tipos MIME e armazenamento.
+
+4.8 Orientações no perfil do paciente
+
+Na guia Orientações, manter a estrutura atual, mas adicionar opção de anexo.
+
+Campos esperados:
+- Título
+- Tipo de orientação
+- Campo digitável
+- Campo PRÉVIA
+- Botão Anexar
+
+O botão Anexar deve permitir:
+- PDF
+- Word
+- Foto/imagem
+- Outros arquivos permitidos pelo sistema
+
+4.9 Listagem de orientações
+
+Na listagem inferior onde aparecem orientações já feitas:
+
+Correção esperada:
+- Cada orientação deve ser clicável.
+- Exibir apenas:
+  - título
+  - prévia
+  - data
+- Ao clicar, abrir orientação completa.
+- Se houver anexo, exibir opção para visualizar ou baixar.
+
+4.10 Histórico no perfil do paciente
+
+Problema:
+Na guia Histórico, as atualizações não são clicáveis.
+
+Correção esperada:
+- Todas as atualizações do Histórico devem ser clicáveis.
+- Ao clicar, abrir o detalhe completo da atualização.
+
+4.11 Guia Responsáveis no topo
+
+Problema:
+Na guia Responsáveis do login Terapeuta, a terapeuta não consegue clicar no nome do responsável para ver ou editar os dados.
+
+Correção esperada:
+- O nome do responsável deve ser clicável.
+- Ao clicar, abrir o perfil do responsável.
+- A terapeuta deve poder visualizar e editar dados cadastrais básicos.
+- A terapeuta não pode excluir, deletar ou desativar o responsável.
+
+==================================================
+5. CORREÇÕES EM AGENDAMENTOS E FERIADOS
+==================================================
+
+5.1 Novo agendamento em data com feriado
+
+Problema:
+Quando ADMIN ou RECEPÇÃO cria um “+ NOVO AGENDAMENTO” e seleciona uma data onde existe feriado cadastrado, o sistema não avisa.
+
+Correção esperada:
+Ao selecionar uma data com feriado cadastrado, o sistema deve exibir um aviso.
+
+Mensagem sugerida:
+“Existe um feriado cadastrado nesta data: [nome do feriado]. Deseja confirmar o agendamento mesmo assim?”
+
+O usuário deve ter duas opções:
+- Confirmar agendamento
+- Cancelar/voltar
+
+Regra:
+- O sistema não deve bloquear automaticamente o agendamento.
+- Deve apenas avisar e pedir confirmação.
+
+==================================================
+6. CORREÇÕES EM COMUNICADOS
+==================================================
+
+6.1 Editar e excluir comunicados
+
+Problema:
+Os comunicados criados por ADMIN ou RECEPÇÃO não possuem opções de edição ou exclusão.
+
+Correção esperada:
+- Comunicados criados por ADMIN ou RECEPÇÃO devem ter botão EDITAR.
+- Comunicados criados por ADMIN ou RECEPÇÃO devem ter botão EXCLUIR.
+- Confirmar antes de excluir.
+- A exclusão deve remover o comunicado da visualização dos usuários.
+- Se o sistema usar exclusão lógica, marcar como inativo/excluído.
+
+==================================================
+7. REGRAS DE PRÉVIA E VISUALIZAÇÃO COMPLETA
+==================================================
+
+Sempre que houver listagem de conteúdos, a listagem deve mostrar apenas:
+
+- Título
+- Prévia
+- Data
+- Autor, se fizer sentido
+- Botão VER ou item clicável
+- Botão PDF/anexo apenas quando houver arquivo anexado
+
+Aplicar para:
+- Relatórios
+- Orientações
+- Comunicados
+- Atualizações
+- Histórico
+- Informativos
+- Notificações
+
+Regra:
+- Texto completo não deve aparecer em listagem.
+- Texto completo deve abrir apenas após clique em VER ou no card.
+- PDF só deve aparecer quando realmente houver PDF anexado.
+- Anexos devem ser exibidos apenas quando existirem.
+
+==================================================
+8. NOTIFICAÇÕES NÃO LIDAS
+==================================================
+
+Criar ou ajustar o sistema de notificações não lidas.
+
+A notificação não lida deve aparecer na tela inicial do usuário correspondente.
+
+Exemplos:
+
+Para RESPONSÁVEL:
+- novo relatório
+- nova orientação
+- novo comunicado
+- nova atualização
+- novo informativo
+
+Para ADMIN:
+- solicitação de alta enviada por terapeuta
+- outros pedidos que exigem validação administrativa
+
+Para TERAPEUTA:
+- recusa de solicitação de alta
+- resposta do ADMIN
+- outras notificações relevantes
+
+Comportamento:
+- Mostrar box “NOTIFICAÇÃO NÃO LIDA” quando houver pendência.
+- Ao clicar, abrir a notificação.
+- Após leitura, marcar como lida.
+- Quando não houver notificações não lidas, ocultar a box.
+
+==================================================
+9. PRIORIDADE DE IMPLEMENTAÇÃO
+==================================================
+
+Priorizar nesta ordem:
+
+1. Corrigir bugs que quebram fluxo:
+   - Relatórios Recentes não clicáveis.
+   - Solicitar alta caindo em 404.
+   - Upload de PDF/imagem com erro.
+   - Responsável não clicável na guia Responsáveis do Terapeuta.
+   - Orientações e Histórico não clicáveis.
+
+2. Corrigir fluxo de alta:
+   - Formulário da terapeuta.
+   - Notificação para ADMIN.
+   - Aprovação ou recusa.
+   - Notificação de retorno para terapeuta.
+   - Alteração de status do paciente quando aprovado.
+
+3. Corrigir permissões:
+   - Terapeuta pode editar dados básicos.
+   - Terapeuta não pode excluir, deletar, desativar ou cadastrar.
+   - ADMIN e RECEPÇÃO mantêm permissões administrativas.
+
+4. Padronizar exibição:
+   - Títulos fora das boxes.
+   - Prévia em listagens.
+   - Conteúdo completo apenas por clique.
+   - Botão PDF apenas quando houver anexo.
+
+5. Melhorar tela do Responsável:
+   - Relatórios Recentes.
+   - Notificação Não Lida.
+   - Guia Geral em Ver acompanhamento.
+   - Relatórios, Orientações e Histórico clicáveis.
+
+6. Ajustar comunicados:
+   - Visualização completa por clique.
+   - Botões Editar e Excluir para ADMIN e RECEPÇÃO.
+
+7. Ajustar agendamentos:
+   - Aviso quando data selecionada for feriado.
+
+==================================================
+10. OBSERVAÇÃO FINAL
+==================================================
+
+Se alguma correção for componente compartilhado entre ADMIN, RECEPÇÃO, TERAPEUTA e RESPONSÁVEL, aplique de forma global.
+
+Se alguma regra estiver ambígua ou puder afetar permissões importantes, pode perguntar antes de implementar.
+
+Caso contrário, aplique diretamente mantendo a lógica atual do sistema.

@@ -26,7 +26,6 @@ const navLinks = {
     { href: '/admin/agendamentos',    label: 'Agenda' },
     { href: '/admin/feriados',        label: 'Feriados' },
     { href: '/admin/comunicados',     label: 'Comunicados' },
-    { href: '/admin/auditoria',       label: 'Auditoria' },
     { href: '/admin/usuarios',        label: 'Usuários' },
   ],
   recepcao: [

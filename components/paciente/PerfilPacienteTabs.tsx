@@ -64,6 +64,8 @@ export interface Relatorio {
   status: string
   publicado_em: string | null
   criado_em: string
+  conclusao: string | null
+  pdf_url: string | null
 }
 
 export interface Documento {
@@ -137,7 +139,7 @@ const ABAS = [
   'Dados Gerais',
   'Responsáveis',
   'Dados Clínicos',
-  'Relatórios e Docs',
+  'Relatórios',
   'Orientações',
   'Histórico',
 ] as const
@@ -182,6 +184,34 @@ export function PerfilPacienteTabs({
     if (!res.ok) { setErroResp('Erro ao vincular.'); return }
     setModalResp(false)
     router.refresh()
+  }
+
+  // Modal ver relatório
+  const [modalRel, setModalRel] = useState<Relatorio | null>(null)
+  const [detalheRel, setDetalheRel] = useState<any>(null)
+  const [carregandoRel, setCarregandoRel] = useState(false)
+
+  async function abrirRelatorio(r: Relatorio) {
+    setModalRel(r)
+    setDetalheRel(null)
+    setCarregandoRel(true)
+    const { createClient } = await import('@/lib/supabase/client')
+    const { data } = await createClient()
+      .from('relatorios')
+      .select('id, identificacao, obs_clinicas, testes, resultado_discussao, conclusao, assinatura_digital, assinado_em, status, criado_em, pdf_url')
+      .eq('id', r.id)
+      .single()
+    setDetalheRel(data)
+    setCarregandoRel(false)
+  }
+
+  const [oriExpandidas, setOriExpandidas] = useState<Set<string>>(new Set())
+  function toggleOri(id: string) {
+    setOriExpandidas(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
   }
 
   const [novaOri, setNovaOri] = useState({ titulo: '', tipo: 'texto', url_midia: '', conteudo: '' })
@@ -424,7 +454,13 @@ export function PerfilPacienteTabs({
             <Card key={r.id}>
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div>
-                  <span className="font-medium" style={{ color: 'var(--color-ink)' }}>{r.nome}</span>
+                  <a
+                    href={isAdminOuRecepcao ? `/admin/usuarios/${r.id}` : `/terapia/responsavel/${r.id}`}
+                    className="font-medium transition-opacity hover:opacity-70"
+                    style={{ color: 'var(--color-ink)' }}
+                  >
+                    {r.nome}
+                  </a>
                   <span
                     className="ml-2 text-xs px-2 py-0.5 rounded-full font-medium"
                     style={r.tipo === 'principal'
@@ -472,88 +508,132 @@ export function PerfilPacienteTabs({
         />
       )}
 
-      {/* ── Aba 4: Relatórios e Documentos ──────────────────── */}
-      {abaAtiva === 'Relatórios e Docs' && (
-        <div className="space-y-4">
-          {/* Relatórios */}
-          <Card>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--color-ink-mid)' }}>
-                Relatórios
-              </h3>
-              {role === 'terapeuta' && paciente.status === 'ativo' && (
-                <a
-                  href={`/terapia/paciente/${paciente.id}/novo-relatorio`}
-                  className="text-xs font-medium transition-opacity hover:opacity-70"
-                  style={{ color: 'var(--color-rose-main)' }}
-                >
-                  + Novo
-                </a>
-              )}
-            </div>
-            {relatorios.length > 0 ? (
-              <ul className="divide-y" style={{ borderColor: 'var(--color-border-soft)' }}>
-                {relatorios.map(r => (
-                  <li key={r.id} className="py-3 flex items-center justify-between first:pt-0 last:pb-0">
-                    <div>
+      {/* ── Aba 4: Relatórios ───────────────────────────────── */}
+      {abaAtiva === 'Relatórios' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+              {relatorios.length} relatório{relatorios.length !== 1 ? 's' : ''}
+            </span>
+            {role === 'terapeuta' && paciente.status === 'ativo' && (
+              <a
+                href={`/terapia/paciente/${paciente.id}/novo-relatorio`}
+                className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
+                style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+              >
+                + Novo relatório
+              </a>
+            )}
+          </div>
+          {relatorios.length > 0 ? (
+            <div className="space-y-2">
+              {relatorios.map(r => (
+                <Card key={r.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
                         {r.identificacao ?? 'Sem título'}
                       </div>
-                      <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-                        {new Date(r.criado_em).toLocaleDateString('pt-BR')}
+                      {r.conclusao && (
+                        <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-soft)' }}>
+                          {r.conclusao}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+                          {new Date(r.criado_em).toLocaleDateString('pt-BR')}
+                        </span>
+                        <Badge color={r.status === 'publicado' ? 'green' : 'yellow'}>{r.status}</Badge>
                       </div>
                     </div>
-                    <Badge color={r.status === 'publicado' ? 'green' : 'yellow'}>{r.status}</Badge>
-                  </li>
-                ))}
-              </ul>
-            ) : (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => abrirRelatorio(r)}
+                        className="text-sm font-medium transition-opacity hover:opacity-70"
+                        style={{ color: 'var(--color-rose-main)' }}
+                      >
+                        Ver
+                      </button>
+                      {role === 'terapeuta' && r.status === 'rascunho' && (
+                        <a
+                          href={`/terapia/relatorio/${r.id}/editar`}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg transition-colors"
+                          style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
+                        >
+                          Editar
+                        </a>
+                      )}
+                      {r.pdf_url && (
+                        <a
+                          href={r.pdf_url.startsWith('http') ? r.pdf_url : `/api/relatorio/${r.id}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg transition-colors"
+                          style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                        >
+                          PDF
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
                 Nenhum relatório ainda.
               </p>
-            )}
-          </Card>
+            </Card>
+          )}
 
-          {/* Documentos */}
-          <Card>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--color-ink-mid)' }}>
-                Documentos e arquivos
+          {/* Documentos (compacto) */}
+          {documentos.length > 0 && (
+            <div>
+              <h3
+                className="text-xs font-semibold uppercase tracking-wider mb-2 mt-4"
+                style={{ color: 'var(--color-ink-soft)' }}
+              >
+                Documentos anexados
               </h3>
-              {role === 'terapeuta' && paciente.status === 'ativo' && (
-                <a
-                  href={`/terapia/paciente/${paciente.id}/novo-documento`}
-                  className="text-xs font-medium transition-opacity hover:opacity-70"
-                  style={{ color: 'var(--color-rose-main)' }}
-                >
-                  + Anexar
-                </a>
-              )}
+              <Card>
+                <ul className="divide-y" style={{ borderColor: 'var(--color-border-soft)' }}>
+                  {documentos.map(d => (
+                    <li key={d.id} className="py-2.5 flex items-center justify-between first:pt-0 last:pb-0">
+                      <div>
+                        <div className="text-sm font-medium capitalize" style={{ color: 'var(--color-ink)' }}>
+                          {d.tipo}
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
+                          {d.descricao ?? '—'} · {d.visivel_pais ? 'Visível às famílias' : 'Interno'}
+                        </div>
+                      </div>
+                      <a
+                        href={d.arquivo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium transition-opacity hover:opacity-70"
+                        style={{ color: 'var(--color-rose-main)' }}
+                      >
+                        Abrir
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
             </div>
-            {documentos.length > 0 ? (
-              <ul className="divide-y" style={{ borderColor: 'var(--color-border-soft)' }}>
-                {documentos.map(d => (
-                  <li key={d.id} className="py-3 flex items-center justify-between first:pt-0 last:pb-0">
-                    <div>
-                      <div className="text-sm font-medium capitalize" style={{ color: 'var(--color-ink)' }}>
-                        {d.tipo}
-                      </div>
-                      <div className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
-                        {d.descricao ?? '—'}
-                      </div>
-                    </div>
-                    <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-                      {d.visivel_pais ? 'Visível às famílias' : 'Interno'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                Nenhum arquivo anexado.
-              </p>
-            )}
-          </Card>
+          )}
+          {role === 'terapeuta' && paciente.status === 'ativo' && (
+            <div className="text-right">
+              <a
+                href={`/terapia/paciente/${paciente.id}/novo-documento`}
+                className="text-xs transition-opacity hover:opacity-70"
+                style={{ color: 'var(--color-ink-soft)' }}
+              >
+                + Anexar documento
+              </a>
+            </div>
+          )}
         </div>
       )}
 
@@ -630,94 +710,93 @@ export function PerfilPacienteTabs({
                 Nenhuma orientação registrada.
               </p>
             </Card>
-          ) : orientacoes.map(o => (
-            <Card key={o.id}>
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <div className="font-medium" style={{ color: 'var(--color-ink)' }}>{o.titulo}</div>
-                {o.tipo && o.tipo !== 'texto' && (
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
-                    style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
-                  >
-                    {{ video: 'Vídeo', pdf: 'PDF', imagem: 'Imagem', guia: 'Guia' }[o.tipo] ?? o.tipo}
-                  </span>
-                )}
-              </div>
-
-              {(!o.tipo || o.tipo === 'texto' || o.tipo === 'guia') ? (
-                <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>
-                  {o.conteudo}
-                </p>
-              ) : o.tipo === 'video' && o.url_midia ? (
-                <div className="mt-1 space-y-2">
-                  {o.url_midia.includes('youtu') ? (
-                    <div
-                      className="aspect-video rounded-xl overflow-hidden"
-                      style={{ background: 'var(--color-border-soft)' }}
-                    >
-                      <iframe
-                        src={o.url_midia
-                          .replace('watch?v=', 'embed/')
-                          .replace('youtu.be/', 'youtube.com/embed/')}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  ) : (
-                    <a
-                      href={o.url_midia}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70"
+          ) : orientacoes.map(o => {
+            const expandida = oriExpandidas.has(o.id)
+            const tipoLabel: Record<string, string> = { video: 'Vídeo', pdf: 'PDF', imagem: 'Imagem', guia: 'Guia' }
+            return (
+              <Card key={o.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium" style={{ color: 'var(--color-ink)' }}>{o.titulo}</div>
+                    {!expandida && (
+                      <p className="text-sm mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-soft)' }}>
+                        {o.conteudo || (o.url_midia ? tipoLabel[o.tipo] ?? o.tipo : '')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {o.tipo && o.tipo !== 'texto' && (
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full"
+                        style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                      >
+                        {tipoLabel[o.tipo] ?? o.tipo}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => toggleOri(o.id)}
+                      className="text-sm font-medium transition-opacity hover:opacity-70"
                       style={{ color: 'var(--color-rose-main)' }}
                     >
-                      ▶ Assistir vídeo
-                    </a>
-                  )}
-                  {o.conteudo && (
-                    <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>
-                  )}
+                      {expandida ? 'Fechar' : 'Ver'}
+                    </button>
+                  </div>
                 </div>
-              ) : o.tipo === 'pdf' && o.url_midia ? (
-                <div className="mt-1 space-y-1">
-                  <a
-                    href={o.url_midia}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70"
-                    style={{ color: 'var(--color-rose-main)' }}
-                  >
-                    📄 Abrir PDF
-                  </a>
-                  {o.conteudo && (
-                    <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>
-                  )}
-                </div>
-              ) : o.tipo === 'imagem' && o.url_midia ? (
-                <div className="mt-1 space-y-1">
-                  <img
-                    src={o.url_midia}
-                    alt={o.titulo}
-                    className="rounded-xl max-w-full max-h-64 object-contain"
-                  />
-                  {o.conteudo && (
-                    <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>
-                  )}
-                </div>
-              ) : (
-                o.conteudo && (
-                  <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>
-                    {o.conteudo}
-                  </p>
-                )
-              )}
 
-              <div className="text-xs mt-2" style={{ color: 'var(--color-ink-faint)' }}>
-                {new Date(o.criado_em).toLocaleDateString('pt-BR')}
-              </div>
-            </Card>
-          ))}
+                {expandida && (
+                  <div className="mt-3 pt-3 border-t space-y-2" style={{ borderColor: 'var(--color-border-soft)' }}>
+                    {(!o.tipo || o.tipo === 'texto' || o.tipo === 'guia') ? (
+                      <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>
+                        {o.conteudo}
+                      </p>
+                    ) : o.tipo === 'video' && o.url_midia ? (
+                      <>
+                        {o.url_midia.includes('youtu') ? (
+                          <div className="aspect-video rounded-xl overflow-hidden" style={{ background: 'var(--color-border-soft)' }}>
+                            <iframe
+                              src={o.url_midia.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          </div>
+                        ) : (
+                          <a href={o.url_midia} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70"
+                            style={{ color: 'var(--color-rose-main)' }}
+                          >
+                            ▶ Assistir vídeo
+                          </a>
+                        )}
+                        {o.conteudo && <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>}
+                      </>
+                    ) : o.tipo === 'pdf' && o.url_midia ? (
+                      <>
+                        <a href={o.url_midia} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70"
+                          style={{ color: 'var(--color-rose-main)' }}
+                        >
+                          📄 Abrir PDF
+                        </a>
+                        {o.conteudo && <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>}
+                      </>
+                    ) : o.tipo === 'imagem' && o.url_midia ? (
+                      <>
+                        <img src={o.url_midia} alt={o.titulo} className="rounded-xl max-w-full max-h-64 object-contain" />
+                        {o.conteudo && <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>}
+                      </>
+                    ) : (
+                      o.conteudo && <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{o.conteudo}</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="text-xs mt-2" style={{ color: 'var(--color-ink-faint)' }}>
+                  {new Date(o.criado_em).toLocaleDateString('pt-BR')}
+                </div>
+              </Card>
+            )
+          })}
         </div>
       )}
 
@@ -757,12 +836,16 @@ export function PerfilPacienteTabs({
           ))}
 
           {relatorios.map(r => (
-            <div key={r.id} className="flex gap-3 items-start">
+            <button
+              key={r.id}
+              onClick={() => { abrirRelatorio(r); }}
+              className="w-full flex gap-3 items-start text-left group"
+            >
               <div
                 className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
                 style={{ background: r.status === 'publicado' ? 'var(--color-sage-main)' : 'var(--color-rose-soft)' }}
               />
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
                   <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
                     {r.status === 'publicado' ? 'Relatório publicado' : 'Rascunho'}
@@ -773,16 +856,25 @@ export function PerfilPacienteTabs({
                   {new Date(r.criado_em).toLocaleDateString('pt-BR')}
                 </div>
               </div>
-            </div>
+              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" style={{ color: 'var(--color-rose-main)' }}>
+                Ver →
+              </span>
+            </button>
           ))}
 
           {documentos.map(d => (
-            <div key={d.id} className="flex gap-3 items-start">
+            <a
+              key={d.id}
+              href={d.arquivo_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex gap-3 items-start group"
+            >
               <div
                 className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
                 style={{ background: 'var(--color-lavender-main)' }}
               />
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
                   <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
                     Documento anexado
@@ -793,16 +885,23 @@ export function PerfilPacienteTabs({
                   {new Date(d.criado_em).toLocaleDateString('pt-BR')}
                 </div>
               </div>
-            </div>
+              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" style={{ color: 'var(--color-lavender-main)' }}>
+                Abrir →
+              </span>
+            </a>
           ))}
 
           {orientacoes.map(o => (
-            <div key={o.id} className="flex gap-3 items-start">
+            <button
+              key={o.id}
+              onClick={() => { setAbaAtiva('Orientações'); toggleOri(o.id) }}
+              className="w-full flex gap-3 items-start text-left group"
+            >
               <div
                 className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
                 style={{ background: 'var(--color-peach-main)' }}
               />
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
                   <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
                     Orientação registrada
@@ -813,7 +912,10 @@ export function PerfilPacienteTabs({
                   {new Date(o.criado_em).toLocaleDateString('pt-BR')}
                 </div>
               </div>
-            </div>
+              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" style={{ color: 'var(--color-peach-main)' }}>
+                Ver →
+              </span>
+            </button>
           ))}
 
           {altas.length + relatorios.length + documentos.length + orientacoes.length === 0 && (
@@ -826,6 +928,92 @@ export function PerfilPacienteTabs({
         </div>
       )}
     </div>
+
+    {/* Modal: ver relatório completo */}
+    {modalRel && (
+      <div
+        className="fixed inset-0 flex items-center justify-center z-50 p-4"
+        style={{ background: 'rgba(44,32,24,0.5)' }}
+        onClick={() => { setModalRel(null); setDetalheRel(null) }}
+      >
+        <div
+          className="rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+          style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div
+            className="sticky top-0 flex items-center justify-between px-5 py-4 border-b"
+            style={{ background: 'var(--color-warm-white)', borderColor: 'var(--color-border-soft)' }}
+          >
+            <h3 className="font-semibold" style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-lora)' }}>
+              {modalRel.identificacao ?? 'Relatório'}
+            </h3>
+            <div className="flex items-center gap-2">
+              {modalRel.pdf_url && (
+                <a
+                  href={modalRel.pdf_url.startsWith('http') ? modalRel.pdf_url : `/api/relatorio/${modalRel.id}/pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg"
+                  style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                >
+                  Baixar PDF
+                </a>
+              )}
+              <button
+                onClick={() => { setModalRel(null); setDetalheRel(null) }}
+                className="text-lg hover:opacity-60"
+                style={{ color: 'var(--color-ink-faint)' }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <div className="p-5 space-y-5">
+            {carregandoRel ? (
+              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Carregando...</p>
+            ) : detalheRel ? (
+              <>
+                {detalheRel.conclusao && (
+                  <div>
+                    <div className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--color-ink-faint)' }}>Prévia / Conclusão</div>
+                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{detalheRel.conclusao}</p>
+                  </div>
+                )}
+                {detalheRel.obs_clinicas && (
+                  <div>
+                    <div className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--color-ink-faint)' }}>Observações Clínicas</div>
+                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{detalheRel.obs_clinicas}</p>
+                  </div>
+                )}
+                {detalheRel.testes && (
+                  <div>
+                    <div className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--color-ink-faint)' }}>Testes Aplicados</div>
+                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{detalheRel.testes}</p>
+                  </div>
+                )}
+                {detalheRel.resultado_discussao && (
+                  <div>
+                    <div className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--color-ink-faint)' }}>Resultado e Discussão</div>
+                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{detalheRel.resultado_discussao}</p>
+                  </div>
+                )}
+                {detalheRel.assinatura_digital && (
+                  <div
+                    className="rounded-xl px-3 py-2 text-xs"
+                    style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-soft)' }}
+                  >
+                    ✓ {detalheRel.assinatura_digital}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Sem conteúdo disponível.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Modal: vincular responsável existente */}
     {modalResp && (

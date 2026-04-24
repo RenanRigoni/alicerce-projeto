@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
+import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 import { CalendarioMensalPortal } from '@/components/portal/CalendarioMensalPortal'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
 
@@ -26,7 +27,7 @@ export default async function PortalDashboard() {
 
   const pacienteIds = (vinculos ?? []).map((v: any) => v.paciente_id as string)
 
-  const [{ data: comunicados }, { data: agendamentos }, { data: feriados }, { data: orientacoes }] = await Promise.all([
+  const [{ data: comunicados }, { data: agendamentos }, { data: feriados }, { data: orientacoes }, { data: relatoriosRecentes }] = await Promise.all([
     supabase
       .from('comunicados')
       .select('id, titulo, conteudo, criado_em')
@@ -52,6 +53,15 @@ export default async function PortalDashboard() {
           .select('id, titulo, tipo, url_midia, conteudo, criado_em, paciente_id, pacientes(nome)')
           .in('paciente_id', pacienteIds)
           .order('criado_em', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] }),
+    pacienteIds.length > 0
+      ? supabase
+          .from('relatorios')
+          .select('id, paciente_id, identificacao, conclusao, publicado_em, pdf_url, pacientes(nome)')
+          .in('paciente_id', pacienteIds)
+          .eq('status', 'publicado')
+          .order('publicado_em', { ascending: false })
           .limit(5)
       : Promise.resolve({ data: [] }),
   ])
@@ -289,6 +299,59 @@ export default async function PortalDashboard() {
         </div>
       )}
 
+      {/* Relatórios recentes */}
+      {relatoriosRecentes && relatoriosRecentes.length > 0 && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-ink-soft)' }}>
+            Relatórios recentes
+          </h2>
+          <div className="space-y-2">
+            {(relatoriosRecentes as any[]).map((r: any) => (
+              <Card key={r.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="font-medium" style={{ color: 'var(--color-ink)' }}>
+                      {r.identificacao ?? 'Relatório de avaliação'}
+                      {pacienteIds.length > 1 && r.pacientes?.nome && (
+                        <span className="ml-1.5 text-sm font-normal" style={{ color: 'var(--color-ink-soft)' }}>
+                          — {r.pacientes.nome}
+                        </span>
+                      )}
+                    </div>
+                    {r.conclusao && (
+                      <p className="text-sm mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-mid)' }}>
+                        {r.conclusao}
+                      </p>
+                    )}
+                    <div className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
+                      {r.publicado_em ? new Date(r.publicado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <a
+                      href={`/portal/paciente/${r.paciente_id}/relatorio/${r.id}`}
+                      className="text-sm font-medium transition-opacity hover:opacity-70"
+                      style={{ color: 'var(--color-rose-main)' }}
+                    >
+                      Ver
+                    </a>
+                    {r.pdf_url && (
+                      <a
+                        href={`/api/relatorio/${r.id}/pdf`}
+                        className="text-xs font-medium px-2.5 py-1.5 rounded-lg"
+                        style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                      >
+                        PDF
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Comunicados */}
       {comunicados && comunicados.length > 0 && (
         <div>
@@ -300,13 +363,12 @@ export default async function PortalDashboard() {
           </h2>
           <div className="space-y-3">
             {comunicados.map((c: any) => (
-              <Card key={c.id}>
-                <div className="font-medium mb-1" style={{ color: 'var(--color-ink)' }}>{c.titulo}</div>
-                <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{c.conteudo}</p>
-                <div className="text-xs mt-2" style={{ color: 'var(--color-ink-faint)' }}>
-                  {new Date(c.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                </div>
-              </Card>
+              <ComunicadoCard
+                key={c.id}
+                titulo={c.titulo}
+                conteudo={c.conteudo}
+                criado_em={c.criado_em}
+              />
             ))}
           </div>
         </div>

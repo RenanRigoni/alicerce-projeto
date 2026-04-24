@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
+import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
@@ -22,7 +23,6 @@ export default async function AdminDashboard() {
     { data: comunicados },
   ] = await Promise.all([
     supabase.from('pacientes').select('*', { count: 'exact', head: true }).eq('status', 'ativo'),
-    // Responsáveis com pelo menos 1 paciente ativo
     supabase
       .from('paciente_responsaveis')
       .select('responsavel_id, pacientes!inner(status)')
@@ -36,7 +36,7 @@ export default async function AdminDashboard() {
     !isRecepcao
       ? supabase
           .from('relatorios')
-          .select('id, paciente_id, identificacao, status, criado_em, pacientes!inner(nome)')
+          .select('id, paciente_id, identificacao, status, conclusao, criado_em, pacientes!inner(nome)')
           .not('paciente_id', 'is', null)
           .order('criado_em', { ascending: false })
           .limit(5)
@@ -49,12 +49,11 @@ export default async function AdminDashboard() {
       .limit(3),
     supabase
       .from('comunicados')
-      .select('id, titulo, conteudo, criado_em')
+      .select('id, titulo, conteudo, criado_em, profiles(nome)')
       .order('criado_em', { ascending: false })
       .limit(3),
   ])
 
-  // Conta responsáveis únicos com paciente ativo
   const totalFamilias = new Set((familiasDados ?? []).map((f: any) => f.responsavel_id)).size
 
   return (
@@ -147,131 +146,163 @@ export default async function AdminDashboard() {
 
       {/* Relatórios recentes */}
       {!isRecepcao && (
-        <Card>
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-ink-mid)' }}>
+        <div>
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
             Relatórios recentes
           </h2>
-          {relatóriosRecentes && relatóriosRecentes.length > 0 ? (
-            <ul className="space-y-2">
-              {relatóriosRecentes.map((r: any) => (
-                <li key={r.id}>
-                  <a
-                    href={`/portal/paciente/${r.paciente_id}/relatorio/${r.id}`}
-                    className="flex items-center justify-between text-sm rounded-xl px-3 py-2 -mx-3 transition-colors hover:bg-[var(--color-rose-blush)]"
-                    style={{ color: 'var(--color-ink)' }}
-                  >
-                    <span style={{ color: 'var(--color-ink-mid)' }}>
-                      <span style={{ color: 'var(--color-ink)', fontWeight: 500 }}>{r.pacientes?.nome ?? '—'}</span>
-                      {' — '}{r.identificacao ?? 'Sem título'}
-                    </span>
-                    <span
-                      className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ml-2"
-                      style={r.status === 'publicado'
-                        ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
-                        : { background: '#FFFBEB', color: '#92400E' }
-                      }
+          <Card>
+            {relatóriosRecentes && relatóriosRecentes.length > 0 ? (
+              <ul className="space-y-1">
+                {relatóriosRecentes.map((r: any) => (
+                  <li key={r.id}>
+                    <a
+                      href={`/admin/pacientes/${r.paciente_id}`}
+                      className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 -mx-3 transition-colors hover:bg-[var(--color-rose-blush)]"
                     >
-                      {r.status}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhum relatório ainda.</p>
-          )}
-        </Card>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+                          {r.pacientes?.nome ?? '—'}
+                          {r.identificacao && (
+                            <span style={{ color: 'var(--color-ink-soft)', fontWeight: 400 }}>
+                              {' — '}{r.identificacao}
+                            </span>
+                          )}
+                        </div>
+                        {r.conclusao && (
+                          <div
+                            className="text-xs mt-0.5 line-clamp-1"
+                            style={{ color: 'var(--color-ink-soft)' }}
+                          >
+                            {r.conclusao}
+                          </div>
+                        )}
+                        <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-faint)' }}>
+                          {new Date(r.criado_em).toLocaleDateString('pt-BR')}
+                        </div>
+                      </div>
+                      <span
+                        className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 mt-0.5"
+                        style={r.status === 'publicado'
+                          ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
+                          : { background: '#FFFBEB', color: '#92400E' }
+                        }
+                      >
+                        {r.status}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhum relatório ainda.</p>
+            )}
+          </Card>
+        </div>
       )}
 
       {/* Próximos feriados */}
       {feriados && feriados.length > 0 && (
-        <Card>
-          <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-ink-mid)' }}>
+        <div>
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
             Próximos feriados
           </h2>
-          <div className="space-y-2.5">
-            {feriados.map((f: any) => (
-              <div key={f.data} className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-rose-soft)' }} />
-                <div>
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>{f.descricao}</span>
-                  <span className="text-xs ml-2" style={{ color: 'var(--color-ink-soft)' }}>
-                    {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', {
-                      weekday: 'long', day: '2-digit', month: 'long',
-                    })}
-                  </span>
+          <Card>
+            <div className="space-y-2.5">
+              {feriados.map((f: any) => (
+                <div key={f.data} className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-rose-soft)' }} />
+                  <div>
+                    <span className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>{f.descricao}</span>
+                    <span className="text-xs ml-2" style={{ color: 'var(--color-ink-soft)' }}>
+                      {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', {
+                        weekday: 'long', day: '2-digit', month: 'long',
+                      })}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* Comunicados recentes */}
       {comunicados && comunicados.length > 0 && (
-        <Card>
-          <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-ink-mid)' }}>
+        <div>
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
             Comunicados recentes
           </h2>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {comunicados.map((c: any) => (
-              <div
+              <ComunicadoCard
                 key={c.id}
-                className="pb-4 last:pb-0 border-b last:border-0"
-                style={{ borderColor: 'var(--color-border-soft)' }}
-              >
-                <div className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>{c.titulo}</div>
-                <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-soft)' }}>{c.conteudo}</p>
-                <div className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
-                  {new Date(c.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
-                </div>
-              </div>
+                titulo={c.titulo}
+                conteudo={c.conteudo}
+                autor={c.profiles?.nome}
+                criado_em={c.criado_em}
+              />
             ))}
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Ações rápidas */}
-      <Card>
-        <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-ink-mid)' }}>Ações rápidas</h2>
-        <div className="flex flex-wrap gap-2.5">
-          <a
-            href="/admin/pacientes/novo"
-            className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
-            style={{ background: 'var(--color-rose-main)' }}
-          >
-            + Novo paciente
-          </a>
-          <a
-            href="/admin/usuarios/novo"
-            className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
-            style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
-          >
-            + Novo usuário
-          </a>
-          <a
-            href="/admin/agendamentos/novo"
-            className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
-            style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
-          >
-            + Agendamento
-          </a>
-          <a
-            href="/admin/comunicados"
-            className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
-            style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
-          >
-            Comunicados
-          </a>
-          <a
-            href="/admin/feriados"
-            className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
-            style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
-          >
-            Feriados
-          </a>
-        </div>
-      </Card>
+      <div>
+        <h2
+          className="text-xs font-semibold uppercase tracking-wider mb-3"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Ações rápidas
+        </h2>
+        <Card>
+          <div className="flex flex-wrap gap-2.5">
+            <a
+              href="/admin/pacientes/novo"
+              className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
+              style={{ background: 'var(--color-rose-main)' }}
+            >
+              + Novo paciente
+            </a>
+            <a
+              href="/admin/usuarios/novo"
+              className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
+              style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+            >
+              + Novo usuário
+            </a>
+            <a
+              href="/admin/agendamentos/novo"
+              className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
+              style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+            >
+              + Agendamento
+            </a>
+            <a
+              href="/admin/comunicados"
+              className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
+              style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
+            >
+              Comunicados
+            </a>
+            <a
+              href="/admin/feriados"
+              className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
+              style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
+            >
+              Feriados
+            </a>
+          </div>
+        </Card>
+      </div>
     </div>
   )
 }

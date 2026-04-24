@@ -45,7 +45,7 @@ export default async function AdminPacienteDetalhePage({
       .maybeSingle(),
     supabase
       .from('relatorios')
-      .select('id, identificacao, status, publicado_em, criado_em')
+      .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }),
     supabase

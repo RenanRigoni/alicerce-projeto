@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { Card } from '@/components/ui/Card'
 import { NovoComunicadoForm } from './NovoComunicadoForm'
+import { ComunicadosList } from './ComunicadosList'
 
 export default async function ComunicadosPage() {
   const supabase = await createClient()
@@ -26,25 +26,7 @@ export default async function ComunicadosPage() {
 
       <NovoComunicadoForm />
 
-      <div className="space-y-3">
-        {comunicados && comunicados.length > 0 ? comunicados.map((c: any) => (
-          <Card key={c.id}>
-            <div className="font-medium mb-1" style={{ color: 'var(--color-ink)' }}>{c.titulo}</div>
-            <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{c.conteudo}</p>
-            <div className="text-xs mt-2" style={{ color: 'var(--color-ink-faint)' }}>
-              {c.profiles?.nome ?? '—'} · {new Date(c.criado_em).toLocaleDateString('pt-BR', {
-                day: '2-digit', month: 'long', year: 'numeric',
-              })}
-            </div>
-          </Card>
-        )) : (
-          <Card>
-            <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-              Nenhum comunicado publicado ainda.
-            </p>
-          </Card>
-        )}
-      </div>
+      <ComunicadosList comunicados={(comunicados ?? []) as any} />
     </div>
   )
 }

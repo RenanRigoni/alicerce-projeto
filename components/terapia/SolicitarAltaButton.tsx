@@ -8,22 +8,46 @@ interface Props {
   pacienteNome: string
 }
 
+const labelStyle = { color: 'var(--color-ink-mid)' }
+
 export function SolicitarAltaButton({ pacienteId, pacienteNome }: Props) {
   const router = useRouter()
   const [modalAberto, setModalAberto] = useState(false)
-  const [motivo, setMotivo] = useState('')
+  const [form, setForm] = useState({
+    justificativa: '',
+    evolucao: '',
+    detalhes_clinicos: '',
+    obs_adicionais: '',
+  })
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
 
+  function handle(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  function fechar() {
+    setModalAberto(false)
+    setErro('')
+    setForm({ justificativa: '', evolucao: '', detalhes_clinicos: '', obs_adicionais: '' })
+  }
+
   async function handleSolicitar() {
-    if (!motivo.trim()) { setErro('O motivo é obrigatório.'); return }
+    if (!form.justificativa.trim()) { setErro('A justificativa é obrigatória.'); return }
     setErro('')
     setEnviando(true)
+
+    const partes = [
+      `[Justificativa]\n${form.justificativa.trim()}`,
+      form.evolucao.trim() ? `[Evolução do paciente]\n${form.evolucao.trim()}` : '',
+      form.detalhes_clinicos.trim() ? `[Detalhes clínicos]\n${form.detalhes_clinicos.trim()}` : '',
+      form.obs_adicionais.trim() ? `[Observações adicionais]\n${form.obs_adicionais.trim()}` : '',
+    ].filter(Boolean)
 
     const res = await fetch('/api/alta/solicitar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paciente_id: pacienteId, motivo }),
+      body: JSON.stringify({ paciente_id: pacienteId, motivo: partes.join('\n\n') }),
     })
 
     const json = await res.json()
@@ -31,7 +55,7 @@ export function SolicitarAltaButton({ pacienteId, pacienteNome }: Props) {
 
     if (!res.ok) { setErro(json.error ?? 'Erro ao solicitar alta.'); return }
 
-    setModalAberto(false)
+    fechar()
     router.refresh()
   }
 
@@ -40,55 +64,88 @@ export function SolicitarAltaButton({ pacienteId, pacienteNome }: Props) {
       <button
         onClick={() => setModalAberto(true)}
         className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
-        style={{
-          border: '1px solid #FDE68A',
-          color: '#92400E',
-          background: '#FFFBEB',
-        }}
+        style={{ border: '1px solid #FDE68A', color: '#92400E', background: '#FFFBEB' }}
       >
         Solicitar alta
       </button>
 
       {modalAberto && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-50 px-4"
+          className="fixed inset-0 flex items-center justify-center z-50 px-4 py-6 overflow-y-auto"
           style={{ background: 'rgba(44,32,24,0.4)' }}
         >
           <div
-            className="rounded-2xl p-6 w-full max-w-sm space-y-4"
-            style={{
-              background: 'var(--color-warm-white)',
-              boxShadow: '0 20px 60px rgba(44,32,24,0.2)',
-            }}
+            className="rounded-2xl p-6 w-full max-w-lg space-y-4 my-auto"
+            style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
           >
-            <h2
-              className="text-base font-semibold"
-              style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
-            >
-              Solicitar alta — {pacienteNome}
-            </h2>
-            <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-              A solicitação será enviada para a administração para aprovação.
-            </p>
             <div>
-              <label
-                className="block text-sm font-medium mb-1.5"
-                style={{ color: 'var(--color-ink-mid)' }}
-              >
-                Motivo da alta <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+              <h2 className="text-base font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
+                Solicitar alta — {pacienteNome}
+              </h2>
+              <p className="text-sm mt-1" style={{ color: 'var(--color-ink-soft)' }}>
+                A solicitação será enviada para a administração para aprovação.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
+                Justificativa <span style={{ color: 'var(--color-rose-main)' }}>*</span>
               </label>
               <textarea
-                value={motivo}
-                onChange={e => setMotivo(e.target.value)}
-                rows={4}
-                placeholder="Descreva o motivo da alta terapêutica..."
-                className="input-base resize-none"
+                name="justificativa"
+                value={form.justificativa}
+                onChange={handle}
+                rows={3}
+                placeholder="Motivo principal para a solicitação de alta..."
+                className="input-base resize-y"
               />
             </div>
-            {erro && (
-              <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>
-            )}
-            <div className="flex gap-3">
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
+                Evolução do paciente
+              </label>
+              <textarea
+                name="evolucao"
+                value={form.evolucao}
+                onChange={handle}
+                rows={3}
+                placeholder="Descreva a evolução observada ao longo do tratamento..."
+                className="input-base resize-y"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
+                Detalhes clínicos
+              </label>
+              <textarea
+                name="detalhes_clinicos"
+                value={form.detalhes_clinicos}
+                onChange={handle}
+                rows={2}
+                placeholder="Informações clínicas relevantes para a decisão..."
+                className="input-base resize-y"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
+                Observações adicionais
+              </label>
+              <textarea
+                name="obs_adicionais"
+                value={form.obs_adicionais}
+                onChange={handle}
+                rows={2}
+                placeholder="Outras informações complementares (opcional)..."
+                className="input-base resize-y"
+              />
+            </div>
+
+            {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
+
+            <div className="flex gap-3 pt-1">
               <button
                 onClick={handleSolicitar}
                 disabled={enviando}
@@ -98,8 +155,8 @@ export function SolicitarAltaButton({ pacienteId, pacienteNome }: Props) {
                 {enviando ? 'Enviando...' : 'Enviar solicitação'}
               </button>
               <button
-                onClick={() => { setModalAberto(false); setErro(''); setMotivo('') }}
-                className="text-sm px-4 py-2 transition-colors"
+                onClick={fechar}
+                className="text-sm px-4 py-2 transition-colors rounded-xl"
                 style={{ color: 'var(--color-ink-soft)' }}
               >
                 Cancelar

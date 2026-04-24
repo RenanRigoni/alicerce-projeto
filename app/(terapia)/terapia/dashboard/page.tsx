@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
+import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
 
 const tipoLabel: Record<string, string> = {
@@ -69,18 +70,6 @@ export default async function TerapiaDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1
-          className="text-2xl font-semibold"
-          style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
-        >
-          Minha agenda
-        </h1>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
-          Seus próximos compromissos e pacientes
-        </p>
-      </div>
-
       {/* Próximos compromissos */}
       {proximosCompromissos.length > 0 && (
         <div>
@@ -170,28 +159,33 @@ export default async function TerapiaDashboard() {
 
       {/* Próximos feriados */}
       {(feriados ?? []).length > 0 && (
-        <Card>
-          <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-ink-mid)' }}>
+        <div>
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
             Próximos feriados
           </h2>
-          <div className="space-y-2.5">
-            {(feriados ?? []).map((f: any) => (
-              <div key={f.data} className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-rose-soft)' }} />
-                <div>
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
-                    {f.descricao}
-                  </span>
-                  <span className="text-xs ml-2" style={{ color: 'var(--color-ink-soft)' }}>
-                    {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', {
-                      weekday: 'long', day: '2-digit', month: 'long',
-                    })}
-                  </span>
+          <Card>
+            <div className="space-y-2.5">
+              {(feriados ?? []).map((f: any) => (
+                <div key={f.data} className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-rose-soft)' }} />
+                  <div>
+                    <span className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+                      {f.descricao}
+                    </span>
+                    <span className="text-xs ml-2" style={{ color: 'var(--color-ink-soft)' }}>
+                      {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', {
+                        weekday: 'long', day: '2-digit', month: 'long',
+                      })}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* Comunicados */}
@@ -205,13 +199,12 @@ export default async function TerapiaDashboard() {
           </h2>
           <div className="space-y-3">
             {(comunicados ?? []).map((c: any) => (
-              <Card key={c.id}>
-                <div className="font-medium mb-1" style={{ color: 'var(--color-ink)' }}>{c.titulo}</div>
-                <p className="text-sm line-clamp-2" style={{ color: 'var(--color-ink-mid)' }}>{c.conteudo}</p>
-                <div className="text-xs mt-2" style={{ color: 'var(--color-ink-faint)' }}>
-                  {new Date(c.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
-                </div>
-              </Card>
+              <ComunicadoCard
+                key={c.id}
+                titulo={c.titulo}
+                conteudo={c.conteudo}
+                criado_em={c.criado_em}
+              />
             ))}
           </div>
         </div>

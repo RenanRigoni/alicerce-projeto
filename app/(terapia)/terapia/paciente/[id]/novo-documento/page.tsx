@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 
@@ -24,35 +23,21 @@ export default function NovoDocumentoPage() {
     setErro('')
     setEnviando(true)
 
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const formData = new FormData()
+    formData.append('arquivo', arquivo)
+    formData.append('paciente_id', pacienteId)
+    formData.append('tipo', tipo)
+    if (descricao) formData.append('descricao', descricao)
+    formData.append('visivel_pais', visivelPais ? 'true' : 'false')
 
-    const ext = arquivo.name.split('.').pop()
-    const path = `${pacienteId}/${Date.now()}.${ext}`
+    const res = await fetch('/api/documento/upload', { method: 'POST', body: formData })
+    const json = await res.json()
+    setEnviando(false)
 
-    const { error: uploadError } = await supabase.storage
-      .from('documentos')
-      .upload(path, arquivo, { upsert: false })
-
-    if (uploadError) {
-      setErro('Erro ao enviar arquivo. Verifique o tamanho e tente novamente.')
-      setEnviando(false)
+    if (!res.ok) {
+      setErro(json.error ?? 'Erro ao enviar arquivo.')
       return
     }
-
-    const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(path)
-
-    const { error: dbError } = await supabase.from('documentos').insert({
-      paciente_id: pacienteId,
-      enviado_por: user!.id,
-      tipo,
-      descricao: descricao || null,
-      arquivo_url: publicUrl,
-      visivel_pais: visivelPais,
-    })
-
-    setEnviando(false)
-    if (dbError) { setErro('Erro ao salvar documento.'); return }
     router.push(`/terapia/paciente/${pacienteId}`)
   }
 
@@ -61,24 +46,16 @@ export default function NovoDocumentoPage() {
   return (
     <div className="space-y-6 max-w-xl">
       <div className="flex items-center gap-3">
-        <a
-          href={`/terapia/paciente/${pacienteId}`}
-          className="text-sm transition-colors hover:opacity-70"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <a href={`/terapia/paciente/${pacienteId}`} className="text-sm transition-colors hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
           ← Voltar
         </a>
-        <h1
-          className="text-2xl font-semibold"
-          style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
-        >
+        <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
           Anexar documento
         </h1>
       </div>
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
-
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Tipo</label>
             <select value={tipo} onChange={e => setTipo(e.target.value)} className="input-base">
@@ -95,40 +72,33 @@ export default function NovoDocumentoPage() {
             </label>
             <input
               type="file"
-              accept="image/*,video/*,.pdf"
+              accept="image/*,video/*,.pdf,.doc,.docx"
               onChange={e => setArquivo(e.target.files?.[0] ?? null)}
               required
               className="input-base"
             />
+            <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
+              PDF, imagem, vídeo ou Word — máx. 15 MB
+            </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Descrição</label>
-            <input
-              value={descricao}
-              onChange={e => setDescricao(e.target.value)}
-              className="input-base"
-              placeholder="Breve descrição do arquivo (opcional)"
-            />
+            <input value={descricao} onChange={e => setDescricao(e.target.value)} className="input-base" placeholder="Breve descrição do arquivo (opcional)" />
           </div>
 
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
-              id="visivel"
               checked={visivelPais}
               onChange={e => setVisivelPais(e.target.checked)}
               className="w-4 h-4"
               style={{ accentColor: 'var(--color-rose-main)' }}
             />
-            <span className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
-              Visível para a família
-            </span>
+            <span className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>Visível para a família</span>
           </label>
 
-          {erro && (
-            <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>
-          )}
+          {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
 
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={enviando}>
@@ -138,7 +108,6 @@ export default function NovoDocumentoPage() {
               Cancelar
             </Button>
           </div>
-
         </form>
       </Card>
     </div>

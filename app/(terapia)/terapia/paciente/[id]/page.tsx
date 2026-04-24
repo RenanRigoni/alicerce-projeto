@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { PerfilPacienteTabs } from '@/components/paciente/PerfilPacienteTabs'
+import { SolicitarAltaButton } from '@/components/terapia/SolicitarAltaButton'
 
 export default async function PacienteTerapeutaPage({
   params,
@@ -41,7 +42,7 @@ export default async function PacienteTerapeutaPage({
       .maybeSingle(),
     supabase
       .from('relatorios')
-      .select('id, identificacao, status, publicado_em, criado_em')
+      .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }),
     supabase
@@ -160,19 +161,7 @@ export default async function PacienteTerapeutaPage({
       {/* Botão de solicitar alta (fora das tabs para ficar sempre visível) */}
       {ehTerapeutaVinculado && paciente.status === 'ativo' && !altaAtual && (
         <div className="pt-2">
-          <a
-            href={`/terapia/paciente/${id}/solicitar-alta`}
-            className="text-sm transition-colors"
-            style={{
-              color: 'var(--color-ink-soft)',
-              border: '1px solid var(--color-border)',
-              borderRadius: '0.75rem',
-              padding: '0.5rem 1rem',
-              display: 'inline-block',
-            }}
-          >
-            Solicitar alta para este paciente
-          </a>
+          <SolicitarAltaButton pacienteId={id} pacienteNome={paciente.nome} />
         </div>
       )}
     </div>

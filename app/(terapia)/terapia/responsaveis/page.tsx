@@ -128,7 +128,13 @@ export default function TerapiaResponsaveisPage() {
             <Card key={r.id}>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium" style={{ color: 'var(--color-ink)' }}>{r.nome}</div>
+                  <a
+                    href={`/terapia/responsavel/${r.id}`}
+                    className="font-medium transition-opacity hover:opacity-70"
+                    style={{ color: 'var(--color-ink)' }}
+                  >
+                    {r.nome}
+                  </a>
                   <div className="flex flex-wrap gap-x-4 mt-0.5">
                     {r.telefone && <span className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{r.telefone}</span>}
                     {r.cidade && <span className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{r.cidade}</span>}

@@ -114,15 +114,19 @@ export default async function RelatorioPortalPage({
       )}
 
       {/* Botão PDF */}
-      <div className="flex justify-end">
-        <a
-          href={`/api/relatorio/${relatorioId}/pdf`}
-          className="text-sm font-medium px-5 py-2.5 rounded-xl text-white transition-opacity hover:opacity-90"
-          style={{ background: 'var(--color-rose-main)' }}
-        >
-          Baixar PDF
-        </a>
-      </div>
+      {relatorio.pdf_url && (
+        <div className="flex justify-end">
+          <a
+            href={relatorio.pdf_url.startsWith('http') ? relatorio.pdf_url : `/api/relatorio/${relatorioId}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium px-5 py-2.5 rounded-xl text-white transition-opacity hover:opacity-90"
+            style={{ background: 'var(--color-rose-main)' }}
+          >
+            Baixar PDF
+          </a>
+        </div>
+      )}
     </div>
   )
 }

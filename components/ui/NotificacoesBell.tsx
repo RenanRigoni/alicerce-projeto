@@ -20,19 +20,23 @@ export function NotificacoesBell() {
 
   const naoLidas = notificacoes.filter(n => !n.lida).length
 
+  async function carregar() {
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('notificacoes')
+      .select('id, tipo, titulo, mensagem, lida, link, criado_em')
+      .order('criado_em', { ascending: false })
+      .limit(30)
+    setNotificacoes(data ?? [])
+    setCarregando(false)
+  }
+
   useEffect(() => {
-    async function carregar() {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('notificacoes')
-        .select('id, tipo, titulo, mensagem, lida, link, criado_em')
-        .order('criado_em', { ascending: false })
-        .limit(30)
-      setNotificacoes(data ?? [])
-      setCarregando(false)
-    }
     carregar()
+    const onFocus = () => carregar()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   }, [])
 
   useEffect(() => {

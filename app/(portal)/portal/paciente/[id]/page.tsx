@@ -119,6 +119,12 @@ export default async function PacientePortalPage({
     segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado',
   }
 
+  const turnoLabel: Record<string, string> = {
+  manha: 'Manhã',
+  tarde: 'Tarde',
+  qualquer: 'Qualquer',
+}
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
@@ -186,7 +192,7 @@ export default async function PacientePortalPage({
                 <div>
                   <div className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--color-ink-faint)' }}>Turno</div>
                   <div className="text-sm" style={{ color: 'var(--color-ink)' }}>
-                    {{ manha: 'Manhã', tarde: 'Tarde', qualquer: 'Qualquer' }[paciente.turno_preferencia] ?? paciente.turno_preferencia}
+                    {turnoLabel[String(paciente.turno_preferencia)] ?? paciente.turno_preferencia}
                   </div>
                 </div>
               )}

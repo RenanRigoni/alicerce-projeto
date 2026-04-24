@@ -239,43 +239,43 @@ export default async function PortalDashboard() {
           </h2>
           <div className="space-y-2">
             {(relatoriosRecentes as any[]).map((r: any) => (
-              <a key={r.id} href={`/portal/paciente/${r.paciente_id}/relatorio/${r.id}`} className="block">
-                <Card className="hover:shadow-md transition-all cursor-pointer">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="font-medium" style={{ color: 'var(--color-ink)' }}>
-                        {r.identificacao ?? 'Relatório de avaliação'}
-                        {pacienteIds.length > 1 && r.pacientes?.nome && (
-                          <span className="ml-1.5 text-sm font-normal" style={{ color: 'var(--color-ink-soft)' }}>
-                            — {r.pacientes.nome}
-                          </span>
-                        )}
-                      </div>
-                      {r.conclusao && (
-                        <p className="text-sm mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-mid)' }}>
-                          {r.conclusao}
-                        </p>
-                      )}
-                      <div className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
-                        {r.publicado_em ? new Date(r.publicado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                      {r.pdf_url && (
-                        <a
-                          href={r.pdf_url.startsWith('http') ? r.pdf_url : `/api/relatorio/${r.id}/pdf`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-medium px-2.5 py-1.5 rounded-lg"
-                          style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
-                        >
-                          PDF
-                        </a>
+              <Card key={r.id} className="hover:shadow-md transition-all">
+                <div className="flex items-start justify-between gap-3">
+                  <a
+                    href={`/portal/paciente/${r.paciente_id}/relatorio/${r.id}`}
+                    className="flex-1 min-w-0"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <div className="font-medium" style={{ color: 'var(--color-ink)' }}>
+                      {r.identificacao ?? 'Relatório de avaliação'}
+                      {pacienteIds.length > 1 && r.pacientes?.nome && (
+                        <span className="ml-1.5 text-sm font-normal" style={{ color: 'var(--color-ink-soft)' }}>
+                          — {r.pacientes.nome}
+                        </span>
                       )}
                     </div>
-                  </div>
-                </Card>
-              </a>
+                    {r.conclusao && (
+                      <p className="text-sm mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-mid)' }}>
+                        {r.conclusao}
+                      </p>
+                    )}
+                    <div className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
+                      {r.publicado_em ? new Date(r.publicado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}
+                    </div>
+                  </a>
+                  {r.pdf_url && (
+                    <a
+                      href={r.pdf_url.startsWith('http') ? r.pdf_url : `/api/relatorio/${r.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium px-2.5 py-1.5 rounded-lg flex-shrink-0"
+                      style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                    >
+                      PDF
+                    </a>
+                  )}
+                </div>
+              </Card>
             ))}
           </div>
         </div>

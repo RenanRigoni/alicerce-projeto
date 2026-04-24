@@ -75,10 +75,7 @@ export default async function PacientePortalPage({
       .gte('data', new Date().toISOString().slice(0, 10))
       .order('data')
       .limit(10),
-    supabase
-      .from('paciente_terapeutas')
-      .select('profiles(nome)')
-      .eq('paciente_id', id),
+    supabase.rpc('nomes_terapeutas_do_paciente', { p_paciente_id: id }),
     supabase
       .from('pacientes_dados_clinicos')
       .select('hipotese_diagnostica, diagnostico, objetivos_terapeuticos, plano_terapeutico, obs_clinicas_gerais')
@@ -113,7 +110,7 @@ export default async function PacientePortalPage({
     })),
   ].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
 
-  const terapeutasNomes = (terapeutas ?? []).map((t: any) => t.profiles?.nome).filter(Boolean)
+  const terapeutasNomes: string[] = (terapeutas ?? []).filter(Boolean)
 
   const diasLabel: Record<string, string> = {
     segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado',

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { PerfilPacienteTabs } from '@/components/paciente/PerfilPacienteTabs'
 import { SolicitarAltaButton } from '@/components/terapia/SolicitarAltaButton'
+import { AltaRecusadaBanner } from '@/components/terapia/AltaRecusadaBanner'
 
 export default async function PacienteTerapeutaPage({
   params,
@@ -108,15 +109,8 @@ export default async function PacienteTerapeutaPage({
 
   return (
     <div className="space-y-4">
-      {/* Alerta de alta recusada */}
       {altaAtual?.status === 'recusada' && (
-        <div
-          className="rounded-xl px-4 py-3 text-sm"
-          style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C' }}
-        >
-          <strong>Alta recusada pela administração.</strong>{' '}
-          {altaAtual.argumentacao_recusa && <>Motivo: {altaAtual.argumentacao_recusa}</>}
-        </div>
+        <AltaRecusadaBanner altaId={altaAtual.id} argumentacao_recusa={altaAtual.argumentacao_recusa} />
       )}
 
       {/* Alerta de alta pendente */}

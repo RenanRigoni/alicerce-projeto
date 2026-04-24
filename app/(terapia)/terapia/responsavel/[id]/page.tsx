@@ -63,7 +63,12 @@ export default async function ResponsavelTerapeutaPage({
       </div>
 
       <Card>
-        <div className="space-y-4">
+        {!detalhes?.telefone_principal && !detalhes?.cidade && !detalhes?.endereco && !detalhes?.contato_emergencia ? (
+          <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
+            Nenhum dado de contato cadastrado.{' '}
+            <a href={`/terapia/responsavel/${id}/editar`} style={{ color: 'var(--color-rose-main)' }}>Preencher agora →</a>
+          </p>
+        ) : (
           <div className="grid grid-cols-2 gap-4">
             {detalhes?.telefone_principal && (
               <div>
@@ -92,7 +97,7 @@ export default async function ResponsavelTerapeutaPage({
               </div>
             )}
           </div>
-        </div>
+        )}
       </Card>
 
       {meusPacientes.length > 0 && (

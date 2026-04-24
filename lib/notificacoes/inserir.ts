@@ -17,18 +17,21 @@ interface Notificacao {
 }
 
 export async function inserirNotificacao(n: Notificacao) {
-  await adminClient().from('notificacoes').insert(n)
+  const { error } = await adminClient().from('notificacoes').insert(n)
+  if (error) console.error('[notificacoes] insert error:', error)
 }
 
 export async function inserirNotificacoes(ns: Notificacao[]) {
   if (ns.length === 0) return
-  await adminClient().from('notificacoes').insert(ns)
+  const { error } = await adminClient().from('notificacoes').insert(ns)
+  if (error) console.error('[notificacoes] batch insert error:', error)
 }
 
 export async function notificarAdmins(tipo: string, titulo: string, mensagem?: string, link?: string) {
   const db = adminClient()
-  const { data: admins } = await db.from('profiles').select('id').eq('role', 'admin')
-  if (!admins?.length) return
+  const { data: admins, error } = await db.from('profiles').select('id').eq('role', 'admin')
+  if (error) { console.error('[notificacoes] notificarAdmins query error:', error); return }
+  if (!admins?.length) { console.warn('[notificacoes] notificarAdmins: no admins found'); return }
   await inserirNotificacoes(
     admins.map(a => ({ destinatario_id: a.id, tipo, titulo, mensagem, link }))
   )
@@ -42,11 +45,12 @@ export async function notificarResponsaveisDoPaciente(
   link?: string
 ) {
   const db = adminClient()
-  const { data: vinculos } = await db
+  const { data: vinculos, error } = await db
     .from('paciente_responsaveis')
     .select('responsavel_id')
     .eq('paciente_id', pacienteId)
-  if (!vinculos?.length) return
+  if (error) { console.error('[notificacoes] notificarResponsaveis query error:', error); return }
+  if (!vinculos?.length) { console.warn('[notificacoes] notificarResponsaveis: no responsaveis for paciente', pacienteId); return }
   await inserirNotificacoes(
     vinculos.map(v => ({ destinatario_id: v.responsavel_id, tipo, titulo, mensagem, link }))
   )

@@ -51,13 +51,17 @@ export async function proxy(request: NextRequest) {
   }
 
   // Busca role do usuário
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
-  const role = profile?.role
+  // Se falhou ao buscar profile (DB temporariamente indisponível), deixa passar
+  // para não derrubar sessões válidas por erros transientes
+  if (profileError || !profile) return supabaseResponse
+
+  const role = profile.role
 
   // Proteção por rota
   if (pathname.startsWith('/portal') && role !== 'pai') {

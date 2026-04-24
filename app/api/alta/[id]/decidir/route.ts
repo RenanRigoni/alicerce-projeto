@@ -68,7 +68,7 @@ export async function POST(
       tipo: 'alta_recusada',
       titulo: `Alta recusada — ${paciente?.nome ?? 'Paciente'}`,
       mensagem: argumentacao_recusa?.trim().slice(0, 160),
-      link: `/terapia/paciente/${solicitacao.paciente_id}`,
+      link: `/terapia/alta/${id}`,
     })
   }
 

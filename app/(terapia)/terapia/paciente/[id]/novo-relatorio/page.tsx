@@ -94,7 +94,7 @@ export default function NovoRelatorioPage() {
     const agora = new Date().toISOString()
     const assinatura = `${nomeUsuario} — ${new Date().toLocaleString('pt-BR')}`
 
-    const { error } = await supabase.from('relatorios').insert({
+    const { data: novoRel, error } = await supabase.from('relatorios').insert({
       paciente_id: pacienteId,
       terapeuta_id: user!.id,
       identificacao: titulo.trim(),
@@ -105,11 +105,16 @@ export default function NovoRelatorioPage() {
       assinatura_digital: assinatura,
       assinado_em: agora,
       publicado_em: agora,
-    })
+    }).select('id').single()
 
     setPublicando(false)
 
     if (error) { setErro('Erro ao publicar relatório.'); return }
+
+    if (novoRel?.id) {
+      fetch(`/api/relatorio/${novoRel.id}/publicado`, { method: 'POST' }).catch(() => {})
+    }
+
     router.push(`/terapia/paciente/${pacienteId}`)
   }
 

@@ -46,13 +46,20 @@ export default async function ResponsavelTerapeutaPage({
 
   return (
     <div className="space-y-6 max-w-xl">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <a href="/terapia/responsaveis" className="text-sm transition-colors hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
           ← Voltar
         </a>
-        <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
+        <h1 className="text-2xl font-semibold flex-1" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
           {usuario.nome}
         </h1>
+        <a
+          href={`/terapia/responsavel/${id}/editar`}
+          className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
+          style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
+        >
+          Editar
+        </a>
       </div>
 
       <Card>

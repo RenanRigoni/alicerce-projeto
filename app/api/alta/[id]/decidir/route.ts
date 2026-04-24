@@ -1,6 +1,7 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { inserirNotificacao } from '@/lib/notificacoes/inserir'
 
 export async function POST(
   request: NextRequest,
@@ -32,7 +33,7 @@ export async function POST(
 
   const { data: solicitacao } = await adminClient
     .from('solicitacoes_alta')
-    .select('paciente_id, status')
+    .select('paciente_id, status, solicitado_por')
     .eq('id', id)
     .single()
 
@@ -53,6 +54,22 @@ export async function POST(
       .from('pacientes')
       .update({ status: 'alta' })
       .eq('id', solicitacao.paciente_id)
+  }
+
+  if (decisao === 'recusada' && solicitacao.solicitado_por) {
+    const { data: paciente } = await adminClient
+      .from('pacientes')
+      .select('nome')
+      .eq('id', solicitacao.paciente_id)
+      .single()
+
+    await inserirNotificacao({
+      destinatario_id: solicitacao.solicitado_por,
+      tipo: 'alta_recusada',
+      titulo: `Alta recusada — ${paciente?.nome ?? 'Paciente'}`,
+      mensagem: argumentacao_recusa?.trim().slice(0, 160),
+      link: `/terapia/paciente/${solicitacao.paciente_id}`,
+    })
   }
 
   return NextResponse.json({ success: true })

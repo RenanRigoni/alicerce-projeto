@@ -1,5 +1,6 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { notificarResponsaveisDoPaciente } from '@/lib/notificacoes/inserir'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
@@ -37,6 +38,14 @@ export async function POST(request: NextRequest) {
   if (error) {
     return NextResponse.json({ error: 'Erro ao salvar orientação.' }, { status: 500 })
   }
+
+  await notificarResponsaveisDoPaciente(
+    paciente_id,
+    'orientacao_nova',
+    `Nova orientação: ${titulo.trim()}`,
+    conteudo?.trim().slice(0, 120) || undefined,
+    `/portal/paciente/${paciente_id}?aba=orientacoes`
+  )
 
   return NextResponse.json({ success: true })
 }

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { notificarAdmins } from '@/lib/notificacoes/inserir'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -35,5 +36,14 @@ export async function POST(request: NextRequest) {
   })
 
   if (error) return NextResponse.json({ error: 'Erro ao registrar solicitação' }, { status: 500 })
+
+  const { data: paciente } = await supabase.from('pacientes').select('nome').eq('id', paciente_id).single()
+  await notificarAdmins(
+    'alta_solicitada',
+    `Solicitação de alta — ${paciente?.nome ?? 'Paciente'}`,
+    motivo.trim().slice(0, 120),
+    `/admin/pacientes/${paciente_id}`
+  )
+
   return NextResponse.json({ success: true })
 }

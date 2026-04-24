@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import { NotificacoesBell } from '@/components/ui/NotificacoesBell'
 
 interface NavbarProps {
   role: 'admin' | 'recepcao' | 'terapeuta' | 'pai'
@@ -151,8 +152,12 @@ export function Navbar({ role, nome }: NavbarProps) {
             ))}
           </div>
 
-          {/* Direita: avatar + user menu */}
+          {/* Direita: sino + avatar + user menu */}
           <div className="flex items-center gap-2">
+            <div className="hidden sm:block">
+              <NotificacoesBell />
+            </div>
+
             {/* Avatar button */}
             <div className="relative hidden sm:block">
               <button
@@ -266,6 +271,9 @@ export function Navbar({ role, nome }: NavbarProps) {
                   {initials(nome)}
                 </div>
                 <span className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>{nome}</span>
+              </div>
+              <div className="px-3 py-1">
+                <NotificacoesBell />
               </div>
               <button
                 onClick={handleLogout}

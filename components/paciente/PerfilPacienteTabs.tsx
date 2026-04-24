@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -215,23 +215,47 @@ export function PerfilPacienteTabs({
   }
 
   const [novaOri, setNovaOri] = useState({ titulo: '', tipo: 'texto', url_midia: '', conteudo: '' })
+  const [oriModoUpload, setOriModoUpload] = useState(false)
+  const [oriArquivo, setOriArquivo] = useState<File | null>(null)
+  const oriInputRef = useRef<HTMLInputElement>(null)
   const [salvandoOri, setSalvandoOri] = useState(false)
   const [erroOri, setErroOri] = useState('')
 
   async function handleSalvarOrientacao() {
     if (!novaOri.titulo.trim()) { setErroOri('Título é obrigatório.'); return }
+    const podeUpload = ['pdf', 'imagem'].includes(novaOri.tipo)
     const precisaUrl = ['video', 'pdf', 'imagem'].includes(novaOri.tipo)
-    if (precisaUrl && !novaOri.url_midia.trim()) { setErroOri('URL é obrigatória para este tipo.'); return }
+
+    let urlFinal = novaOri.url_midia
+
+    if (podeUpload && oriModoUpload) {
+      if (!oriArquivo) { setErroOri('Selecione um arquivo.'); return }
+      setErroOri('')
+      setSalvandoOri(true)
+      const fd = new FormData()
+      fd.append('arquivo', oriArquivo)
+      fd.append('pasta', `orientacoes/${paciente.id}`)
+      const res = await fetch('/api/upload/midia', { method: 'POST', body: fd })
+      if (!res.ok) { setSalvandoOri(false); setErroOri('Erro ao enviar arquivo.'); return }
+      const json = await res.json()
+      urlFinal = json.url
+    } else if (precisaUrl && !oriModoUpload && !novaOri.url_midia.trim()) {
+      setErroOri('URL é obrigatória para este tipo.')
+      return
+    }
+
     setErroOri('')
     setSalvandoOri(true)
     const res = await fetch('/api/orientacao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paciente_id: paciente.id, ...novaOri }),
+      body: JSON.stringify({ paciente_id: paciente.id, ...novaOri, url_midia: urlFinal }),
     })
     setSalvandoOri(false)
     if (!res.ok) { const j = await res.json(); setErroOri(j.error ?? 'Erro ao salvar.'); return }
     setNovaOri({ titulo: '', tipo: 'texto', url_midia: '', conteudo: '' })
+    setOriArquivo(null)
+    setOriModoUpload(false)
     router.refresh()
   }
 
@@ -388,6 +412,15 @@ export function PerfilPacienteTabs({
                 style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
               >
                 Editar dados
+              </a>
+            )}
+            {role === 'terapeuta' && ehTerapeutaVinculado && paciente.status === 'ativo' && (
+              <a
+                href={`/terapia/paciente/${paciente.id}/editar`}
+                className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
+                style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
+              >
+                Editar dados básicos
               </a>
             )}
             {isAdminOuRecepcao && paciente.status === 'ativo' && (
@@ -670,16 +703,61 @@ export function PerfilPacienteTabs({
                 </select>
 
                 {['video', 'pdf', 'imagem'].includes(novaOri.tipo) && (
-                  <input
-                    value={novaOri.url_midia}
-                    onChange={e => setNovaOri(p => ({ ...p, url_midia: e.target.value }))}
-                    placeholder={
-                      novaOri.tipo === 'video' ? 'https://www.youtube.com/watch?v=...' :
-                      novaOri.tipo === 'pdf' ? 'https://link-do-pdf.com/arquivo.pdf' :
-                      'https://link-da-imagem.com/foto.jpg'
-                    }
-                    className="input-base"
-                  />
+                  <div className="space-y-2">
+                    {['pdf', 'imagem'].includes(novaOri.tipo) && (
+                      <div className="flex gap-1 p-0.5 rounded-lg w-fit" style={{ background: 'var(--color-border-soft)' }}>
+                        {['Link', 'Upload'].map(op => (
+                          <button
+                            key={op}
+                            type="button"
+                            onClick={() => { setOriModoUpload(op === 'Upload'); setOriArquivo(null); setNovaOri(p => ({ ...p, url_midia: '' })) }}
+                            className="text-xs px-3 py-1 rounded-md transition-colors"
+                            style={
+                              (op === 'Upload') === oriModoUpload
+                                ? { background: 'var(--color-warm-white)', color: 'var(--color-ink)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+                                : { color: 'var(--color-ink-soft)' }
+                            }
+                          >
+                            {op}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {oriModoUpload && ['pdf', 'imagem'].includes(novaOri.tipo) ? (
+                      <>
+                        <input
+                          ref={oriInputRef}
+                          type="file"
+                          accept={novaOri.tipo === 'pdf' ? '.pdf' : 'image/*'}
+                          onChange={e => setOriArquivo(e.target.files?.[0] ?? null)}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => oriInputRef.current?.click()}
+                          className="w-full rounded-xl px-4 py-3 text-sm text-center transition-colors"
+                          style={{
+                            border: oriArquivo ? '2px dashed var(--color-rose-soft)' : '2px dashed var(--color-border)',
+                            color: oriArquivo ? 'var(--color-rose-main)' : 'var(--color-ink-faint)',
+                            background: 'transparent',
+                          }}
+                        >
+                          {oriArquivo ? `✓ ${oriArquivo.name}` : `Clique para selecionar ${novaOri.tipo === 'pdf' ? 'PDF' : 'imagem'}`}
+                        </button>
+                      </>
+                    ) : (
+                      <input
+                        value={novaOri.url_midia}
+                        onChange={e => setNovaOri(p => ({ ...p, url_midia: e.target.value }))}
+                        placeholder={
+                          novaOri.tipo === 'video' ? 'https://www.youtube.com/watch?v=...' :
+                          novaOri.tipo === 'pdf' ? 'https://link-do-pdf.com/arquivo.pdf' :
+                          'https://link-da-imagem.com/foto.jpg'
+                        }
+                        className="input-base"
+                      />
+                    )}
+                  </div>
                 )}
 
                 <textarea

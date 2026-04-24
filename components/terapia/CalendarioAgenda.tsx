@@ -223,7 +223,9 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                 )}
                 <div className="space-y-1">
                   {evs.map(ev => {
-                    const s = tipoStyle[ev.tipo] ?? tipoStyle.outro
+                    const s = hoje
+                      ? { background: '#BFDBFE', color: '#1E40AF', border: '#93C5FD' }
+                      : (tipoStyle[ev.tipo] ?? tipoStyle.outro)
                     return (
                       <button
                         key={ev.id}
@@ -306,7 +308,9 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                   </div>
                   <div className="space-y-0.5">
                     {evs.slice(0, 2).map(ev => {
-                      const s = tipoStyle[ev.tipo] ?? tipoStyle.outro
+                      const s = hoje
+                        ? { background: '#BFDBFE', color: '#1E40AF', border: '#93C5FD' }
+                        : (tipoStyle[ev.tipo] ?? tipoStyle.outro)
                       return (
                         <button
                           key={ev.id}

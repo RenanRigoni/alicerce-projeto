@@ -108,26 +108,17 @@ export function Navbar({ role, nome }: NavbarProps) {
           {/* Logo */}
           <a
             href={dashboardByRole[role]}
-            className="flex items-center gap-2 shrink-0"
+            className="flex items-center shrink-0"
             style={{ textDecoration: 'none' }}
           >
             <Image
-              src="/logo.png"
+              src="/logo_hor.png"
               alt="Alicerce"
-              width={36}
-              height={36}
-              className="rounded-full shrink-0"
+              width={130}
+              height={50}
               priority
+              style={{ objectFit: 'contain', height: 36, width: 'auto' }}
             />
-            <span
-              className="text-base font-semibold tracking-tight hidden sm:block"
-              style={{
-                fontFamily: 'var(--font-lora)',
-                color: 'var(--color-ink)',
-              }}
-            >
-              Alicerce
-            </span>
           </a>
 
           {/* Links desktop */}
@@ -239,20 +230,48 @@ export function Navbar({ role, nome }: NavbarProps) {
           </div>
         </div>
 
-        {/* Menu mobile */}
+      </nav>
+
+      {/* Overlay para fechar user menu desktop */}
+      {userMenuAberto && (
         <div
-          className="sm:hidden overflow-hidden transition-all duration-300"
-          style={{
-            maxHeight: menuAberto ? '400px' : '0',
-            borderTop: menuAberto ? `1px solid var(--color-border)` : 'none',
-          }}
+          className="fixed inset-0 z-40"
+          onClick={() => setUserMenuAberto(false)}
+        />
+      )}
+
+      {/* Menu mobile full-screen */}
+      {menuAberto && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col sm:hidden"
+          style={{ background: 'var(--color-warm-white)' }}
         >
-          <div className="px-4 py-3 space-y-1">
+          {/* Cabeçalho do overlay */}
+          <div
+            className="h-14 flex items-center justify-between px-4 shrink-0"
+            style={{ borderBottom: '1px solid var(--color-border)' }}
+          >
+            <a href={dashboardByRole[role]} className="flex items-center" style={{ textDecoration: 'none' }}>
+              <Image src="/logo_hor.png" alt="Alicerce" width={130} height={50} priority style={{ objectFit: 'contain', height: 36, width: 'auto' }} />
+            </a>
+            <button
+              onClick={() => setMenuAberto(false)}
+              className="p-2 rounded-lg transition-colors hover:bg-[var(--color-border-soft)]"
+              aria-label="Fechar menu"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-ink-mid)' }}>
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Links — scroll se necessário */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
             {links.map(link => (
               <a
                 key={link.href}
                 href={link.href}
-                className="flex items-center px-3 py-2.5 rounded-xl text-sm transition-all"
+                className="flex items-center px-4 py-3 rounded-xl text-sm transition-all"
                 style={{
                   color: isActive(link.href) ? 'var(--color-rose-main)' : 'var(--color-ink-mid)',
                   background: isActive(link.href) ? 'var(--color-rose-blush)' : 'transparent',
@@ -262,37 +281,39 @@ export function Navbar({ role, nome }: NavbarProps) {
                 {link.label}
               </a>
             ))}
-            <div
-              className="pt-2 mt-1 border-t"
-              style={{ borderColor: 'var(--color-border-soft)' }}
-            >
-              <div className="flex items-center gap-2 px-3 py-2 mb-1">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${avatarColors[role]}`}>
+          </div>
+
+          {/* Rodapé: usuário + sino + sair */}
+          <div
+            className="shrink-0 px-4 py-4 space-y-3"
+            style={{ borderTop: '1px solid var(--color-border)' }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${avatarColors[role]}`}>
                   {initials(nome)}
                 </div>
-                <span className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>{nome}</span>
+                <div>
+                  <div className="text-sm font-medium leading-tight" style={{ color: 'var(--color-ink)' }}>{nome}</div>
+                  <div className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
+                    {role === 'admin' ? 'Administrador' : role === 'recepcao' ? 'Recepção' : role === 'terapeuta' ? 'Terapeuta' : 'Família'}
+                  </div>
+                </div>
               </div>
-              <div className="px-3 py-1">
-                <NotificacoesBell />
-              </div>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-3 py-2 text-sm rounded-xl transition-colors hover:bg-[var(--color-border-soft)]"
-                style={{ color: 'var(--color-ink-mid)' }}
-              >
-                Sair da conta
-              </button>
+              <NotificacoesBell />
             </div>
+            <button
+              onClick={handleLogout}
+              className="w-full py-3 rounded-xl text-sm font-medium transition-colors"
+              style={{
+                background: 'var(--color-rose-blush)',
+                color: 'var(--color-rose-main)',
+              }}
+            >
+              Sair da conta
+            </button>
           </div>
         </div>
-      </nav>
-
-      {/* Overlay para fechar menus */}
-      {(menuAberto || userMenuAberto) && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => { setMenuAberto(false); setUserMenuAberto(false) }}
-        />
       )}
     </>
   )

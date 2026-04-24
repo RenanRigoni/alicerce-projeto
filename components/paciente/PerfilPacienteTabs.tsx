@@ -141,6 +141,7 @@ const ABAS = [
   'Dados Clínicos',
   'Relatórios',
   'Orientações',
+  'Alta',
   'Histórico',
 ] as const
 
@@ -206,6 +207,7 @@ export function PerfilPacienteTabs({
   }
 
   const [oriExpandidas, setOriExpandidas] = useState<Set<string>>(new Set())
+  const [oriHistoricoAberta, setOriHistoricoAberta] = useState<string | null>(null)
   function toggleOri(id: string) {
     setOriExpandidas(prev => {
       const next = new Set(prev)
@@ -559,6 +561,15 @@ export function PerfilPacienteTabs({
                   </div>
                 )}
               </div>
+              <div className="mt-3 pt-3 border-t flex justify-end" style={{ borderColor: 'var(--color-border-soft)' }}>
+                <a
+                  href={isAdminOuRecepcao ? `/admin/usuarios/${r.id}` : `/terapia/responsavel/${r.id}`}
+                  className="text-xs transition-opacity hover:opacity-70"
+                  style={{ color: 'var(--color-rose-main)' }}
+                >
+                  Ver perfil completo →
+                </a>
+              </div>
             </Card>
           ))}
         </div>
@@ -847,15 +858,15 @@ export function PerfilPacienteTabs({
                       <>
                         <button
                           onClick={() => setEditandoOri({ id: o.id, titulo: o.titulo, tipo: o.tipo ?? 'texto', url_midia: o.url_midia ?? '', conteudo: o.conteudo ?? '' })}
-                          className="text-xs transition-opacity hover:opacity-70"
-                          style={{ color: 'var(--color-ink-soft)' }}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg transition-opacity hover:opacity-70"
+                          style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => handleDeletarOri(o.id)}
-                          className="text-xs transition-opacity hover:opacity-70"
-                          style={{ color: '#B91C1C' }}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg transition-opacity hover:opacity-70"
+                          style={{ border: '1px solid #FECACA', color: '#B91C1C', background: '#FEF2F2' }}
                         >
                           Excluir
                         </button>
@@ -863,8 +874,8 @@ export function PerfilPacienteTabs({
                     )}
                     <button
                       onClick={() => toggleOri(o.id)}
-                      className="text-sm font-medium transition-opacity hover:opacity-70"
-                      style={{ color: 'var(--color-rose-main)' }}
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg transition-opacity hover:opacity-70"
+                      style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
                     >
                       {expandida ? 'Fechar' : 'Ver'}
                     </button>
@@ -928,137 +939,217 @@ export function PerfilPacienteTabs({
         </div>
       )}
 
-      {/* ── Aba 6: Histórico ────────────────────────────────── */}
-      {abaAtiva === 'Histórico' && (
-        <div className="space-y-2">
-          {altas.map(a => (
-            <div key={a.id} className="flex gap-3 items-start">
-              <div
-                className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                style={{ background: '#D97706' }}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
-                  <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
-                    Solicitação de alta
-                  </span>
-                  {a.solicitado_por_nome && ` · ${a.solicitado_por_nome}`}
-                  <span
-                    className="ml-2 text-xs px-1.5 py-0.5 rounded-full"
-                    style={
-                      a.status === 'pendente'
-                        ? { background: '#FFFBEB', color: '#92400E' }
-                        : a.status === 'aprovada'
-                        ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
-                        : { background: '#FEF2F2', color: '#B91C1C' }
-                    }
-                  >
-                    {a.status}
-                  </span>
-                </div>
-                <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-                  {new Date(a.criado_em).toLocaleDateString('pt-BR')}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {relatorios.map(r => (
-            <button
-              key={r.id}
-              onClick={() => { abrirRelatorio(r); }}
-              className="w-full flex gap-3 items-start text-left group"
-            >
-              <div
-                className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                style={{ background: r.status === 'publicado' ? 'var(--color-sage-main)' : 'var(--color-rose-soft)' }}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
-                  <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
-                    {r.status === 'publicado' ? 'Relatório publicado' : 'Rascunho'}
-                  </span>
-                  {r.identificacao && ` — ${r.identificacao}`}
-                </div>
-                <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-                  {new Date(r.criado_em).toLocaleDateString('pt-BR')}
-                </div>
-              </div>
-              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" style={{ color: 'var(--color-rose-main)' }}>
-                Ver →
-              </span>
-            </button>
-          ))}
-
-          {documentos.map(d => (
-            <a
-              key={d.id}
-              href={d.arquivo_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex gap-3 items-start group"
-            >
-              <div
-                className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                style={{ background: 'var(--color-lavender-main)' }}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
-                  <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
-                    Documento anexado
-                  </span>
-                  {d.descricao && ` — ${d.descricao}`}
-                </div>
-                <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-                  {new Date(d.criado_em).toLocaleDateString('pt-BR')}
-                </div>
-              </div>
-              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" style={{ color: 'var(--color-lavender-main)' }}>
-                Abrir →
-              </span>
-            </a>
-          ))}
-
-          {orientacoes.map(o => (
-            <button
-              key={o.id}
-              onClick={() => {
-                setOriExpandidas(prev => { const next = new Set(prev); next.add(o.id); return next })
-                setAbaAtiva('Orientações')
-                setTimeout(() => document.getElementById(`ori-${o.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
-              }}
-              className="w-full flex gap-3 items-start text-left group"
-            >
-              <div
-                className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                style={{ background: 'var(--color-peach-main)' }}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
-                  <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
-                    Orientação registrada
-                  </span>
-                  {' — '}{o.titulo}
-                </div>
-                <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-                  {new Date(o.criado_em).toLocaleDateString('pt-BR')}
-                </div>
-              </div>
-              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" style={{ color: 'var(--color-peach-main)' }}>
-                Ver →
-              </span>
-            </button>
-          ))}
-
-          {altas.length + relatorios.length + documentos.length + orientacoes.length === 0 && (
+      {/* ── Aba 6: Alta ─────────────────────────────────────── */}
+      {abaAtiva === 'Alta' && (
+        <div className="space-y-3">
+          {altas.length === 0 ? (
             <Card>
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                Nenhum registro no histórico ainda.
+                Nenhuma solicitação de alta registrada.
               </p>
             </Card>
-          )}
+          ) : altas.map(a => (
+            <Card key={a.id}>
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div>
+                  <span className="font-medium text-sm" style={{ color: 'var(--color-ink)' }}>Solicitação de alta</span>
+                  {a.solicitado_por_nome && (
+                    <span className="text-sm ml-1.5" style={{ color: 'var(--color-ink-soft)' }}>· {a.solicitado_por_nome}</span>
+                  )}
+                </div>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full shrink-0"
+                  style={
+                    a.status === 'pendente' ? { background: '#FFFBEB', color: '#92400E' }
+                    : a.status === 'aprovada' ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
+                    : { background: '#FEF2F2', color: '#B91C1C' }
+                  }
+                >
+                  {a.status}
+                </span>
+              </div>
+              <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-faint)' }}>
+                {new Date(a.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </div>
+              {a.motivo && (
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--color-border-soft)' }}>
+                  <div className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--color-ink-faint)' }}>Motivo da solicitação</div>
+                  <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{a.motivo}</p>
+                </div>
+              )}
+              {a.argumentacao_recusa && (
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: '#FECACA' }}>
+                  <div className="text-xs uppercase tracking-wide mb-1" style={{ color: '#B91C1C' }}>Recusa da administração</div>
+                  <p className="text-sm whitespace-pre-wrap" style={{ color: '#991B1B' }}>{a.argumentacao_recusa}</p>
+                </div>
+              )}
+            </Card>
+          ))}
         </div>
       )}
+
+      {/* ── Aba 7: Histórico ────────────────────────────────── */}
+      {abaAtiva === 'Histórico' && (() => {
+        const tipoLabel: Record<string, string> = { video: 'Vídeo', pdf: 'PDF', imagem: 'Imagem', guia: 'Guia' }
+        const itens = [
+          ...altas.map(a => ({ tipo: 'alta' as const, criado_em: a.criado_em, data: a as any })),
+          ...relatorios.map(r => ({ tipo: 'relatorio' as const, criado_em: r.criado_em, data: r as any })),
+          ...documentos.map(d => ({ tipo: 'documento' as const, criado_em: d.criado_em, data: d as any })),
+          ...orientacoes.map(o => ({ tipo: 'orientacao' as const, criado_em: o.criado_em, data: o as any })),
+        ].sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
+
+        if (itens.length === 0) return (
+          <Card>
+            <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
+              Nenhum registro no histórico ainda.
+            </p>
+          </Card>
+        )
+
+        return (
+          <div className="space-y-2">
+            {itens.map((item, idx) => {
+              const dataFormatada = new Date(item.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+              if (item.tipo === 'alta') {
+                const a = item.data as SolicitacaoAlta
+                return (
+                  <div key={`alta-${a.id}`} className="flex gap-3 items-start">
+                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: '#D97706' }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
+                        <span className="font-medium" style={{ color: 'var(--color-ink)' }}>Solicitação de alta</span>
+                        {a.solicitado_por_nome && ` · ${a.solicitado_por_nome}`}
+                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full"
+                          style={a.status === 'pendente' ? { background: '#FFFBEB', color: '#92400E' }
+                            : a.status === 'aprovada' ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
+                            : { background: '#FEF2F2', color: '#B91C1C' }}
+                        >{a.status}</span>
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>{dataFormatada}</div>
+                    </div>
+                    <button
+                      onClick={() => setAbaAtiva('Alta')}
+                      className="text-xs opacity-60 hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5"
+                      style={{ color: '#D97706' }}
+                    >
+                      Ver →
+                    </button>
+                  </div>
+                )
+              }
+
+              if (item.tipo === 'relatorio') {
+                const r = item.data as Relatorio
+                return (
+                  <button key={`rel-${r.id}`} onClick={() => abrirRelatorio(r)} className="w-full flex gap-3 items-start text-left group">
+                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                      style={{ background: r.status === 'publicado' ? 'var(--color-sage-main)' : 'var(--color-rose-soft)' }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
+                        <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
+                          {r.status === 'publicado' ? 'Relatório publicado' : 'Rascunho'}
+                        </span>
+                        {r.identificacao && ` — ${r.identificacao}`}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>{dataFormatada}</div>
+                    </div>
+                    <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" style={{ color: 'var(--color-rose-main)' }}>Ver →</span>
+                  </button>
+                )
+              }
+
+              if (item.tipo === 'documento') {
+                const d = item.data as Documento
+                return (
+                  <a key={`doc-${d.id}`} href={d.arquivo_url} target="_blank" rel="noopener noreferrer" className="flex gap-3 items-start group">
+                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'var(--color-lavender-main)' }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
+                        <span className="font-medium" style={{ color: 'var(--color-ink)' }}>Documento anexado</span>
+                        {d.descricao && ` — ${d.descricao}`}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>{dataFormatada}</div>
+                    </div>
+                    <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" style={{ color: 'var(--color-lavender-main)' }}>Abrir →</span>
+                  </a>
+                )
+              }
+
+              if (item.tipo === 'orientacao') {
+                const o = item.data as Orientacao
+                const aberta = oriHistoricoAberta === o.id
+                return (
+                  <div key={`ori-${o.id}`} className="flex flex-col gap-0">
+                    <button
+                      onClick={() => setOriHistoricoAberta(prev => prev === o.id ? null : o.id)}
+                      className="w-full flex gap-3 items-start text-left group"
+                    >
+                      <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'var(--color-peach-main)' }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
+                          <span className="font-medium" style={{ color: 'var(--color-ink)' }}>Orientação registrada</span>
+                          {' — '}{o.titulo}
+                          {o.tipo && o.tipo !== 'texto' && (
+                            <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}>
+                              {tipoLabel[o.tipo] ?? o.tipo}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>{dataFormatada}</div>
+                      </div>
+                      <span className="text-xs flex-shrink-0 mt-0.5 font-medium" style={{ color: 'var(--color-peach-main)' }}>
+                        {aberta ? 'Fechar ↑' : 'Ver →'}
+                      </span>
+                    </button>
+                    {aberta && (
+                      <div className="ml-5 mt-2 p-3 rounded-xl space-y-2" style={{ background: 'var(--color-border-soft)' }}>
+                        {(!o.tipo || o.tipo === 'texto' || o.tipo === 'guia') ? (
+                          <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{o.conteudo}</p>
+                        ) : o.tipo === 'video' && o.url_midia ? (
+                          <>
+                            {o.url_midia.includes('youtu') ? (
+                              <div className="aspect-video rounded-xl overflow-hidden">
+                                <iframe
+                                  src={o.url_midia.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                                  className="w-full h-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              </div>
+                            ) : (
+                              <a href={o.url_midia} target="_blank" rel="noopener noreferrer" className="text-sm font-medium" style={{ color: 'var(--color-rose-main)' }}>
+                                ▶ Assistir vídeo
+                              </a>
+                            )}
+                            {o.conteudo && <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>}
+                          </>
+                        ) : o.tipo === 'pdf' && o.url_midia ? (
+                          <>
+                            <a href={o.url_midia} target="_blank" rel="noopener noreferrer" className="text-sm font-medium" style={{ color: 'var(--color-rose-main)' }}>
+                              Abrir PDF
+                            </a>
+                            {o.conteudo && <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>}
+                          </>
+                        ) : o.tipo === 'imagem' && o.url_midia ? (
+                          <>
+                            <img src={o.url_midia} alt={o.titulo} className="rounded-xl max-w-full max-h-48 object-contain" />
+                            {o.conteudo && <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>}
+                          </>
+                        ) : (
+                          o.conteudo && <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{o.conteudo}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              }
+
+              return null
+            })}
+          </div>
+        )
+      })()}
     </div>
 
     {/* Modal: editar orientação */}

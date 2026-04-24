@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { PerfilPacienteTabs } from '@/components/paciente/PerfilPacienteTabs'
 import { SolicitarAltaButton } from '@/components/terapia/SolicitarAltaButton'
-import { AltaRecusadaBanner } from '@/components/terapia/AltaRecusadaBanner'
 
 export default async function PacienteTerapeutaPage({
   params,
@@ -109,20 +108,6 @@ export default async function PacienteTerapeutaPage({
 
   return (
     <div className="space-y-4">
-      {altaAtual?.status === 'recusada' && (
-        <AltaRecusadaBanner altaId={altaAtual.id} argumentacao_recusa={altaAtual.argumentacao_recusa} />
-      )}
-
-      {/* Alerta de alta pendente */}
-      {altaAtual?.status === 'pendente' && (
-        <div
-          className="rounded-xl px-4 py-3 text-sm"
-          style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E' }}
-        >
-          Solicitação de alta enviada — aguardando aprovação da administração.
-        </div>
-      )}
-
       <PerfilPacienteTabs
         paciente={{
           id: paciente.id,
@@ -152,8 +137,7 @@ export default async function PacienteTerapeutaPage({
         ehTerapeutaVinculado={ehTerapeutaVinculado}
       />
 
-      {/* Botão de solicitar alta (fora das tabs para ficar sempre visível) */}
-      {ehTerapeutaVinculado && paciente.status === 'ativo' && !altaAtual && (
+      {ehTerapeutaVinculado && paciente.status === 'ativo' && (
         <div className="pt-2">
           <SolicitarAltaButton pacienteId={id} pacienteNome={paciente.nome} />
         </div>

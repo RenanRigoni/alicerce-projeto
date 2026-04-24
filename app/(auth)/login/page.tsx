@@ -17,22 +17,10 @@ export default function LoginPage() {
     e.preventDefault()
     setErro('')
     setCarregando(true)
-
     const supabase = createClient()
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha })
-
-    if (error) {
-      setErro('E-mail ou senha incorretos.')
-      setCarregando(false)
-      return
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .single()
-
+    if (error) { setErro('E-mail ou senha incorretos.'); setCarregando(false); return }
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
     const role = profile?.role
     if (role === 'pai')                               router.push('/portal/dashboard')
     else if (role === 'terapeuta')                    router.push('/terapia/dashboard')
@@ -41,104 +29,132 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#FDF8F3' }}>
+    <>
+      <style>{`
+        @keyframes blob-drift-1 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          33%      { transform: translate(40px,-30px) scale(1.08); }
+          66%      { transform: translate(-20px,20px) scale(0.95); }
+        }
+        @keyframes blob-drift-2 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          33%      { transform: translate(-50px,25px) scale(1.06); }
+          66%      { transform: translate(30px,-15px) scale(0.97); }
+        }
+        @keyframes blob-drift-3 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50%      { transform: translate(25px,-40px) scale(1.1); }
+        }
+        @keyframes blob-drift-4 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50%      { transform: translate(-30px,30px) scale(1.05); }
+        }
+        .blob-1 { animation: blob-drift-1 14s ease-in-out infinite; }
+        .blob-2 { animation: blob-drift-2 18s ease-in-out infinite; }
+        .blob-3 { animation: blob-drift-3 12s ease-in-out infinite; }
+        .blob-4 { animation: blob-drift-4 16s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .blob-1,.blob-2,.blob-3,.blob-4 { animation: none; }
+        }
 
-      {/* ── Painel esquerdo — visível só em desktop ── */}
+        .glass-card {
+          backdrop-filter: blur(40px) saturate(180%);
+          -webkit-backdrop-filter: blur(40px) saturate(180%);
+          background: rgba(255,255,255,0.42);
+          border: 1px solid rgba(255,255,255,0.70);
+          box-shadow:
+            0 32px 64px rgba(44,32,24,0.12),
+            0 8px 24px rgba(44,32,24,0.06),
+            inset 0 1.5px 0 rgba(255,255,255,0.90),
+            inset 0 -1px 0 rgba(255,255,255,0.25);
+        }
+
+        .glass-input {
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          background: rgba(255,255,255,0.65);
+          border: 1.5px solid rgba(255,255,255,0.75);
+          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+        .glass-input:focus {
+          outline: none;
+          background: rgba(255,255,255,0.85);
+          border-color: rgba(212,113,106,0.55);
+          box-shadow: 0 0 0 3px rgba(212,113,106,0.15);
+        }
+
+        .logo-wrap {
+          backdrop-filter: blur(20px) saturate(120%);
+          -webkit-backdrop-filter: blur(20px) saturate(120%);
+          background: rgba(255,255,255,0.80);
+          border: 1.5px solid rgba(255,255,255,0.90);
+          box-shadow:
+            0 8px 24px rgba(44,32,24,0.10),
+            inset 0 1px 0 rgba(255,255,255,0.95);
+        }
+
+        .btn-entrar {
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        .btn-entrar:hover:not(:disabled) {
+          opacity: 0.92;
+          box-shadow: 0 6px 20px rgba(212,113,106,0.45), inset 0 1px 0 rgba(255,255,255,0.30);
+        }
+        .btn-entrar:active:not(:disabled) {
+          transform: scale(0.985);
+        }
+      `}</style>
+
+      {/* Fundo pastel animado */}
       <div
-        className="hidden lg:flex lg:w-[48%] xl:w-[44%] flex-col items-center justify-between p-12 relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #FFFCF9 0%, #F0EDF8 60%, #FEF0E8 100%)' }}
+        className="fixed inset-0 overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #FDF8F3 0%, #F3EAE0 50%, #EDE4F5 100%)' }}
+        aria-hidden="true"
       >
-        {/* Bolhas decorativas de fundo */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-16 -left-16 w-72 h-72 rounded-full opacity-30"
-            style={{ background: 'radial-gradient(circle, #F0B8B2 0%, transparent 70%)' }} />
-          <div className="absolute top-1/3 -right-20 w-56 h-56 rounded-full opacity-25"
-            style={{ background: 'radial-gradient(circle, #C4DEC0 0%, transparent 70%)' }} />
-          <div className="absolute bottom-24 left-8 w-40 h-40 rounded-full opacity-20"
-            style={{ background: 'radial-gradient(circle, #9B8EC4 0%, transparent 70%)' }} />
-          <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full opacity-15"
-            style={{ background: 'radial-gradient(circle, #E8A07A 0%, transparent 70%)' }} />
-        </div>
-
-        {/* Logo horizontal — fundo neutro garante boa leitura das cores pastel */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-10">
-          <Image
-            src="/logo_hor.png"
-            alt="Alicerce Espaço Terapêutico Infantil"
-            width={340}
-            height={130}
-            className="drop-shadow-sm"
-            priority
-            style={{ objectFit: 'contain' }}
-          />
-
-          {/* Tagline */}
-          <div className="text-center space-y-2 max-w-xs">
-            <p
-              className="text-base leading-relaxed"
-              style={{ color: '#A8978E', fontFamily: 'var(--font-dm-sans)' }}
-            >
-              Conectando famílias e terapeutas com cuidado e carinho
-            </p>
-          </div>
-
-          {/* Dots decorativos */}
-          <div className="flex gap-2.5">
-            {['#F0B8B2', '#C4DEC0', '#9B8EC4', '#E8A07A', '#F0B8B2'].map((c, i) => (
-              <div key={i} className="w-2 h-2 rounded-full" style={{ background: c }} />
-            ))}
-          </div>
-        </div>
-
-        {/* Rodapé esquerdo */}
-        <div className="relative z-10 text-xs text-center" style={{ color: '#D4C8C3' }}>
-          Alicerce Espaço Terapêutico Infantil
-        </div>
+        <div className="blob-1 absolute -top-40 -left-40 w-[560px] h-[560px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(240,184,178,0.65) 0%, rgba(240,184,178,0) 70%)' }} />
+        <div className="blob-2 absolute top-1/3 -right-40 w-[500px] h-[500px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(155,142,196,0.50) 0%, rgba(155,142,196,0) 70%)' }} />
+        <div className="blob-3 absolute -bottom-24 left-1/4 w-[460px] h-[460px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(196,222,192,0.60) 0%, rgba(196,222,192,0) 70%)' }} />
+        <div className="blob-4 absolute bottom-16 -right-16 w-[380px] h-[380px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(232,160,122,0.45) 0%, rgba(232,160,122,0) 70%)' }} />
       </div>
 
-      {/* ── Painel direito — formulário ── */}
-      <div className="flex-1 flex items-center justify-center px-5 py-10 sm:px-10">
-        <div className="w-full max-w-sm">
+      {/* Layout */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 sm:p-6">
+        <div className="glass-card w-full max-w-sm rounded-3xl px-8 py-10 flex flex-col items-center">
 
-          {/* Logo mobile */}
-          <div className="flex flex-col items-center mb-10 lg:hidden">
-            <div
-              className="rounded-3xl p-3 mb-4 shadow-sm"
-              style={{ background: 'linear-gradient(135deg, #FFFCF9, #F0EDF8)' }}
-            >
-              <Image
-                src="/logo_ico.png"
-                alt="Alicerce"
-                width={88}
-                height={88}
-                className="drop-shadow-sm"
-                priority
-              />
-            </div>
-            <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-              Espaço Terapêutico Infantil
-            </p>
+          {/* Logo ícone */}
+          <div className="logo-wrap rounded-2xl mb-6 flex items-center justify-center" style={{ width: 147, height: 147 }}>
+            <Image
+              src="/logo_ico.png"
+              alt="Alicerce"
+              width={124}
+              height={124}
+              priority
+              style={{ objectFit: 'contain' }}
+            />
           </div>
 
-          {/* Cabeçalho */}
-          <div className="mb-8">
-            <h1
-              className="text-2xl font-semibold mb-1"
-              style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
-            >
-              Bem-vindo de volta
-            </h1>
-            <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-              Entre com suas credenciais para acessar o portal
-            </p>
-          </div>
+          {/* Título */}
+          <h1
+            className="text-2xl font-semibold mb-1 text-center"
+            style={{ fontFamily: 'var(--font-lora)', color: '#2C2018' }}
+          >
+            Bem-vindo de volta
+          </h1>
+          <p className="text-sm text-center mb-8" style={{ color: '#A8978E' }}>
+            Cuidando de cada passo com amor
+          </p>
 
-          {/* Formulário */}
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="w-full space-y-4">
 
             {/* E-mail */}
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-ink-mid)' }}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#6B5B4E' }}>
                 E-mail
               </label>
               <input
@@ -148,37 +164,14 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 placeholder="seu@email.com"
-                className="w-full rounded-xl px-4 py-3 text-base outline-none transition-all duration-200"
-                style={{
-                  background: 'var(--color-warm-white)',
-                  border: '1.5px solid var(--color-border)',
-                  color: 'var(--color-ink)',
-                }}
-                onFocus={e => {
-                  e.target.style.borderColor = 'var(--color-rose-soft)'
-                  e.target.style.boxShadow = '0 0 0 3px var(--color-rose-blush)'
-                }}
-                onBlur={e => {
-                  e.target.style.borderColor = 'var(--color-border)'
-                  e.target.style.boxShadow = 'none'
-                }}
+                className="glass-input w-full rounded-xl px-4 py-3 text-sm"
+                style={{ color: '#2C2018' }}
               />
             </div>
 
             {/* Senha */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium" style={{ color: 'var(--color-ink-mid)' }}>
-                  Senha
-                </label>
-                <a
-                  href="/recuperar-senha"
-                  className="text-xs transition-opacity hover:opacity-70"
-                  style={{ color: 'var(--color-rose-main)' }}
-                >
-                  Esqueci minha senha
-                </a>
-              </div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#6B5B4E' }}>Senha</label>
               <div className="relative">
                 <input
                   type={mostrarSenha ? 'text' : 'password'}
@@ -187,41 +180,38 @@ export default function LoginPage() {
                   required
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full rounded-xl px-4 py-3 pr-11 text-base outline-none transition-all duration-200"
-                  style={{
-                    background: 'var(--color-warm-white)',
-                    border: '1.5px solid var(--color-border)',
-                    color: 'var(--color-ink)',
-                  }}
-                  onFocus={e => {
-                    e.target.style.borderColor = 'var(--color-rose-soft)'
-                    e.target.style.boxShadow = '0 0 0 3px var(--color-rose-blush)'
-                  }}
-                  onBlur={e => {
-                    e.target.style.borderColor = 'var(--color-border)'
-                    e.target.style.boxShadow = 'none'
-                  }}
+                  className="glass-input w-full rounded-xl px-4 py-3 pr-12 text-sm"
+                  style={{ color: '#2C2018' }}
                 />
                 <button
                   type="button"
                   onClick={() => setMostrarSenha(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 transition-opacity hover:opacity-60"
-                  style={{ color: 'var(--color-ink-soft)' }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-opacity hover:opacity-60 cursor-pointer"
+                  style={{ color: '#A8978E' }}
                   aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
                 >
                   {mostrarSenha ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
                     </svg>
                   ) : (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
                     </svg>
                   )}
                 </button>
+              </div>
+              <div className="flex justify-end mt-1.5">
+                <a
+                  href="/recuperar-senha"
+                  className="text-xs transition-opacity hover:opacity-70 cursor-pointer"
+                  style={{ color: '#D4716A' }}
+                >
+                  Esqueci minha senha
+                </a>
               </div>
             </div>
 
@@ -229,34 +219,38 @@ export default function LoginPage() {
             {erro && (
               <div
                 className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm"
-                style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}
+                style={{
+                  background: 'rgba(254,242,242,0.85)',
+                  color: '#B91C1C',
+                  border: '1px solid rgba(254,202,202,0.80)',
+                  backdropFilter: 'blur(8px)',
+                }}
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
                 {erro}
               </div>
             )}
 
-            {/* Botão entrar */}
+            {/* Botão */}
             <button
               type="submit"
               disabled={carregando}
-              className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 disabled:opacity-60 active:scale-[0.99] cursor-pointer mt-2"
+              className="btn-entrar w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60 cursor-pointer mt-1"
               style={{
                 background: carregando
-                  ? 'var(--color-rose-soft)'
-                  : 'linear-gradient(135deg, var(--color-rose-main) 0%, #C4635C 100%)',
-                boxShadow: carregando ? 'none' : '0 4px 14px rgba(212, 113, 106, 0.35)',
+                  ? 'rgba(240,184,178,0.85)'
+                  : 'linear-gradient(135deg, rgba(212,113,106,0.95) 0%, rgba(178,82,76,0.98) 100%)',
+                border: '1px solid rgba(255,255,255,0.30)',
+                boxShadow: carregando ? 'none' : '0 4px 16px rgba(212,113,106,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
               }}
             >
               {carregando ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
                   Entrando...
                 </span>
@@ -265,11 +259,11 @@ export default function LoginPage() {
           </form>
 
           {/* Rodapé */}
-          <p className="text-center text-xs mt-8" style={{ color: 'var(--color-ink-faint)' }}>
+          <p className="text-center text-xs mt-8" style={{ color: '#C8B8B0' }}>
             Alicerce Espaço Terapêutico Infantil
           </p>
         </div>
       </div>
-    </div>
+    </>
   )
 }

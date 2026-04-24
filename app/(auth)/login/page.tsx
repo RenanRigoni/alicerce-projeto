@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
+  const [mostrarSenha, setMostrarSenha] = useState(false)
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -40,125 +41,104 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: 'var(--color-cream)' }}
-    >
-      {/* Painel decorativo esquerdo */}
+    <div className="min-h-screen flex" style={{ background: '#FDF8F3' }}>
+
+      {/* ── Painel esquerdo — visível só em desktop ── */}
       <div
-        className="hidden lg:flex lg:w-[45%] xl:w-[42%] flex-col relative overflow-hidden"
-        style={{ background: 'var(--color-rose-blush)' }}
+        className="hidden lg:flex lg:w-[48%] xl:w-[44%] flex-col items-center justify-between p-12 relative overflow-hidden"
+        style={{ background: 'linear-gradient(160deg, #FFFCF9 0%, #F0EDF8 60%, #FEF0E8 100%)' }}
       >
-        {/* Formas decorativas */}
-        <div
-          className="absolute -top-20 -left-20 w-96 h-96 rounded-full opacity-40"
-          style={{ background: 'var(--color-rose-soft)' }}
-        />
-        <div
-          className="absolute top-1/3 -right-16 w-64 h-64 rounded-full opacity-30"
-          style={{ background: 'var(--color-peach-main)' }}
-        />
-        <div
-          className="absolute -bottom-12 left-1/4 w-80 h-80 rounded-full opacity-25"
-          style={{ background: 'var(--color-rose-muted)' }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full opacity-20"
-          style={{ background: 'var(--color-lavender-main)' }}
-        />
+        {/* Bolhas decorativas de fundo */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-16 -left-16 w-72 h-72 rounded-full opacity-30"
+            style={{ background: 'radial-gradient(circle, #F0B8B2 0%, transparent 70%)' }} />
+          <div className="absolute top-1/3 -right-20 w-56 h-56 rounded-full opacity-25"
+            style={{ background: 'radial-gradient(circle, #C4DEC0 0%, transparent 70%)' }} />
+          <div className="absolute bottom-24 left-8 w-40 h-40 rounded-full opacity-20"
+            style={{ background: 'radial-gradient(circle, #9B8EC4 0%, transparent 70%)' }} />
+          <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full opacity-15"
+            style={{ background: 'radial-gradient(circle, #E8A07A 0%, transparent 70%)' }} />
+        </div>
 
-        {/* Conteúdo do painel */}
-        <div className="relative z-10 flex flex-col justify-between h-full p-12">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Alicerce" width={44} height={44} className="rounded-full" />
-            <span
-              className="text-xl font-semibold"
-              style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
+        {/* Logo horizontal — fundo neutro garante boa leitura das cores pastel */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-10">
+          <Image
+            src="/logo_hor.png"
+            alt="Alicerce Espaço Terapêutico Infantil"
+            width={340}
+            height={130}
+            className="drop-shadow-sm"
+            priority
+            style={{ objectFit: 'contain' }}
+          />
+
+          {/* Tagline */}
+          <div className="text-center space-y-2 max-w-xs">
+            <p
+              className="text-base leading-relaxed"
+              style={{ color: '#A8978E', fontFamily: 'var(--font-dm-sans)' }}
             >
-              Alicerce
-            </span>
+              Conectando famílias e terapeutas com cuidado e carinho
+            </p>
           </div>
 
-          {/* Logo grande central */}
-          <div className="flex flex-col items-center gap-6">
-            <Image
-              src="/logo.png"
-              alt="Alicerce Espaço Terapêutico Infantil"
-              width={180}
-              height={180}
-              className="drop-shadow-sm"
-              priority
-            />
-            <div className="space-y-2 text-center">
-              <h1
-                className="text-3xl font-semibold leading-snug"
-                style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
-              >
-                Acompanhamento<br />
-                <span style={{ color: 'var(--color-rose-main)' }}>terapêutico</span><br />
-                com cuidado
-              </h1>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-mid)' }}>
-                Conectando famílias, terapeutas e a clínica.
-              </p>
-            </div>
+          {/* Dots decorativos */}
+          <div className="flex gap-2.5">
+            {['#F0B8B2', '#C4DEC0', '#9B8EC4', '#E8A07A', '#F0B8B2'].map((c, i) => (
+              <div key={i} className="w-2 h-2 rounded-full" style={{ background: c }} />
+            ))}
           </div>
+        </div>
 
-          {/* Detalhe inferior */}
-          <div className="flex items-center gap-3">
-            <div className="flex gap-1.5">
-              {['bg-[var(--color-rose-main)]', 'bg-[var(--color-rose-soft)]', 'bg-[var(--color-rose-muted)]'].map((c, i) => (
-                <div key={i} className={`w-2 h-2 rounded-full ${c}`} />
-              ))}
-            </div>
-            <span className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
-              Alicerce Espaço Terapêutico Infantil
-            </span>
-          </div>
+        {/* Rodapé esquerdo */}
+        <div className="relative z-10 text-xs text-center" style={{ color: '#D4C8C3' }}>
+          Alicerce Espaço Terapêutico Infantil
         </div>
       </div>
 
-      {/* Painel do formulário */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm animate-fade-up">
+      {/* ── Painel direito — formulário ── */}
+      <div className="flex-1 flex items-center justify-center px-5 py-10 sm:px-10">
+        <div className="w-full max-w-sm">
 
           {/* Logo mobile */}
-          <div className="flex items-center gap-2 mb-10 lg:hidden">
+          <div className="flex flex-col items-center mb-10 lg:hidden">
             <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold shadow-sm"
-              style={{ background: 'var(--color-rose-main)' }}
+              className="rounded-3xl p-3 mb-4 shadow-sm"
+              style={{ background: 'linear-gradient(135deg, #FFFCF9, #F0EDF8)' }}
             >
-              A
+              <Image
+                src="/logo_ico.png"
+                alt="Alicerce"
+                width={88}
+                height={88}
+                className="drop-shadow-sm"
+                priority
+              />
             </div>
-            <span
-              className="text-lg font-semibold"
-              style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
-            >
-              Alicerce
-            </span>
+            <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
+              Espaço Terapêutico Infantil
+            </p>
           </div>
 
           {/* Cabeçalho */}
           <div className="mb-8">
-            <h2
+            <h1
               className="text-2xl font-semibold mb-1"
               style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
             >
               Bem-vindo de volta
-            </h2>
+            </h1>
             <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
               Entre com suas credenciais para acessar o portal
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          {/* Formulário */}
+          <form onSubmit={handleLogin} className="space-y-4">
+
             {/* E-mail */}
             <div>
-              <label
-                className="block text-sm font-medium mb-1.5"
-                style={{ color: 'var(--color-ink-mid)' }}
-              >
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-ink-mid)' }}>
                 E-mail
               </label>
               <input
@@ -166,13 +146,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
+                autoComplete="email"
                 placeholder="seu@email.com"
-                className="w-full rounded-xl px-4 py-2.5 text-sm transition-all duration-200"
+                className="w-full rounded-xl px-4 py-3 text-base outline-none transition-all duration-200"
                 style={{
                   background: 'var(--color-warm-white)',
-                  border: '1px solid var(--color-border)',
+                  border: '1.5px solid var(--color-border)',
                   color: 'var(--color-ink)',
-                  outline: 'none',
                 }}
                 onFocus={e => {
                   e.target.style.borderColor = 'var(--color-rose-soft)'
@@ -188,64 +168,88 @@ export default function LoginPage() {
             {/* Senha */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--color-ink-mid)' }}
-                >
+                <label className="text-sm font-medium" style={{ color: 'var(--color-ink-mid)' }}>
                   Senha
                 </label>
                 <a
                   href="/recuperar-senha"
-                  className="text-xs transition-colors hover:opacity-80"
+                  className="text-xs transition-opacity hover:opacity-70"
                   style={{ color: 'var(--color-rose-main)' }}
                 >
                   Esqueci minha senha
                 </a>
               </div>
-              <input
-                type="password"
-                value={senha}
-                onChange={e => setSenha(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="w-full rounded-xl px-4 py-2.5 text-sm transition-all duration-200"
-                style={{
-                  background: 'var(--color-warm-white)',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--color-ink)',
-                  outline: 'none',
-                }}
-                onFocus={e => {
-                  e.target.style.borderColor = 'var(--color-rose-soft)'
-                  e.target.style.boxShadow = '0 0 0 3px var(--color-rose-blush)'
-                }}
-                onBlur={e => {
-                  e.target.style.borderColor = 'var(--color-border)'
-                  e.target.style.boxShadow = 'none'
-                }}
-              />
+              <div className="relative">
+                <input
+                  type={mostrarSenha ? 'text' : 'password'}
+                  value={senha}
+                  onChange={e => setSenha(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className="w-full rounded-xl px-4 py-3 pr-11 text-base outline-none transition-all duration-200"
+                  style={{
+                    background: 'var(--color-warm-white)',
+                    border: '1.5px solid var(--color-border)',
+                    color: 'var(--color-ink)',
+                  }}
+                  onFocus={e => {
+                    e.target.style.borderColor = 'var(--color-rose-soft)'
+                    e.target.style.boxShadow = '0 0 0 3px var(--color-rose-blush)'
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = 'var(--color-border)'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 transition-opacity hover:opacity-60"
+                  style={{ color: 'var(--color-ink-soft)' }}
+                  aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {mostrarSenha ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Erro */}
             {erro && (
               <div
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm"
+                className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm"
                 style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}
               >
-                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
                 {erro}
               </div>
             )}
 
-            {/* Botão */}
+            {/* Botão entrar */}
             <button
               type="submit"
               disabled={carregando}
-              className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all duration-200 disabled:opacity-60 active:scale-[0.99]"
+              className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 disabled:opacity-60 active:scale-[0.99] cursor-pointer mt-2"
               style={{
-                background: carregando ? 'var(--color-rose-soft)' : 'var(--color-rose-main)',
+                background: carregando
+                  ? 'var(--color-rose-soft)'
+                  : 'linear-gradient(135deg, var(--color-rose-main) 0%, #C4635C 100%)',
+                boxShadow: carregando ? 'none' : '0 4px 14px rgba(212, 113, 106, 0.35)',
               }}
             >
               {carregando ? (
@@ -259,6 +263,11 @@ export default function LoginPage() {
               ) : 'Entrar'}
             </button>
           </form>
+
+          {/* Rodapé */}
+          <p className="text-center text-xs mt-8" style={{ color: 'var(--color-ink-faint)' }}>
+            Alicerce Espaço Terapêutico Infantil
+          </p>
         </div>
       </div>
     </div>

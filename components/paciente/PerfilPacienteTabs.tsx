@@ -792,7 +792,7 @@ export function PerfilPacienteTabs({
             const expandida = oriExpandidas.has(o.id)
             const tipoLabel: Record<string, string> = { video: 'Vídeo', pdf: 'PDF', imagem: 'Imagem', guia: 'Guia' }
             return (
-              <Card key={o.id}>
+              <Card key={o.id} id={`ori-${o.id}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="font-medium" style={{ color: 'var(--color-ink)' }}>{o.titulo}</div>
@@ -972,7 +972,11 @@ export function PerfilPacienteTabs({
           {orientacoes.map(o => (
             <button
               key={o.id}
-              onClick={() => { setAbaAtiva('Orientações'); toggleOri(o.id) }}
+              onClick={() => {
+                setOriExpandidas(prev => { const next = new Set(prev); next.add(o.id); return next })
+                setAbaAtiva('Orientações')
+                setTimeout(() => document.getElementById(`ori-${o.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+              }}
               className="w-full flex gap-3 items-start text-left group"
             >
               <div

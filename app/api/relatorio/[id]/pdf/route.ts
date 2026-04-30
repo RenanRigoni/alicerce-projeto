@@ -4,12 +4,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createElement } from 'react'
 import { TemplateRelatorio } from '@/lib/pdf/template-relatorio'
+import {
+  criarPdfAutenticadoDeImagem,
+  inserirHashNoRodapePdf,
+  isImagePath,
+  isPdfPath,
+} from '@/lib/pdf/autenticar-pdf'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  const body = await request.json().catch(() => ({})) as { sourcePath?: string | null }
 
   // Verifica autenticação
   const supabase = await createServerClient()
@@ -22,7 +29,7 @@ export async function POST(
     .select(`
       *,
       pacientes(nome, data_nascimento, frequencia_atendimento, pacientes_dados_clinicos(diagnostico)),
-      profiles(nome)
+      profiles(nome, crefito)
     `)
     .eq('id', id)
     .single()
@@ -31,7 +38,8 @@ export async function POST(
     return NextResponse.json({ error: 'Relatório não encontrado' }, { status: 404 })
   }
 
-  // Apenas o terapeuta dono ou admin pode gerar o PDF
+  // Apenas o terapeuta dono ou admin pode gerar/autenticar o PDF.
+  // Pai continua podendo acionar a geracao sob demanda quando nao existe PDF salvo.
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -45,6 +53,16 @@ export async function POST(
   if (!isOwner && !isAdmin && !isPai) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
+  if (body.sourcePath && !isOwner && !isAdmin) {
+    return NextResponse.json({ error: 'Sem permissão para autenticar PDF anexado' }, { status: 403 })
+  }
+
+  const hashIntegridade = typeof relatorio.hash_integridade === 'string'
+    ? relatorio.hash_integridade.trim()
+    : ''
+  if (!hashIntegridade) {
+    return NextResponse.json({ error: 'Relatório sem hash de integridade.' }, { status: 409 })
+  }
 
   // Extrai diagnóstico de dados_clinicos (relação aninhada)
   const pacienteRaw = relatorio.pacientes as any
@@ -55,16 +73,6 @@ export async function POST(
     diagnostico: pacienteRaw?.pacientes_dados_clinicos?.diagnostico ?? null,
   }
 
-  // Gera o PDF
-  const pdfBuffer = await renderToBuffer(
-    createElement(TemplateRelatorio, {
-      paciente,
-      relatorio,
-      terapeuta: relatorio.profiles as any,
-    }) as any
-  )
-
-  // Faz upload para o Supabase Storage
   const adminClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -72,26 +80,67 @@ export async function POST(
   )
 
   const path = `${relatorio.paciente_id}/${id}.pdf`
+  const sourcePath = typeof body.sourcePath === 'string' ? body.sourcePath : null
+  let pdfBuffer: Buffer
+  let geradoPeloSistema = false
 
-  await adminClient.storage
+  if (sourcePath && (isPdfPath(sourcePath) || isImagePath(sourcePath))) {
+    const { data: originalFile, error: downloadError } = await adminClient.storage
+      .from('relatorios-pdf')
+      .download(sourcePath)
+
+    if (downloadError || !originalFile) {
+      return NextResponse.json({ error: 'Erro ao ler anexo para autenticação' }, { status: 500 })
+    }
+
+    try {
+      const originalBytes = new Uint8Array(await originalFile.arrayBuffer())
+      pdfBuffer = isPdfPath(sourcePath)
+        ? await inserirHashNoRodapePdf(originalBytes, hashIntegridade)
+        : await criarPdfAutenticadoDeImagem(originalBytes, sourcePath, hashIntegridade)
+    } catch {
+      return NextResponse.json({ error: 'Não foi possível inserir o hash no anexo.' }, { status: 500 })
+    }
+  } else {
+    geradoPeloSistema = true
+    pdfBuffer = await renderToBuffer(
+      createElement(TemplateRelatorio, {
+        paciente,
+        relatorio,
+        terapeuta: relatorio.profiles as any,
+      }) as any
+    )
+  }
+
+  const { error: uploadError } = await adminClient.storage
     .from('relatorios-pdf')
     .upload(path, pdfBuffer, {
       contentType: 'application/pdf',
       upsert: true,
     })
 
-  // Gera URL assinada (válida por 1 hora)
+  if (uploadError) {
+    return NextResponse.json({ error: `Erro ao salvar PDF autenticado: ${uploadError.message}` }, { status: 500 })
+  }
+
+  if (sourcePath && sourcePath !== path) {
+    await adminClient.storage.from('relatorios-pdf').remove([sourcePath])
+  }
+
   const { data: signedUrl } = await adminClient.storage
     .from('relatorios-pdf')
     .createSignedUrl(path, 3600)
 
-  // Salva a referência do PDF no banco
-  await adminClient
+  const { error: updateError } = await adminClient
     .from('relatorios')
     .update({ pdf_url: path })
     .eq('id', id)
 
-  return NextResponse.json({ url: signedUrl?.signedUrl })
+  if (updateError) {
+    return NextResponse.json({ error: 'PDF autenticado, mas não foi possível atualizar o relatório.' }, { status: 500 })
+  }
+
+  return NextResponse.json({ url: signedUrl?.signedUrl, path, geradoPeloSistema })
 }
 
 // GET — baixa o PDF (gera URL assinada a partir do path salvo)

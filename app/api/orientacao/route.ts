@@ -1,6 +1,7 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { notificarResponsaveisDoPaciente } from '@/lib/notificacoes/inserir'
+import { gerarHash } from '@/lib/hash/gerar-hash'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
@@ -17,14 +18,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Apenas terapeutas podem criar orientações' }, { status: 403 })
   }
 
-  const { paciente_id, titulo, tipo, url_midia, conteudo } = await request.json()
+  const body = await request.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
+  const { paciente_id, titulo, tipo, url_midia, conteudo } = body
 
   if (!paciente_id || !titulo?.trim()) {
     return NextResponse.json({ error: 'Paciente e título são obrigatórios.' }, { status: 400 })
   }
 
+  // Prontuário encerrado — bloqueia novas orientações (COFFITO: só leitura após alta)
+  const { data: paciente } = await supabase.from('pacientes').select('status').eq('id', paciente_id).single()
+  if (paciente && paciente.status !== 'ativo') {
+    return NextResponse.json({ error: 'Prontuário encerrado. Não é possível criar orientações para paciente inativo.' }, { status: 409 })
+  }
+
   const tiposValidos = ['texto', 'video', 'pdf', 'imagem', 'guia']
   const tipoFinal = tiposValidos.includes(tipo) ? tipo : 'texto'
+
+  const agora = new Date().toISOString()
+  const hash = await gerarHash({
+    paciente_id,
+    terapeuta_id: user.id,
+    titulo: titulo.trim(),
+    tipo: tipoFinal,
+    conteudo: conteudo?.trim() ?? null,
+    url_midia: url_midia?.trim() ?? null,
+    assinado_em: agora,
+  })
 
   const { error } = await supabase.from('orientacoes').insert({
     paciente_id,
@@ -33,6 +53,8 @@ export async function POST(request: NextRequest) {
     tipo: tipoFinal,
     url_midia: url_midia?.trim() || null,
     conteudo: conteudo?.trim() || null,
+    hash_integridade: hash,
+    assinado_em: agora,
   })
 
   if (error) {

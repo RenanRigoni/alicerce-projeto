@@ -1,36 +1,147 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Portal Alicerce
 
-## Getting Started
+Sistema web da **Alicerce Espaço Terapêutico Infantil** para gestão clínica (pacientes, prontuário, agenda, relatórios, documentos, orientações) e portal da família. Conformidade LGPD + COFFITO Res. 424/2013 + CREFITO Res. 426/2015.
 
-First, run the development server:
+---
+
+## Stack
+
+- **Next.js 16** (App Router) + **React 19** + **TypeScript 5**
+- **Supabase** (Auth, Postgres com RLS, Storage)
+- **Tailwind 4** + **react-hook-form** + **zod**
+- **@react-pdf/renderer** (PDFs de relatórios)
+- Deploy: **Vercel**
+
+---
+
+## Scripts
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev      # dev server (localhost:3000)
+npm run build    # build de produção
+npm run start    # start do build
+npm run lint     # eslint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variáveis de ambiente
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Criar `.env.local` na raiz:
 
-## Learn More
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
+SUPABASE_SERVICE_ROLE_KEY=<service role key>   # nunca expor no cliente
+```
 
-To learn more about Next.js, take a look at the following resources:
+> A `SUPABASE_SERVICE_ROLE_KEY` é usada apenas em rotas `app/api/**` para operações privilegiadas (criar usuário, deletar paciente sem prontuário, upload server-side, etc.). Nunca importar em código `'use client'`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Supabase — banco e migrations
 
-## Deploy on Vercel
+### Aplicar migrations
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Migrations versionadas em `supabase/migrations/` (001 → 022). Aplicar em ordem via Supabase SQL Editor ou CLI:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# CLI (opcional)
+supabase db push
+```
+
+Resumo das migrations principais:
+
+| Migration | Conteúdo |
+|---|---|
+| 001 | Schema inicial (profiles, pacientes, vínculos, relatórios, documentos, orientações, comunicados, audit_logs) |
+| 002–008 | Horários, alta, cadastro completo, FKs, perfil terapeuta, contato emergência |
+| 009 / 011 | RLS fixes (geral e portal família) |
+| 010 | Notificações |
+| 012 | Consentimento LGPD (`consentimento_aceito_em`) |
+| 013 | `hash_integridade` SHA-256 nas entidades clínicas |
+| 014 | Refactor do fluxo de alta (status: registrada / pendente_confirmacao / confirmada) |
+| 015 | Permissões granulares (`profiles.permissoes` JSONB) |
+| 016 | Prontuário somente leitura pós-alta (RLS RESTRICTIVE) |
+| 017 | CPF — coluna `cpf_cifrado` + funções `encrypt_cpf` / `decrypt_cpf` (pgcrypto) |
+| 018 | CREFITO obrigatório para `role = 'terapeuta'` |
+| 019 | Versão da política de consentimento (`consentimento_policy_versao`) |
+| 020 | Triggers de audit log (orientações, documentos, dados clínicos, alta, relatórios) |
+| 021 | CPF Fase 2 — função `get_paciente_cpf` SECURITY DEFINER |
+| 022 | Tabela `_app_config` para chave de cifragem do CPF |
+
+### Configurar a chave de cifragem do CPF (após migration 022)
+
+```sql
+INSERT INTO _app_config (key, value)
+VALUES ('cpf_key', '<gere uma chave forte e guarde fora do banco>')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+```
+
+> Sem essa chave, `encrypt_cpf` / `decrypt_cpf` falham. Guarde também em cofre/secret manager — se a chave for perdida, os CPFs cifrados ficam ilegíveis.
+
+### Storage Buckets
+
+Criar dois buckets no Supabase Storage:
+
+| Bucket | Visibilidade | Uso |
+|---|---|---|
+| `documentos` | **público** (leitura) | uploads de documentos do paciente e mídias de orientação |
+| `relatorios-pdf` | **privado** | PDFs gerados de relatórios; entregues via signed URL (1h) |
+
+> O bucket `documentos` usa URL pública para reduzir custo/latência; o controle de acesso é feito via RLS na tabela `documentos`. O bucket `relatorios-pdf` é privado e exige `createSignedUrl`.
+
+### RLS
+
+Todas as tabelas com dados clínicos ou pessoais têm RLS habilitado. Política geral:
+
+- **admin / recepção:** acesso amplo conforme matriz de permissões
+- **terapeuta:** somente pacientes vinculados em `paciente_terapeutas`
+- **pai (família):** somente pacientes vinculados em `paciente_responsaveis`
+- **prontuário pós-alta:** RLS RESTRICTIVE bloqueia INSERT/UPDATE/DELETE; SELECT preservado pelos 20 anos legais
+
+---
+
+## Arquitetura — pastas
+
+```
+app/
+  (admin)/admin/...         layout + páginas admin/recepção
+  (auth)/login              login
+  (auth)/recuperar-senha    recuperação
+  (auth)/privacidade        política pública
+  (portal)/portal/...       layout + portal família
+  (terapia)/terapia/...     layout + área do terapeuta
+  api/...                   route handlers (server)
+components/                 UI compartilhada
+lib/
+  supabase/{client,server,admin}.ts
+  permissoes/{definicoes,verificar}.ts
+  hash/gerar-hash.ts        SHA-256 das entidades clínicas
+  pdf/template-relatorio.tsx
+  notificacoes/inserir.ts
+proxy.ts                    middleware (auth) — rotas públicas: /login, /recuperar-senha, /privacidade
+supabase/migrations/        SQL versionado
+docs/                       documentação + LGPD (RIPD, ROPA)
+```
+
+---
+
+## Deploy (Vercel)
+
+1. Conectar repositório no Vercel.
+2. Definir as variáveis (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) no painel do projeto.
+3. Build padrão: `npm run build`. Output `.next`.
+4. Aplicar migrations no Supabase de produção antes do primeiro deploy.
+5. Inserir a chave de cifragem do CPF em `_app_config`.
+6. Garantir os buckets `documentos` e `relatorios-pdf` criados (ver acima).
+7. Habilitar PITR no plano Supabase Pro (recomendação do RIPD).
+
+---
+
+## Documentação adicional
+
+- [`docs/DOCUMENTACAO_RESUMIDA.md`](docs/DOCUMENTACAO_RESUMIDA.md) — visão funcional, rotas, modelo de dados, permissões, fluxo de alta
+- [`docs/lgpd/ROPA.md`](docs/lgpd/ROPA.md) — Registro de Atividades de Tratamento (LGPD Art. 37)
+- [`docs/lgpd/RIPD.md`](docs/lgpd/RIPD.md) — Relatório de Impacto à Proteção de Dados
+- [`docs/superpowers/specs/`](docs/superpowers/specs/) — planejamento histórico (Bloco 1)

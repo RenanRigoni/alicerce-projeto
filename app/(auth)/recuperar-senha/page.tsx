@@ -37,7 +37,7 @@ export default function RecuperarSenhaPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-8">
-          <Image src="/logo.png" alt="Alicerce" width={64} height={64} className="rounded-full" />
+          <Image src="/logo.png" alt="Alicerce" width={64} height={64} className="rounded-full" style={{ width: 64, height: 64 }} />
           <div className="text-center">
             <div
               className="text-xl font-semibold"

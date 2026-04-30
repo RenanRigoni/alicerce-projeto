@@ -21,10 +21,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
-  const { nome, email, senha, role, paciente_id } = await request.json()
+  const body = await request.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
+  const { nome, email, senha, role, crefito, paciente_id } = body
 
   if (!nome || !email || !senha || !role) {
     return NextResponse.json({ error: 'Campos obrigatórios faltando' }, { status: 400 })
+  }
+
+  if (role === 'terapeuta' && !crefito?.trim()) {
+    return NextResponse.json({ error: 'CREFITO é obrigatório para terapeutas (CREFITO Res. 426/2015)' }, { status: 400 })
   }
 
   // Usa service role para criar o usuário no Auth
@@ -45,10 +51,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: authError.message }, { status: 400 })
   }
 
-  // Atualiza o nome no profile (trigger já criou com role correto)
+  // Atualiza nome e crefito no profile (trigger já criou com role correto)
   await adminClient
     .from('profiles')
-    .update({ nome })
+    .update({ nome, ...(crefito?.trim() ? { crefito: crefito.trim() } : {}) })
     .eq('id', newUser.user.id)
 
   // Vincula ao paciente se informado

@@ -35,13 +35,21 @@ export async function POST(request: NextRequest) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
+  // Criptografa CPF se chave configurada (LGPD Art. 46)
+  let cpfCifrado: string | null = null
+  const cpfPlain = cpf?.trim() || null
+  if (cpfPlain) {
+    const { data: enc } = await adminClient.rpc('encrypt_cpf', { cpf_plain: cpfPlain }).maybeSingle()
+    cpfCifrado = (enc as string | null) ?? null
+  }
+
   const { data: paciente, error: erroPaciente } = await adminClient
     .from('pacientes')
     .insert({
       nome: nome.trim(),
       data_nascimento: data_nascimento || null,
       sexo: sexo || null,
-      cpf: cpf?.trim() || null,
+      cpf_cifrado: cpfCifrado,
       frequencia_atendimento: frequencia_atendimento?.trim() || null,
       turno_preferencia: turno_preferencia || null,
       convenio_ou_particular: convenio_ou_particular || null,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -119,13 +120,13 @@ function NovoPacienteForm() {
   return (
     <div className="space-y-6 max-w-xl">
       <div className="flex items-center gap-3">
-        <a
+        <Link
           href={voltarUrl}
           className="text-sm transition-colors hover:opacity-70"
           style={{ color: 'var(--color-ink-soft)' }}
         >
           ← Voltar
-        </a>
+        </Link>
         <h1
           className="text-2xl font-semibold"
           style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
@@ -238,13 +239,13 @@ function NovoPacienteForm() {
               <label className="block text-sm font-medium" style={labelStyle}>
                 Responsável (familiar)
               </label>
-              <a
+              <Link
                 href="/admin/usuarios/novo"
                 className="text-xs font-medium transition-opacity hover:opacity-70"
                 style={{ color: 'var(--color-rose-main)' }}
               >
                 + Cadastrar responsável
-              </a>
+              </Link>
             </div>
             <select
               value={responsavelSelecionado}

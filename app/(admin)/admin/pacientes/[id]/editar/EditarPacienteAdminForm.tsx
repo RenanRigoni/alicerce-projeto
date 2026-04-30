@@ -78,13 +78,21 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
     setSalvando(true)
     const supabase = createClient()
 
+    // CPF Phase 2: cifra antes de salvar (LGPD Art. 46)
+    let cpfCifrado: string | null = null
+    const cpfPlain = form.cpf.trim() || null
+    if (cpfPlain) {
+      const { data: enc } = await supabase.rpc('encrypt_cpf', { cpf_plain: cpfPlain })
+      cpfCifrado = (enc as string | null) ?? null
+    }
+
     const { error: erroPaciente } = await supabase
       .from('pacientes')
       .update({
         nome:                   form.nome,
         data_nascimento:        form.data_nascimento || null,
         sexo:                   form.sexo || null,
-        cpf:                    form.cpf.trim() || null,
+        cpf_cifrado:            cpfCifrado,
         frequencia_atendimento: form.frequencia_atendimento.trim() || null,
         turno_preferencia:      form.turno_preferencia || null,
         convenio_ou_particular: form.convenio_ou_particular || null,

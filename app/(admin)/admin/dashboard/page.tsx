@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 
@@ -94,13 +95,13 @@ export default async function AdminDashboard() {
                   <span className="font-medium">{a.pacientes?.nome}</span>
                   <span style={{ color: '#B45309' }}> · por {a.profiles?.nome}</span>
                 </div>
-                <a
+                <Link
                   href="/admin/alta"
                   className="text-xs font-medium rounded-lg px-3 py-1 transition-colors flex-shrink-0"
                   style={{ color: '#92400E', border: '1px solid #FCD34D', background: 'transparent' }}
                 >
                   Analisar
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -109,7 +110,7 @@ export default async function AdminDashboard() {
 
       {/* Cards de totais */}
       <div className="grid grid-cols-3 gap-4">
-        <a href="/admin/pacientes">
+        <Link href="/admin/pacientes">
           <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
             <div
               className="text-3xl font-bold mb-1 group-hover:scale-105 transition-transform duration-200 inline-block"
@@ -119,8 +120,8 @@ export default async function AdminDashboard() {
             </div>
             <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Pacientes ativos</div>
           </Card>
-        </a>
-        <a href="/admin/responsaveis">
+        </Link>
+        <Link href="/admin/responsaveis">
           <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
             <div
               className="text-3xl font-bold mb-1 group-hover:scale-105 transition-transform duration-200 inline-block"
@@ -130,8 +131,8 @@ export default async function AdminDashboard() {
             </div>
             <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Famílias ativas</div>
           </Card>
-        </a>
-        <a href="/admin/terapeutas">
+        </Link>
+        <Link href="/admin/terapeutas">
           <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
             <div
               className="text-3xl font-bold mb-1 group-hover:scale-105 transition-transform duration-200 inline-block"
@@ -141,7 +142,7 @@ export default async function AdminDashboard() {
             </div>
             <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Terapeutas</div>
           </Card>
-        </a>
+        </Link>
       </div>
 
       {/* Relatórios recentes */}
@@ -158,7 +159,7 @@ export default async function AdminDashboard() {
               <ul className="space-y-1">
                 {relatóriosRecentes.map((r: any) => (
                   <li key={r.id}>
-                    <a
+                    <Link
                       href={`/admin/pacientes/${r.paciente_id}`}
                       className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 -mx-3 transition-colors hover:bg-[var(--color-rose-blush)]"
                     >
@@ -192,7 +193,7 @@ export default async function AdminDashboard() {
                       >
                         {r.status}
                       </span>
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -265,41 +266,41 @@ export default async function AdminDashboard() {
         </h2>
         <Card>
           <div className="flex flex-wrap gap-2.5">
-            <a
+            <Link
               href="/admin/pacientes/novo"
               className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
               style={{ background: 'var(--color-rose-main)' }}
             >
               + Novo paciente
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/usuarios/novo"
               className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
               style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
             >
               + Novo usuário
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/agendamentos/novo"
               className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
               style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
             >
               + Agendamento
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/comunicados"
               className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
               style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
             >
               Comunicados
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/feriados"
               className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
               style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
             >
               Feriados
-            </a>
+            </Link>
           </div>
         </Card>
       </div>

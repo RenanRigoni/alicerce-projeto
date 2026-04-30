@@ -37,6 +37,25 @@ export async function notificarAdmins(tipo: string, titulo: string, mensagem?: s
   )
 }
 
+export async function notificarTerapeutasDoPaciente(
+  pacienteId: string,
+  tipo: string,
+  titulo: string,
+  mensagem?: string,
+  link?: string
+) {
+  const db = adminClient()
+  const { data: vinculos, error } = await db
+    .from('paciente_terapeutas')
+    .select('terapeuta_id')
+    .eq('paciente_id', pacienteId)
+  if (error) { console.error('[notificacoes] notificarTerapeutas query error:', error); return }
+  if (!vinculos?.length) return
+  await inserirNotificacoes(
+    vinculos.map(v => ({ destinatario_id: v.terapeuta_id, tipo, titulo, mensagem, link }))
+  )
+}
+
 export async function notificarResponsaveisDoPaciente(
   pacienteId: string,
   tipo: string,

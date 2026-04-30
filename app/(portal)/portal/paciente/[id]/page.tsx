@@ -3,13 +3,10 @@ import { Card } from '@/components/ui/Card'
 import { notFound } from 'next/navigation'
 import { registrarAcao } from '@/lib/audit/registrar-acao'
 import { OrientacaoCard } from '@/components/portal/OrientacaoCard'
+import { SolicitarAltaPortal } from '@/components/portal/SolicitarAltaPortal'
 
 const tipoLabel: Record<string, string> = {
   sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
-}
-
-const orientacaoTipoLabel: Record<string, string> = {
-  texto: 'Orientação', video: 'Vídeo', pdf: 'PDF', imagem: 'Imagem', guia: 'Guia',
 }
 
 export default async function PacientePortalPage({
@@ -23,11 +20,9 @@ export default async function PacientePortalPage({
   const { aba = 'geral' } = await searchParams
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
   const { data: paciente } = await supabase
     .from('pacientes')
-    .select('id, nome, frequencia_atendimento, horarios_atendimento, data_nascimento, sexo, cpf, status, data_inicio, turno_preferencia, convenio_ou_particular')
+    .select('id, nome, frequencia_atendimento, horarios_atendimento, data_nascimento, sexo, status, data_inicio, turno_preferencia, convenio_ou_particular')
     .eq('id', id)
     .single()
 
@@ -43,6 +38,7 @@ export default async function PacientePortalPage({
     { data: feriados },
     { data: terapeutas },
     { data: dadosClinicos },
+    { data: altaPendente },
   ] = await Promise.all([
     supabase
       .from('relatorios')
@@ -80,6 +76,12 @@ export default async function PacientePortalPage({
       .from('pacientes_dados_clinicos')
       .select('hipotese_diagnostica, diagnostico, objetivos_terapeuticos, plano_terapeutico, obs_clinicas_gerais')
       .eq('paciente_id', id)
+      .maybeSingle(),
+    supabase
+      .from('solicitacoes_alta')
+      .select('id')
+      .eq('paciente_id', id)
+      .eq('status', 'pendente_confirmacao')
       .maybeSingle(),
   ])
 
@@ -263,6 +265,21 @@ export default async function PacientePortalPage({
                   )}
                 </div>
               </Card>
+            </div>
+          )}
+
+          {paciente.status === 'ativo' && !altaPendente && (
+            <div className="flex justify-end pt-2">
+              <SolicitarAltaPortal pacienteId={id} pacienteNome={paciente.nome} />
+            </div>
+          )}
+
+          {altaPendente && (
+            <div
+              className="rounded-xl px-4 py-3 text-sm"
+              style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E' }}
+            >
+              Sua solicitação de alta foi enviada e aguarda confirmação da terapeuta.
             </div>
           )}
         </div>

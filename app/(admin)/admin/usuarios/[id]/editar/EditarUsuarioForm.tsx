@@ -13,7 +13,6 @@ const roleLabel: Record<string, string> = {
 interface Props {
   usuario: { id: string; nome: string; role: string; telefone: string | null; crefito: string | null }
   detalhes: { endereco: string | null; cidade: string | null; cep: string | null; telefone_principal: string | null; contato_emergencia: string | null } | null
-  isAdmin: boolean
 }
 
 const inputCls = 'w-full rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 transition-all'
@@ -23,7 +22,7 @@ const inputStyle = {
   color: 'var(--color-ink)',
 }
 
-export function EditarUsuarioForm({ usuario, detalhes, isAdmin }: Props) {
+export function EditarUsuarioForm({ usuario, detalhes }: Props) {
   const router = useRouter()
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
@@ -47,13 +46,19 @@ export function EditarUsuarioForm({ usuario, detalhes, isAdmin }: Props) {
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
     setErro('')
+
+    if (usuario.role === 'terapeuta' && !form.crefito.trim()) {
+      setErro('CREFITO é obrigatório para terapeutas (CREFITO Res. 426/2015).')
+      return
+    }
+
     setSalvando(true)
 
     const supabase = createClient()
 
     const profileUpdate: Record<string, string> = { nome: form.nome }
     if (usuario.role !== 'pai') profileUpdate.telefone = form.telefone
-    if (usuario.role === 'terapeuta') profileUpdate.crefito = form.crefito
+    if (usuario.role === 'terapeuta') profileUpdate.crefito = form.crefito.trim()
 
     const { error: errProfile } = await supabase
       .from('profiles')

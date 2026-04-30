@@ -60,12 +60,15 @@ export default async function AdminPacienteDetalhePage({
       .order('criado_em', { ascending: false }),
     supabase
       .from('solicitacoes_alta')
-      .select('id, status, motivo, argumentacao_recusa, criado_em, profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
+      .select('id, status, tipo, motivo, documento_url, argumentacao_recusa, criado_em, profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }),
   ])
 
   if (!paciente) notFound()
+
+  // CPF Phase 2: tenta decifrar; cai no plaintext se chave não configurada
+  const { data: cpfDecifrado } = await supabase.rpc('get_paciente_cpf', { p_patient_id: id })
 
   const terapeutas = (terapeutasVinculo ?? []).map((t: any) => ({
     id: t.profiles.id,
@@ -85,7 +88,9 @@ export default async function AdminPacienteDetalhePage({
   const altasMapped = (altas ?? []).map((a: any) => ({
     id: a.id,
     status: a.status,
+    tipo: a.tipo ?? 'terapeuta',
     motivo: a.motivo,
+    documento_url: a.documento_url ?? null,
     argumentacao_recusa: a.argumentacao_recusa,
     criado_em: a.criado_em,
     solicitado_por_nome: a.profiles?.nome ?? null,
@@ -100,7 +105,7 @@ export default async function AdminPacienteDetalhePage({
         foto_url: paciente.foto_url,
         data_nascimento: paciente.data_nascimento,
         sexo: paciente.sexo,
-        cpf: paciente.cpf,
+        cpf: cpfDecifrado as string | null,
         status: paciente.status,
         motivo_desativacao: paciente.motivo_desativacao,
         data_inicio: paciente.data_inicio,
@@ -117,7 +122,6 @@ export default async function AdminPacienteDetalhePage({
       orientacoes={orientacoes ?? []}
       altas={altasMapped}
       role={me?.role as 'admin' | 'recepcao'}
-      meuId={user.id}
       ehTerapeutaVinculado={false}
     />
   )

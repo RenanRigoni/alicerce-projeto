@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { PerfilPacienteTabs } from '@/components/paciente/PerfilPacienteTabs'
-import { SolicitarAltaButton } from '@/components/terapia/SolicitarAltaButton'
+import { RegistrarAltaButton } from '@/components/terapia/RegistrarAltaButton'
+import { ConfirmarAltaButton } from '@/components/terapia/ConfirmarAltaButton'
 
 export default async function PacienteTerapeutaPage({
   params,
@@ -57,7 +58,7 @@ export default async function PacienteTerapeutaPage({
       .order('criado_em', { ascending: false }),
     supabase
       .from('solicitacoes_alta')
-      .select('id, status, motivo, argumentacao_recusa, criado_em, profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
+      .select('id, status, tipo, motivo, documento_url, argumentacao_recusa, criado_em, profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }),
     supabase
@@ -68,15 +69,18 @@ export default async function PacienteTerapeutaPage({
       .maybeSingle(),
     supabase
       .from('solicitacoes_alta')
-      .select('id, status, argumentacao_recusa')
+      .select('id, status, tipo, motivo, documento_url')
       .eq('paciente_id', id)
-      .in('status', ['pendente', 'recusada'])
+      .eq('status', 'pendente_confirmacao')
       .order('criado_em', { ascending: false })
       .limit(1)
       .maybeSingle(),
   ])
 
   if (!paciente) notFound()
+
+  // CPF Phase 2: tenta decifrar; cai no plaintext se chave não configurada
+  const { data: cpfDecifrado } = await supabase.rpc('get_paciente_cpf', { p_patient_id: id })
 
   const ehTerapeutaVinculado = !!meuVinculo
 
@@ -100,7 +104,9 @@ export default async function PacienteTerapeutaPage({
   const altasMapped = (altas ?? []).map((a: any) => ({
     id: a.id,
     status: a.status,
+    tipo: a.tipo ?? 'terapeuta',
     motivo: a.motivo,
+    documento_url: a.documento_url ?? null,
     argumentacao_recusa: a.argumentacao_recusa,
     criado_em: a.criado_em,
     solicitado_por_nome: a.profiles?.nome ?? null,
@@ -116,7 +122,7 @@ export default async function PacienteTerapeutaPage({
           foto_url: paciente.foto_url,
           data_nascimento: paciente.data_nascimento,
           sexo: paciente.sexo,
-          cpf: paciente.cpf,
+          cpf: cpfDecifrado as string | null,
           status: paciente.status,
           motivo_desativacao: paciente.motivo_desativacao,
           data_inicio: paciente.data_inicio,
@@ -133,13 +139,23 @@ export default async function PacienteTerapeutaPage({
         orientacoes={orientacoes ?? []}
         altas={altasMapped}
         role="terapeuta"
-        meuId={user.id}
         ehTerapeutaVinculado={ehTerapeutaVinculado}
       />
 
-      {ehTerapeutaVinculado && paciente.status === 'ativo' && (
+      {ehTerapeutaVinculado && altaAtual && (
         <div className="pt-2">
-          <SolicitarAltaButton pacienteId={id} pacienteNome={paciente.nome} />
+          <ConfirmarAltaButton
+            altaId={altaAtual.id}
+            pacienteNome={paciente.nome}
+            motivo={altaAtual.motivo}
+            documentoUrl={altaAtual.documento_url}
+          />
+        </div>
+      )}
+
+      {ehTerapeutaVinculado && paciente.status === 'ativo' && !altaAtual && (
+        <div className="pt-2">
+          <RegistrarAltaButton pacienteId={id} pacienteNome={paciente.nome} />
         </div>
       )}
     </div>

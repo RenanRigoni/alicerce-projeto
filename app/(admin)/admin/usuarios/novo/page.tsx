@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { createClient } from '@/lib/supabase/client'
@@ -15,7 +16,7 @@ export default function NovoUsuarioPage() {
   const [etapa, setEtapa] = useState<'form' | 'vincular'>('form')
   const [novoUserId, setNovoUserId] = useState('')
 
-  const [form, setForm] = useState({ nome: '', email: '', senha: '', role: 'pai' })
+  const [form, setForm] = useState({ nome: '', email: '', senha: '', role: 'pai', crefito: '' })
 
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [pacientesSelecionados, setPacientesSelecionados] = useState<string[]>([])
@@ -156,9 +157,9 @@ export default function NovoUsuarioPage() {
   return (
     <div className="space-y-6 max-w-xl">
       <div className="flex items-center gap-3">
-        <a href="/admin/usuarios" className="text-sm transition-colors hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
+        <Link href="/admin/usuarios" className="text-sm transition-colors hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
           ← Voltar
-        </a>
+        </Link>
         <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
           Novo usuário
         </h1>
@@ -199,6 +200,25 @@ export default function NovoUsuarioPage() {
               <option value="admin">Admin</option>
             </select>
           </div>
+
+          {form.role === 'terapeuta' && (
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
+                CREFITO <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+              </label>
+              <input
+                name="crefito"
+                value={form.crefito}
+                onChange={handleChange}
+                required
+                placeholder="Ex: 4/23934-TO"
+                className="input-base"
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
+                Obrigatório — CREFITO Res. 426/2015
+              </p>
+            </div>
+          )}
 
           {/* Paciente pré-selecionado (role=pai) */}
           {form.role === 'pai' && (

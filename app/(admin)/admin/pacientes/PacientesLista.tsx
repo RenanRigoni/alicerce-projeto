@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 
@@ -62,13 +63,13 @@ export function PacientesLista({ todos }: { todos: Paciente[] }) {
               </button>
             ))}
           </div>
-          <a
+          <Link
             href="/admin/pacientes/novo"
             className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
             style={{ background: 'var(--color-rose-main)' }}
           >
             + Novo paciente
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -96,9 +97,9 @@ export function PacientesLista({ todos }: { todos: Paciente[] }) {
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <Badge color={statusColor[p.status]}>{statusLabel[p.status]}</Badge>
-                  <a href={`/admin/pacientes/${p.id}`} className="text-sm font-medium transition-colors hover:opacity-80" style={{ color: 'var(--color-rose-main)' }}>
+                  <Link href={`/admin/pacientes/${p.id}`} className="text-sm font-medium transition-colors hover:opacity-80" style={{ color: 'var(--color-rose-main)' }}>
                     Ver
-                  </a>
+                  </Link>
                 </div>
               </li>
             ))}

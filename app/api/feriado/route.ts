@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
-  const payload = await request.json()
+  const payload = await request.json().catch(() => null)
+  if (!payload) return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
   const dataFeriado: string = payload.data
   const descricao: string = payload.descricao
 

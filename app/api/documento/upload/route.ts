@@ -1,6 +1,7 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { gerarHash } from '@/lib/hash/gerar-hash'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
@@ -22,6 +23,12 @@ export async function POST(request: NextRequest) {
 
   if (!arquivo || !pacienteId) {
     return NextResponse.json({ error: 'Arquivo e paciente_id são obrigatórios.' }, { status: 400 })
+  }
+
+  // Prontuário encerrado — bloqueia novos documentos (COFFITO: só leitura após alta)
+  const { data: paciente } = await supabase.from('pacientes').select('status').eq('id', pacienteId).single()
+  if (paciente && paciente.status !== 'ativo') {
+    return NextResponse.json({ error: 'Prontuário encerrado. Não é possível adicionar documentos a paciente inativo.' }, { status: 409 })
   }
 
   const maxBytes = 15 * 1024 * 1024 // 15 MB
@@ -54,6 +61,16 @@ export async function POST(request: NextRequest) {
 
   const { data: { publicUrl } } = adminClient.storage.from('documentos').getPublicUrl(path)
 
+  const agora = new Date().toISOString()
+  const hash = await gerarHash({
+    paciente_id: pacienteId,
+    enviado_por: user.id,
+    tipo,
+    descricao: descricao?.trim() ?? null,
+    arquivo_path: path,
+    assinado_em: agora,
+  })
+
   const { error: dbError } = await adminClient.from('documentos').insert({
     paciente_id: pacienteId,
     enviado_por: user.id,
@@ -61,6 +78,8 @@ export async function POST(request: NextRequest) {
     descricao: descricao?.trim() || null,
     arquivo_url: publicUrl,
     visivel_pais: visivelPais,
+    hash_integridade: hash,
+    assinado_em: agora,
   })
 
   if (dbError) {

@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession()
   const pathname = request.nextUrl.pathname
 
-  const publicRoutes = ['/login', '/recuperar-senha']
+  const publicRoutes = ['/login', '/recuperar-senha', '/privacidade']
   if (publicRoutes.includes(pathname)) return supabaseResponse
 
   // Não autenticado → login

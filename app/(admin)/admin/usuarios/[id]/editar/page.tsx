@@ -38,7 +38,6 @@ export default async function EditarUsuarioPage({
     <EditarUsuarioForm
       usuario={usuario}
       detalhes={detalhes}
-      isAdmin={meProfile?.role === 'admin'}
     />
   )
 }

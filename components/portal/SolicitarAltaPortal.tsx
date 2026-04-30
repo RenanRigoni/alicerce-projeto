@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -10,50 +10,55 @@ interface Props {
 
 const labelStyle = { color: 'var(--color-ink-mid)' }
 
-export function SolicitarAltaButton({ pacienteId, pacienteNome }: Props) {
+export function SolicitarAltaPortal({ pacienteId, pacienteNome }: Props) {
   const router = useRouter()
+  const inputRef = useRef<HTMLInputElement>(null)
   const [modalAberto, setModalAberto] = useState(false)
-  const [form, setForm] = useState({
-    justificativa: '',
-    evolucao: '',
-    detalhes_clinicos: '',
-    obs_adicionais: '',
-  })
+  const [motivo, setMotivo] = useState('')
+  const [arquivo, setArquivo] = useState<File | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
-
-  function handle(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
-  }
 
   function fechar() {
     setModalAberto(false)
     setErro('')
-    setForm({ justificativa: '', evolucao: '', detalhes_clinicos: '', obs_adicionais: '' })
+    setMotivo('')
+    setArquivo(null)
+  }
+
+  async function uploadDocumento(): Promise<string | null> {
+    if (!arquivo) return null
+
+    const formData = new FormData()
+    formData.append('arquivo', arquivo)
+    formData.append('paciente_id', pacienteId)
+    formData.append('tipo', 'encaminhamento')
+    formData.append('descricao', 'Solicitação médica de alta')
+    formData.append('visivel_pais', 'true')
+
+    const res = await fetch('/api/documento/upload', { method: 'POST', body: formData })
+    if (!res.ok) return null
+    const json = await res.json()
+    return json.url ?? null
   }
 
   async function handleSolicitar() {
-    if (!form.justificativa.trim()) { setErro('A justificativa é obrigatória.'); return }
+    if (!motivo.trim()) { setErro('Descreva o motivo da solicitação.'); return }
     setErro('')
     setEnviando(true)
 
-    const partes = [
-      `[Justificativa]\n${form.justificativa.trim()}`,
-      form.evolucao.trim() ? `[Evolução do paciente]\n${form.evolucao.trim()}` : '',
-      form.detalhes_clinicos.trim() ? `[Detalhes clínicos]\n${form.detalhes_clinicos.trim()}` : '',
-      form.obs_adicionais.trim() ? `[Observações adicionais]\n${form.obs_adicionais.trim()}` : '',
-    ].filter(Boolean)
+    const documentoUrl = await uploadDocumento()
 
     const res = await fetch('/api/alta/solicitar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paciente_id: pacienteId, motivo: partes.join('\n\n') }),
+      body: JSON.stringify({ paciente_id: pacienteId, motivo: motivo.trim(), documento_url: documentoUrl }),
     })
 
     const json = await res.json()
     setEnviando(false)
 
-    if (!res.ok) { setErro(json.error ?? 'Erro ao solicitar alta.'); return }
+    if (!res.ok) { setErro(json.error ?? 'Erro ao enviar solicitação.'); return }
 
     fechar()
     router.refresh()
@@ -83,64 +88,49 @@ export function SolicitarAltaButton({ pacienteId, pacienteNome }: Props) {
                 Solicitar alta — {pacienteNome}
               </h2>
               <p className="text-sm mt-1" style={{ color: 'var(--color-ink-soft)' }}>
-                A solicitação será enviada para a administração para aprovação.
+                A terapeuta receberá sua solicitação e confirmará a alta em breve.
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
-                Justificativa <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                Motivo da solicitação <span style={{ color: 'var(--color-rose-main)' }}>*</span>
               </label>
               <textarea
-                name="justificativa"
-                value={form.justificativa}
-                onChange={handle}
-                rows={3}
-                placeholder="Motivo principal para a solicitação de alta..."
+                value={motivo}
+                onChange={e => setMotivo(e.target.value)}
+                rows={4}
+                placeholder="Descreva o motivo pelo qual está solicitando a alta..."
                 className="input-base resize-y"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
-                Evolução do paciente
+                Documento médico (opcional)
               </label>
-              <textarea
-                name="evolucao"
-                value={form.evolucao}
-                onChange={handle}
-                rows={3}
-                placeholder="Descreva a evolução observada ao longo do tratamento..."
-                className="input-base resize-y"
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={e => setArquivo(e.target.files?.[0] ?? null)}
+                className="hidden"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
-                Detalhes clínicos
-              </label>
-              <textarea
-                name="detalhes_clinicos"
-                value={form.detalhes_clinicos}
-                onChange={handle}
-                rows={2}
-                placeholder="Informações clínicas relevantes para a decisão..."
-                className="input-base resize-y"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
-                Observações adicionais
-              </label>
-              <textarea
-                name="obs_adicionais"
-                value={form.obs_adicionais}
-                onChange={handle}
-                rows={2}
-                placeholder="Outras informações complementares (opcional)..."
-                className="input-base resize-y"
-              />
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="w-full rounded-xl px-4 py-4 text-sm text-center transition-colors"
+                style={{
+                  border: arquivo ? '2px dashed var(--color-rose-soft)' : '2px dashed var(--color-border)',
+                  color: arquivo ? 'var(--color-rose-main)' : 'var(--color-ink-faint)',
+                  background: 'transparent',
+                }}
+              >
+                {arquivo ? `✓ ${arquivo.name}` : 'Anexar solicitação médica (PDF ou imagem)'}
+              </button>
+              <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
+                Se um médico solicitou a alta, anexe o documento aqui.
+              </p>
             </div>
 
             {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}

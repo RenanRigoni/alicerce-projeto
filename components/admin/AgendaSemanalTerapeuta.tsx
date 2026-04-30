@@ -32,10 +32,6 @@ function addDays(d: Date, n: number): Date {
   return r
 }
 
-function localDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
 export function AgendaSemanalTerapeuta({ pacientes, feriadosDatas }: Props) {
   const [weekOffset, setWeekOffset] = useState(0)
 

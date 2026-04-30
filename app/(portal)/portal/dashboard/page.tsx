@@ -9,14 +9,6 @@ const tipoLabel: Record<string, string> = {
   sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
 }
 
-const orientacaoTipoLabel: Record<string, string> = {
-  texto: 'Orientação',
-  video: 'Vídeo',
-  pdf: 'PDF',
-  imagem: 'Imagem',
-  guia: 'Guia',
-}
-
 export default async function PortalDashboard() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

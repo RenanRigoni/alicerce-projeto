@@ -4,7 +4,6 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
 } from '@react-pdf/renderer'
 
 const styles = StyleSheet.create({
@@ -125,9 +124,11 @@ interface TemplateRelatorioProps {
     conclusao?: string | null
     assinatura_digital?: string | null
     publicado_em?: string | null
+    hash_integridade?: string | null
   }
   terapeuta: {
     nome: string
+    crefito?: string | null
   }
 }
 
@@ -165,7 +166,9 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta }: TemplateRe
           {idadeTexto && <Text style={styles.pacienteMeta}>Idade: {idadeTexto}</Text>}
           {paciente.diagnostico && <Text style={styles.pacienteMeta}>Diagnóstico: {paciente.diagnostico}</Text>}
           {paciente.frequencia_atendimento && <Text style={styles.pacienteMeta}>Frequência: {paciente.frequencia_atendimento}</Text>}
-          <Text style={styles.pacienteMeta}>Terapeuta: {terapeuta.nome}</Text>
+          <Text style={styles.pacienteMeta}>
+            Terapeuta: {terapeuta.nome}{terapeuta.crefito ? ` — CREFITO ${terapeuta.crefito}` : ''}
+          </Text>
           {dataPublicacao && <Text style={styles.pacienteMeta}>Data: {dataPublicacao}</Text>}
         </View>
 
@@ -197,6 +200,11 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta }: TemplateRe
           <Text style={styles.rodapeTexto}>
             Alicerce Espaço Terapêutico Infantil — Documento gerado eletronicamente
           </Text>
+          {relatorio.hash_integridade && (
+            <Text style={styles.rodapeTexto}>
+              Autenticacao Alicerce SHA-256: {relatorio.hash_integridade}
+            </Text>
+          )}
         </View>
 
       </Page>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 
@@ -63,13 +64,13 @@ export function ResponsaveisLista({ todos }: { todos: Responsavel[] }) {
               </button>
             ))}
           </div>
-          <a
+          <Link
             href="/admin/usuarios/novo"
             className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
             style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
           >
             + Novo responsável
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -84,13 +85,13 @@ export function ResponsaveisLista({ todos }: { todos: Responsavel[] }) {
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <a
+                    <Link
                       href={`/admin/usuarios/${r.id}`}
                       className="font-medium transition-opacity hover:opacity-70"
                       style={{ color: 'var(--color-ink)' }}
                     >
                       {r.nome}
-                    </a>
+                    </Link>
                     {!r.ativo && <Badge color="gray">Inativo</Badge>}
                   </div>
                   <div className="flex flex-wrap gap-x-4 mt-0.5">
@@ -100,7 +101,7 @@ export function ResponsaveisLista({ todos }: { todos: Responsavel[] }) {
                 </div>
                 <div className="flex flex-col gap-1.5 items-end">
                   {r.pacientes.map(p => (
-                    <a
+                    <Link
                       key={p.id}
                       href={`/admin/pacientes/${p.id}`}
                       className="flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70"
@@ -111,14 +112,14 @@ export function ResponsaveisLista({ todos }: { todos: Responsavel[] }) {
                       )}
                       <span>{p.nome}</span>
                       <Badge color={statusColor[p.status]}>{statusLabel[p.status]}</Badge>
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t flex justify-end" style={{ borderColor: 'var(--color-border-soft)' }}>
-                <a href={`/admin/usuarios/${r.id}`} className="text-xs transition-opacity hover:opacity-70" style={{ color: 'var(--color-rose-main)' }}>
+                <Link href={`/admin/usuarios/${r.id}`} className="text-xs transition-opacity hover:opacity-70" style={{ color: 'var(--color-rose-main)' }}>
                   Ver perfil completo →
-                </a>
+                </Link>
               </div>
             </Card>
           ))}

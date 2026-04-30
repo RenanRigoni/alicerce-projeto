@@ -79,7 +79,7 @@ export function DeletarPacienteButton({ pacienteId, pacienteNome }: Props) {
                 Excluir paciente permanentemente
               </h2>
               <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-                Esta ação é <strong>irreversível</strong>. Todos os dados do paciente serão excluídos — relatórios, documentos, orientações e histórico.
+                Esta ação é <strong>irreversível</strong>. Disponível apenas para pacientes sem prontuário clínico registrado. Pacientes com relatórios ou documentos devem ser <strong>desativados</strong>, conforme exigência da LGPD e do COFFITO.
               </p>
             </div>
 

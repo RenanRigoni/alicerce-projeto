@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { NotificacoesBell } from '@/components/ui/NotificacoesBell'
 
@@ -47,6 +48,7 @@ const navLinks = {
   ],
   pai: [
     { href: '/portal/dashboard',  label: 'Início' },
+    { href: '/portal/meus-dados', label: 'Meus Dados' },
   ],
 }
 
@@ -77,12 +79,6 @@ export function Navbar({ role, nome }: NavbarProps) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Fecha menus ao mudar de rota
-  useEffect(() => {
-    setMenuAberto(false)
-    setUserMenuAberto(false)
-  }, [pathname])
-
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -106,28 +102,30 @@ export function Navbar({ role, nome }: NavbarProps) {
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <a
+          <Link
             href={dashboardByRole[role]}
             className="flex items-center shrink-0"
             style={{ textDecoration: 'none' }}
+            onClick={() => setUserMenuAberto(false)}
           >
             <Image
               src="/logo_hor.png"
               alt="Alicerce"
-              width={130}
-              height={50}
+              width={94}
+              height={36}
               priority
-              style={{ objectFit: 'contain', height: 36, width: 'auto' }}
+              style={{ objectFit: 'contain', width: 94, height: 36 }}
             />
-          </a>
+          </Link>
 
           {/* Links desktop */}
           <div className="hidden sm:flex items-center gap-0.5 flex-1 ml-4">
             {links.map(link => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 className="relative px-3 py-1.5 text-sm rounded-lg transition-all duration-200"
+                onClick={() => setUserMenuAberto(false)}
                 style={{
                   color: isActive(link.href)
                     ? 'var(--color-rose-main)'
@@ -139,7 +137,7 @@ export function Navbar({ role, nome }: NavbarProps) {
                 }}
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -188,6 +186,33 @@ export function Navbar({ role, nome }: NavbarProps) {
                       {role === 'admin' ? 'Administrador' : role === 'recepcao' ? 'Recepção' : role === 'terapeuta' ? 'Terapeuta' : 'Família'}
                     </div>
                   </div>
+                  {role === 'pai' && (
+                    <>
+                      <Link
+                        href="/privacidade"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-[var(--color-border-soft)]"
+                        style={{ color: 'var(--color-ink-mid)', textDecoration: 'none' }}
+                      >
+                        Política de Privacidade
+                      </Link>
+                      <div className="px-4 py-2 border-t" style={{ borderColor: 'var(--color-border-soft)' }}>
+                        <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+                          DPO: Isabella Alvarenga
+                        </div>
+                        <a
+                          href="https://wa.me/5534992900583"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs transition-opacity hover:opacity-70"
+                          style={{ color: 'var(--color-ink-soft)' }}
+                        >
+                          (34) 9 9290-0583
+                        </a>
+                      </div>
+                    </>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-[var(--color-border-soft)]"
@@ -251,9 +276,9 @@ export function Navbar({ role, nome }: NavbarProps) {
             className="h-14 flex items-center justify-between px-4 shrink-0"
             style={{ borderBottom: '1px solid var(--color-border)' }}
           >
-            <a href={dashboardByRole[role]} className="flex items-center" style={{ textDecoration: 'none' }}>
-              <Image src="/logo_hor.png" alt="Alicerce" width={130} height={50} priority style={{ objectFit: 'contain', height: 36, width: 'auto' }} />
-            </a>
+            <Link href={dashboardByRole[role]} className="flex items-center" style={{ textDecoration: 'none' }} onClick={() => setMenuAberto(false)}>
+              <Image src="/logo_hor.png" alt="Alicerce" width={94} height={36} priority style={{ objectFit: 'contain', width: 94, height: 36 }} />
+            </Link>
             <button
               onClick={() => setMenuAberto(false)}
               className="p-2 rounded-lg transition-colors hover:bg-[var(--color-border-soft)]"
@@ -268,9 +293,10 @@ export function Navbar({ role, nome }: NavbarProps) {
           {/* Links — scroll se necessário */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
             {links.map(link => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
+                onClick={() => setMenuAberto(false)}
                 className="flex items-center px-4 py-3 rounded-xl text-sm transition-all"
                 style={{
                   color: isActive(link.href) ? 'var(--color-rose-main)' : 'var(--color-ink-mid)',
@@ -279,7 +305,7 @@ export function Navbar({ role, nome }: NavbarProps) {
                 }}
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -302,6 +328,34 @@ export function Navbar({ role, nome }: NavbarProps) {
               </div>
               <NotificacoesBell />
             </div>
+            {role === 'pai' && (
+              <>
+                <Link
+                  href="/privacidade"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full py-3 rounded-xl text-sm font-medium text-center transition-colors"
+                  style={{
+                    background: 'var(--color-peach-light)',
+                    color: 'var(--color-peach-main)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Política de Privacidade
+                </Link>
+                <p className="text-xs text-center" style={{ color: 'var(--color-ink-faint)' }}>
+                  DPO: Isabella Alvarenga ·{' '}
+                  <a
+                    href="https://wa.me/5534992900583"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    (34) 9 9290-0583
+                  </a>
+                </p>
+              </>
+            )}
             <button
               onClick={handleLogout}
               className="w-full py-3 rounded-xl text-sm font-medium transition-colors"

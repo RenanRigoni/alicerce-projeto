@@ -28,14 +28,39 @@ export async function DELETE(
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // Remove registros relacionados em ordem para respeitar FKs
-  await adminClient.from('pacientes_dados_clinicos').delete().eq('paciente_id', id)
+  // LGPD + COFFITO: qualquer registro clínico implica guarda obrigatória de 20 anos.
+  // Bloqueia exclusão física se existir QUALQUER dado clínico do paciente.
+  const [
+    { count: totalRelatorios },
+    { count: totalDocumentos },
+    { count: totalOrientacoes },
+    { count: totalDadosClinicos },
+    { count: totalAltas },
+  ] = await Promise.all([
+    adminClient.from('relatorios').select('id', { count: 'exact', head: true }).eq('paciente_id', id),
+    adminClient.from('documentos').select('id', { count: 'exact', head: true }).eq('paciente_id', id),
+    adminClient.from('orientacoes').select('id', { count: 'exact', head: true }).eq('paciente_id', id),
+    adminClient.from('pacientes_dados_clinicos').select('paciente_id', { count: 'exact', head: true }).eq('paciente_id', id),
+    adminClient.from('solicitacoes_alta').select('id', { count: 'exact', head: true }).eq('paciente_id', id),
+  ])
+
+  const temProntuario =
+    (totalRelatorios ?? 0) > 0 ||
+    (totalDocumentos ?? 0) > 0 ||
+    (totalOrientacoes ?? 0) > 0 ||
+    (totalDadosClinicos ?? 0) > 0 ||
+    (totalAltas ?? 0) > 0
+
+  if (temProntuario) {
+    return NextResponse.json(
+      { error: 'Este paciente possui prontuário clínico registrado. A exclusão permanente é vedada pela LGPD e pelo COFFITO (guarda obrigatória de 20 anos). Use a opção de desativar o cadastro.' },
+      { status: 409 }
+    )
+  }
+
+  // Paciente sem nenhum dado clínico: remove vínculos e cadastro
   await adminClient.from('paciente_terapeutas').delete().eq('paciente_id', id)
   await adminClient.from('paciente_responsaveis').delete().eq('paciente_id', id)
-  await adminClient.from('solicitacoes_alta').delete().eq('paciente_id', id)
-  await adminClient.from('orientacoes').delete().eq('paciente_id', id)
-  await adminClient.from('documentos').delete().eq('paciente_id', id)
-  await adminClient.from('relatorios').delete().eq('paciente_id', id)
 
   const { error } = await adminClient.from('pacientes').delete().eq('id', id)
 

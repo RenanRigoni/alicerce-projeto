@@ -13,8 +13,9 @@ export default function LoginPage() {
   const [carregando, setCarregando] = useState(false)
   const [mostrarSenha, setMostrarSenha] = useState(false)
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleLogin(e?: React.FormEvent) {
+    e?.preventDefault()
+    if (carregando) return
     setErro('')
     setCarregando(true)
     const supabase = createClient()
@@ -26,6 +27,13 @@ export default function LoginPage() {
     else if (role === 'terapeuta')                    router.push('/terapia/dashboard')
     else if (role === 'admin' || role === 'recepcao') router.push('/admin/dashboard')
     else router.push('/login')
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (email && senha) handleLogin()
+    }
   }
 
   return (
@@ -135,7 +143,7 @@ export default function LoginPage() {
               width={124}
               height={124}
               priority
-              style={{ objectFit: 'contain' }}
+              style={{ objectFit: 'contain', width: 124, height: 124 }}
             />
           </div>
 
@@ -161,6 +169,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+                onKeyDown={handleKeyDown}
                 required
                 autoComplete="email"
                 placeholder="seu@email.com"
@@ -177,6 +186,7 @@ export default function LoginPage() {
                   type={mostrarSenha ? 'text' : 'password'}
                   value={senha}
                   onChange={e => setSenha(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   required
                   autoComplete="current-password"
                   placeholder="••••••••"
@@ -259,9 +269,18 @@ export default function LoginPage() {
           </form>
 
           {/* Rodapé */}
-          <p className="text-center text-xs mt-8" style={{ color: '#C8B8B0' }}>
-            Alicerce Espaço Terapêutico Infantil
-          </p>
+          <div className="text-center mt-8 space-y-1.5">
+            <p className="text-xs" style={{ color: '#C8B8B0' }}>
+              Alicerce Espaço Terapêutico Infantil
+            </p>
+            <a
+              href="/privacidade"
+              className="text-xs transition-opacity hover:opacity-70"
+              style={{ color: '#D4716A' }}
+            >
+              Política de Privacidade
+            </a>
+          </div>
         </div>
       </div>
     </>

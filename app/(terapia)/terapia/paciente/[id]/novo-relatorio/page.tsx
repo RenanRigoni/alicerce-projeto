@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { gerarHash } from '@/lib/hash/gerar-hash'
 
 export default function NovoRelatorioPage() {
   const router = useRouter()
@@ -12,6 +13,7 @@ export default function NovoRelatorioPage() {
   const pacienteId = params.id as string
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const [pacienteAtivo, setPacienteAtivo] = useState<boolean | null>(null)
   const [titulo, setTitulo] = useState('')
   const [previa, setPrevia] = useState('')
   const [adicionais, setAdicionais] = useState('')
@@ -19,28 +21,36 @@ export default function NovoRelatorioPage() {
   const [salvando, setSalvando] = useState(false)
   const [publicando, setPublicando] = useState(false)
   const [erro, setErro] = useState('')
+  const [declaracaoCoffito, setDeclaracaoCoffito] = useState(false)
   const [modalAberto, setModalAberto] = useState(false)
+  const [creditoUsuario, setCreditoUsuario] = useState('')
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.from('pacientes').select('status').eq('id', pacienteId).single()
+      .then(({ data }) => setPacienteAtivo(data?.status === 'ativo'))
+  }, [pacienteId])
   const [nomeConfirmacao, setNomeConfirmacao] = useState('')
   const [nomeUsuario, setNomeUsuario] = useState('')
 
-  async function uploadPdf(): Promise<string | null> {
+  async function uploadPdf(): Promise<{ path: string } | null> {
     if (!arquivo) return null
 
     const formData = new FormData()
     formData.append('arquivo', arquivo)
     formData.append('paciente_id', pacienteId)
-    formData.append('tipo', 'pdf')
-    formData.append('descricao', titulo || 'Relatório')
-    formData.append('visivel_pais', 'false')
 
-    const res = await fetch('/api/documento/upload', {
+    const res = await fetch('/api/upload/relatorio-pdf', {
       method: 'POST',
       body: formData,
     })
 
-    if (!res.ok) return null
     const json = await res.json()
-    return json.url ?? null
+    if (!res.ok) {
+      setErro(json.error ?? 'Erro ao enviar o arquivo PDF.')
+      return null
+    }
+    return { path: json.path }
   }
 
   async function handleSalvarRascunho() {
@@ -48,7 +58,8 @@ export default function NovoRelatorioPage() {
     setErro('')
     setSalvando(true)
 
-    const pdfUrl = await uploadPdf()
+    const upload = await uploadPdf()
+    if (arquivo && !upload) { setSalvando(false); return }
 
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -59,12 +70,12 @@ export default function NovoRelatorioPage() {
       identificacao: titulo.trim(),
       conclusao: previa.trim() || null,
       obs_clinicas: adicionais.trim() || null,
-      pdf_url: pdfUrl,
+      pdf_url: upload?.path ?? null,
       status: 'rascunho',
     })
 
     setSalvando(false)
-    if (error) { setErro('Erro ao salvar rascunho.'); return }
+    if (error) { setErro(`Erro ao salvar rascunho: ${error.message}`); return }
     router.push(`/terapia/paciente/${pacienteId}`)
   }
 
@@ -73,8 +84,9 @@ export default function NovoRelatorioPage() {
     setErro('')
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase.from('profiles').select('nome').eq('id', user!.id).single()
+    const { data: profile } = await supabase.from('profiles').select('nome, crefito').eq('id', user!.id).single()
     setNomeUsuario(profile?.nome ?? '')
+    setCreditoUsuario(profile?.crefito ?? '')
     setModalAberto(true)
   }
 
@@ -87,38 +99,98 @@ export default function NovoRelatorioPage() {
     setPublicando(true)
     setErro('')
 
-    const pdfUrl = await uploadPdf()
+    const upload = await uploadPdf()
+    if (arquivo && !upload) { setPublicando(false); return }
 
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const agora = new Date().toISOString()
-    const assinatura = `${nomeUsuario} — ${new Date().toLocaleString('pt-BR')}`
+    const relatorioId = crypto.randomUUID()
+    const finalPdfPath = `${pacienteId}/${relatorioId}.pdf`
+    const assinatura = creditoUsuario.trim()
+      ? `${nomeUsuario} — CREFITO ${creditoUsuario.trim()} — ${new Date().toLocaleString('pt-BR')}`
+      : `${nomeUsuario} — ${new Date().toLocaleString('pt-BR')}`
 
-    const { data: novoRel, error } = await supabase.from('relatorios').insert({
+    const sourcePdfPath = upload?.path ?? null
+
+    const hash = await gerarHash({
+      relatorio_id: relatorioId,
       paciente_id: pacienteId,
       terapeuta_id: user!.id,
       identificacao: titulo.trim(),
       conclusao: previa.trim() || null,
       obs_clinicas: adicionais.trim() || null,
-      pdf_url: pdfUrl,
-      status: 'publicado',
+      pdf_url: finalPdfPath,
+      assinado_em: agora,
+      publicado_em: agora,
+    })
+
+    const { error } = await supabase.from('relatorios').insert({
+      id: relatorioId,
+      paciente_id: pacienteId,
+      terapeuta_id: user!.id,
+      identificacao: titulo.trim(),
+      conclusao: previa.trim() || null,
+      obs_clinicas: adicionais.trim() || null,
+      pdf_url: finalPdfPath,
+      status: 'rascunho',
       assinatura_digital: assinatura,
       assinado_em: agora,
       publicado_em: agora,
-    }).select('id').single()
+      hash_integridade: hash,
+    })
+
+    if (error) {
+      setPublicando(false)
+      setErro(`Erro ao publicar relatório: ${error.message}`)
+      return
+    }
+
+    const pdfRes = await fetch(`/api/relatorio/${relatorioId}/pdf`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourcePath: sourcePdfPath }),
+    })
+    const pdfJson = await pdfRes.json().catch(() => ({}))
+    if (!pdfRes.ok) {
+      setPublicando(false)
+      setErro(pdfJson.error ?? 'Relatório salvo como rascunho, mas não foi possível autenticar o PDF.')
+      return
+    }
+
+    const { error: publishError } = await supabase
+      .from('relatorios')
+      .update({ status: 'publicado' })
+      .eq('id', relatorioId)
 
     setPublicando(false)
 
-    if (error) { setErro('Erro ao publicar relatório.'); return }
-
-    if (novoRel?.id) {
-      fetch(`/api/relatorio/${novoRel.id}/publicado`, { method: 'POST' }).catch(() => {})
+    if (publishError) {
+      setErro(`PDF autenticado, mas não foi possível publicar o relatório: ${publishError.message}`)
+      return
     }
+
+    fetch(`/api/relatorio/${relatorioId}/publicado`, { method: 'POST' }).catch(() => {})
 
     router.push(`/terapia/paciente/${pacienteId}`)
   }
 
   const labelStyle = { color: 'var(--color-ink-mid)' }
+
+  if (pacienteAtivo === false) {
+    return (
+      <div className="max-w-2xl space-y-4">
+        <a href={`/terapia/paciente/${pacienteId}`} className="text-sm transition-colors hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
+          ← Voltar
+        </a>
+        <Card>
+          <p className="text-sm font-medium" style={{ color: '#B91C1C' }}>
+            Prontuário encerrado — não é possível criar novos relatórios para paciente inativo.
+          </p>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -197,10 +269,25 @@ export default function NovoRelatorioPage() {
             />
           </div>
 
+          {/* Declaração de responsabilidade COFFITO */}
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={declaracaoCoffito}
+              onChange={e => setDeclaracaoCoffito(e.target.checked)}
+              className="mt-0.5 h-4 w-4 flex-shrink-0 rounded accent-[var(--color-rose-main)]"
+            />
+            <span className="text-sm leading-snug" style={{ color: 'var(--color-ink-mid)' }}>
+              Declaro responsabilidade ética pelo conteúdo deste relatório, conforme{' '}
+              <strong>COFFITO Res. 424/2013</strong>, e confirmo que as informações são
+              verídicas e correspondem à evolução clínica do paciente.
+            </span>
+          </label>
+
           {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
 
           <div className="flex gap-3 pt-2">
-            <Button type="button" onClick={abrirModalPublicacao} disabled={salvando || publicando}>
+            <Button type="button" onClick={abrirModalPublicacao} disabled={salvando || publicando || !declaracaoCoffito}>
               Publicar para a família
             </Button>
             <Button variant="secondary" type="button" onClick={handleSalvarRascunho} disabled={salvando || publicando}>

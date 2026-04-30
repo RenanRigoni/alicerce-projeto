@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 
@@ -57,13 +58,13 @@ export default async function UsuariosPage({
             Gerencie famílias, terapeutas e equipe
           </p>
         </div>
-        <a
+        <Link
           href="/admin/usuarios/novo"
           className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
           style={{ background: 'var(--color-rose-main)' }}
         >
           + Novo usuário
-        </a>
+        </Link>
       </div>
 
       {/* Filtros de role */}
@@ -71,7 +72,7 @@ export default async function UsuariosPage({
         {filtros.map(f => {
           const isActive = (filtroRole ?? null) === f.role
           return (
-            <a
+            <Link
               key={f.label}
               href={f.role ? `/admin/usuarios?role=${f.role}` : '/admin/usuarios'}
               className="px-3 py-1.5 text-sm rounded-xl transition-all duration-200"
@@ -82,7 +83,7 @@ export default async function UsuariosPage({
               }}
             >
               {f.label}
-            </a>
+            </Link>
           )
         })}
       </div>
@@ -92,13 +93,13 @@ export default async function UsuariosPage({
           <ul className="divide-y" style={{ borderColor: 'var(--color-border-soft)' }}>
             {usuarios.map((u) => (
               <li key={u.id} className="py-3 flex items-center justify-between first:pt-0 last:pb-0">
-                <a
+                <Link
                   href={`/admin/usuarios/${u.id}`}
                   className="font-medium transition-colors hover:opacity-80"
                   style={{ color: 'var(--color-ink)' }}
                 >
                   {u.nome}
-                </a>
+                </Link>
                 <Badge color={roleColor[u.role] ?? 'gray'}>
                   {roleLabel[u.role] ?? u.role}
                 </Badge>

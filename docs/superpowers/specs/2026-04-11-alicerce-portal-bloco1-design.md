@@ -1,3 +1,7 @@
+> ⚠️ **Documento histórico — planejamento legado (Bloco 1).** Este spec foi escrito antes da implementação atual. O conteúdo é mantido para rastreio de decisões de design, mas pode divergir do código em produção. Para o estado real do sistema, consulte `README.md` e `docs/DOCUMENTACAO_RESUMIDA.md`.
+
+---
+
 # Alicerce Espaço Terapêutico — Portal do Paciente (Bloco 1)
 
 **Data:** 2026-04-11 (atualizado 2026-04-11)

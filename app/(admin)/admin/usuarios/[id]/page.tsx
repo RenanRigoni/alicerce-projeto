@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { notFound } from 'next/navigation'
 import { AcoesUsuario } from './AcoesUsuario'
 import { AgendaSemanalTerapeuta } from '@/components/admin/AgendaSemanalTerapeuta'
+import { PermissoesEditor } from '@/components/admin/PermissoesEditor'
 
 const roleLabel: Record<string, string> = {
   admin: 'Admin', recepcao: 'Recepção', terapeuta: 'Terapeuta', pai: 'Família',
@@ -49,7 +50,7 @@ export default async function UsuarioDetalhePage({
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, nome, role, ativo, criado_em, telefone, crefito')
+      .select('id, nome, role, ativo, criado_em, telefone, crefito, permissoes')
       .eq('id', id)
       .single(),
     adminClient.auth.admin.getUserById(id),
@@ -156,6 +157,15 @@ export default async function UsuarioDetalhePage({
           </div>
         )}
       </Card>
+
+      {/* Permissões — apenas admin pode editar */}
+      {isAdmin && (
+        <PermissoesEditor
+          usuarioId={usuario.id}
+          role={usuario.role}
+          permissoesAtuais={usuario.permissoes ?? {}}
+        />
+      )}
 
       {/* Ações */}
       {isAdminOuRecepcao && (

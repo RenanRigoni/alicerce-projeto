@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { gerarHash } from '@/lib/hash/gerar-hash'
 import type { DadosClinicos } from './PerfilPacienteTabs'
 
 interface Props {
@@ -125,7 +126,19 @@ export function AbaDadosClinicos({ pacienteId, dadosIniciais, podeEditar }: Prop
     const agora = new Date().toISOString()
     const { data: user } = await supabase.auth.getUser()
 
-    const payload = { ...form, atualizado_em: agora, atualizado_por: user.user?.id }
+    const hash = await gerarHash({
+      paciente_id: pacienteId,
+      editado_por: user.user?.id,
+      ...form,
+      editado_em: agora,
+    })
+
+    const payload = {
+      ...form,
+      atualizado_em: agora,
+      atualizado_por: user.user?.id,
+      hash_integridade: hash,
+    }
 
     const { error } = await supabase
       .from('pacientes_dados_clinicos')

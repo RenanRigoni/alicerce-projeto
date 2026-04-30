@@ -1,3 +1,7 @@
+> ⚠️ **Documento histórico — planejamento legado (Bloco 1).** Plano original de implementação. Pode divergir do código atual. Estado real em `README.md` e `docs/DOCUMENTACAO_RESUMIDA.md`.
+
+---
+
 # Alicerce — Plano de Implementação (Bloco 1)
 
 **Spec:** `2026-04-11-alicerce-portal-bloco1-design.md`  

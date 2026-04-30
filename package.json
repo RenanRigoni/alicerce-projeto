@@ -15,6 +15,7 @@
     "@supabase/supabase-js": "^2.103.0",
     "jwt-decode": "^4.0.0",
     "next": "16.2.3",
+    "pdf-lib": "^1.17.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.72.1",
@@ -29,6 +30,10 @@
     "eslint-config-next": "16.2.3",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "xlsx": "^0.18.5"
+  },
+  "overrides": {
+    "postcss": "8.5.13"
   }
 }

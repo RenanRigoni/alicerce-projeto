@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 
@@ -39,13 +40,13 @@ export default async function TerapeutasPage() {
             {ativos.length} ativo{ativos.length !== 1 ? 's' : ''}{inativos.length > 0 ? ` · ${inativos.length} inativo${inativos.length !== 1 ? 's' : ''}` : ''}
           </p>
         </div>
-        <a
+        <Link
           href="/admin/usuarios/novo"
           className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200"
           style={{ background: 'var(--color-sage-main)' }}
         >
           + Novo terapeuta
-        </a>
+        </Link>
       </div>
 
       {lista.length === 0 ? (
@@ -86,7 +87,7 @@ export default async function TerapeutasPage() {
                   {pacientesAtivos.length > 0 && (
                     <div className="flex flex-col gap-1 items-end">
                       {pacientesAtivos.slice(0, 5).map((p: any) => (
-                        <a
+                        <Link
                           key={p.id}
                           href={`/admin/pacientes/${p.id}`}
                           className="text-xs transition-opacity hover:opacity-70"
@@ -96,7 +97,7 @@ export default async function TerapeutasPage() {
                             <span className="font-mono mr-1" style={{ color: 'var(--color-ink-faint)' }}>#{p.codigo_interno}</span>
                           )}
                           {p.nome}
-                        </a>
+                        </Link>
                       ))}
                       {pacientesAtivos.length > 5 && (
                         <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
@@ -108,13 +109,13 @@ export default async function TerapeutasPage() {
                 </div>
 
                 <div className="mt-3 pt-3 border-t flex justify-end" style={{ borderColor: 'var(--color-border-soft)' }}>
-                  <a
+                  <Link
                     href={`/admin/usuarios/${t.id}`}
                     className="text-xs transition-opacity hover:opacity-70"
                     style={{ color: 'var(--color-sage-main)' }}
                   >
                     Ver perfil completo →
-                  </a>
+                  </Link>
                 </div>
               </Card>
             )

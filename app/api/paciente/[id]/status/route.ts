@@ -16,7 +16,9 @@ export async function POST(
     return NextResponse.json({ error: 'Apenas admin ou recepção pode alterar status do paciente' }, { status: 403 })
   }
 
-  const { status, motivo_desativacao } = await request.json()
+  const body = await request.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
+  const { status, motivo_desativacao } = body
   if (!['ativo', 'desativado'].includes(status)) {
     return NextResponse.json({ error: 'Status inválido' }, { status: 400 })
   }
@@ -34,6 +36,7 @@ export async function POST(
     updateData.motivo_desativacao = null
   }
 
-  await adminClient.from('pacientes').update(updateData).eq('id', id)
+  const { error } = await adminClient.from('pacientes').update(updateData).eq('id', id)
+  if (error) return NextResponse.json({ error: 'Erro ao atualizar status.' }, { status: 500 })
   return NextResponse.json({ success: true })
 }

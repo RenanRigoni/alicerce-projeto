@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -89,7 +90,9 @@ export interface Orientacao {
 export interface SolicitacaoAlta {
   id: string
   status: string
+  tipo: string
   motivo: string
+  documento_url: string | null
   argumentacao_recusa: string | null
   criado_em: string
   solicitado_por_nome: string | null
@@ -105,7 +108,6 @@ interface Props {
   orientacoes: Orientacao[]
   altas: SolicitacaoAlta[]
   role: 'admin' | 'recepcao' | 'terapeuta'
-  meuId: string
   ehTerapeutaVinculado: boolean
 }
 
@@ -152,7 +154,7 @@ type Aba = typeof ABAS[number]
 export function PerfilPacienteTabs({
   paciente, terapeutas, responsaveis, dadosClinicos,
   relatorios, documentos, orientacoes, altas,
-  role, meuId, ehTerapeutaVinculado,
+  role, ehTerapeutaVinculado,
 }: Props) {
   const router = useRouter()
   const [abaAtiva, setAbaAtiva] = useState<Aba>('Dados Gerais')
@@ -293,7 +295,6 @@ export function PerfilPacienteTabs({
     router.refresh()
   }
 
-  const isAdmin = role === 'admin'
   const isAdminOuRecepcao = role === 'admin' || role === 'recepcao'
   const podeEditarClinicos = role === 'terapeuta' && ehTerapeutaVinculado
 
@@ -948,43 +949,63 @@ export function PerfilPacienteTabs({
                 Nenhuma solicitação de alta registrada.
               </p>
             </Card>
-          ) : altas.map(a => (
-            <Card key={a.id}>
-              <div className="flex items-start justify-between gap-2 flex-wrap">
-                <div>
-                  <span className="font-medium text-sm" style={{ color: 'var(--color-ink)' }}>Solicitação de alta</span>
-                  {a.solicitado_por_nome && (
-                    <span className="text-sm ml-1.5" style={{ color: 'var(--color-ink-soft)' }}>· {a.solicitado_por_nome}</span>
-                  )}
+          ) : altas.map(a => {
+            const statusStyles: Record<string, React.CSSProperties> = {
+              registrada:           { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
+              confirmada:           { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
+              aprovada:             { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
+              pendente_confirmacao: { background: '#FFFBEB', color: '#92400E' },
+              pendente:             { background: '#FFFBEB', color: '#92400E' },
+              recusada:             { background: '#FEF2F2', color: '#B91C1C' },
+            }
+            const statusLabels: Record<string, string> = {
+              registrada:           'Registrada',
+              confirmada:           'Confirmada',
+              aprovada:             'Aprovada',
+              pendente_confirmacao: 'Aguardando confirmação',
+              pendente:             'Pendente',
+              recusada:             'Recusada',
+            }
+            const tipoLabel = a.tipo === 'responsavel' ? 'Solicitada pelo responsável' : 'Registrada pela terapeuta'
+            return (
+              <Card key={a.id}>
+                <div className="flex items-start justify-between gap-2 flex-wrap">
+                  <div>
+                    <span className="font-medium text-sm" style={{ color: 'var(--color-ink)' }}>{tipoLabel}</span>
+                    {a.solicitado_por_nome && (
+                      <span className="text-sm ml-1.5" style={{ color: 'var(--color-ink-soft)' }}>· {a.solicitado_por_nome}</span>
+                    )}
+                  </div>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full shrink-0"
+                    style={statusStyles[a.status] ?? { background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
+                  >
+                    {statusLabels[a.status] ?? a.status}
+                  </span>
                 </div>
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full shrink-0"
-                  style={
-                    a.status === 'pendente' ? { background: '#FFFBEB', color: '#92400E' }
-                    : a.status === 'aprovada' ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
-                    : { background: '#FEF2F2', color: '#B91C1C' }
-                  }
-                >
-                  {a.status}
-                </span>
-              </div>
-              <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-faint)' }}>
-                {new Date(a.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </div>
-              {a.motivo && (
-                <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--color-border-soft)' }}>
-                  <div className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--color-ink-faint)' }}>Motivo da solicitação</div>
-                  <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{a.motivo}</p>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-faint)' }}>
+                  {new Date(a.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
-              )}
-              {a.argumentacao_recusa && (
-                <div className="mt-3 pt-3 border-t" style={{ borderColor: '#FECACA' }}>
-                  <div className="text-xs uppercase tracking-wide mb-1" style={{ color: '#B91C1C' }}>Recusa da administração</div>
-                  <p className="text-sm whitespace-pre-wrap" style={{ color: '#991B1B' }}>{a.argumentacao_recusa}</p>
-                </div>
-              )}
-            </Card>
-          ))}
+                {a.motivo && (
+                  <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--color-border-soft)' }}>
+                    <div className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--color-ink-faint)' }}>Motivo</div>
+                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-ink-mid)' }}>{a.motivo}</p>
+                  </div>
+                )}
+                {a.documento_url && (
+                  <a
+                    href={a.documento_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs mt-2 inline-block font-medium transition-opacity hover:opacity-70"
+                    style={{ color: 'var(--color-rose-main)' }}
+                  >
+                    Ver documento médico →
+                  </a>
+                )}
+              </Card>
+            )
+          })}
         </div>
       )}
 
@@ -1008,7 +1029,7 @@ export function PerfilPacienteTabs({
 
         return (
           <div className="space-y-2">
-            {itens.map((item, idx) => {
+            {itens.map((item) => {
               const dataFormatada = new Date(item.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
               if (item.tipo === 'alta') {
@@ -1346,7 +1367,7 @@ export function PerfilPacienteTabs({
               {responsaveisDisp.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
                   Nenhum responsável disponível.{' '}
-                  <a href="/admin/usuarios/novo" style={{ color: 'var(--color-rose-main)' }}>Cadastrar novo →</a>
+                  <Link href="/admin/usuarios/novo" style={{ color: 'var(--color-rose-main)' }}>Cadastrar novo →</Link>
                 </p>
               ) : (
                 <select

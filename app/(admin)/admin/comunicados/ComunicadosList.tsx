@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -129,10 +130,9 @@ export function ComunicadosList({ comunicados }: Props) {
         </Card>
       ))}
 
-      {/* Modal confirmação de exclusão */}
-      {confirmarDelete && (
+      {confirmarDelete && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 flex items-start justify-center z-50 p-4 pt-20"
           style={{ background: 'rgba(44,32,24,0.4)' }}
           onClick={() => setConfirmarDelete(null)}
         >
@@ -163,7 +163,8 @@ export function ComunicadosList({ comunicados }: Props) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

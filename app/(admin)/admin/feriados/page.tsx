@@ -7,7 +7,7 @@ export default async function FeriadosPage() {
 
   const { data: feriados } = await supabase
     .from('feriados')
-    .select('id, data, descricao')
+    .select('id, data, descricao, anual')
     .order('data', { ascending: true })
 
   return (
@@ -29,17 +29,24 @@ export default async function FeriadosPage() {
       <Card>
         {feriados && feriados.length > 0 ? (
           <ul className="divide-y" style={{ borderColor: 'var(--color-border-soft)' }}>
-            {feriados.map((f) => (
+            {feriados.map((f: any) => (
               <li key={f.id} className="py-3 flex items-center justify-between first:pt-0 last:pb-0">
                 <div>
-                  <div className="font-medium" style={{ color: 'var(--color-ink)' }}>{f.descricao}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium" style={{ color: 'var(--color-ink)' }}>{(f as any).descricao}</span>
+                    {(f as any).anual && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}>
+                        Anual
+                      </span>
+                    )}
+                  </div>
                   <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-                    {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', {
+                    {new Date((f as any).data + 'T12:00:00').toLocaleDateString('pt-BR', {
                       weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
                     })}
                   </div>
                 </div>
-                <ExcluirFeriadoButton feriadoId={f.id} />
+                <ExcluirFeriadoButton feriadoId={(f as any).id} />
               </li>
             ))}
           </ul>

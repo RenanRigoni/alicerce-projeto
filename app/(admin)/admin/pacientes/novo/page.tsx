@@ -38,7 +38,6 @@ function NovoPacienteForm() {
     data_nascimento: '',
     sexo: '',
     cpf: '',
-    frequencia_atendimento: '',
     turno_preferencia: '',
     convenio_ou_particular: '',
   })
@@ -94,7 +93,7 @@ function NovoPacienteForm() {
         data_nascimento: form.data_nascimento || null,
         sexo: form.sexo || null,
         cpf: form.cpf.trim() || null,
-        frequencia_atendimento: form.frequencia_atendimento.trim() || null,
+        frequencia_atendimento: horariosValidos.length > 0 ? `${horariosValidos.length}x por semana` : null,
         turno_preferencia: form.turno_preferencia || null,
         convenio_ou_particular: form.convenio_ou_particular || null,
         horarios_atendimento: horariosValidos,
@@ -190,20 +189,6 @@ function NovoPacienteForm() {
               value={form.cpf}
               onChange={handle}
               placeholder="000.000.000-00"
-              className="input-base"
-            />
-          </div>
-
-          {/* Frequência */}
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
-              Frequência de atendimento
-            </label>
-            <input
-              name="frequencia_atendimento"
-              value={form.frequencia_atendimento}
-              onChange={handle}
-              placeholder="Ex: 2x por semana"
               className="input-base"
             />
           </div>

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+export const dynamic = 'force-dynamic'
 
 export default async function TerapeutasPage() {
   const supabase = await createClient()
@@ -62,7 +63,7 @@ export default async function TerapeutasPage() {
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium" style={{ color: 'var(--color-ink)' }}>{t.nome}</span>
+                      <Link href={`/admin/usuarios/${t.id}`} className="font-medium hover:underline" style={{ color: 'var(--color-ink)' }}>{t.nome}</Link>
                       {!t.ativo && <Badge color="gray">Inativo</Badge>}
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">

@@ -1,0 +1,95 @@
+Implemente os ajustes abaixo no Portal Alicerce com foco em correções objetivas, sem refatoração ampla.
+
+Regras gerais:
+- Não refatorar arquitetura.
+- Não alterar regra de negócio fora dos itens abaixo.
+- Reutilizar componentes e padrões existentes.
+- Se algum item depender de decisão jurídica/LGPD/COFFITO, não implementar sem validar no código/documentação; apenas registrar recomendação técnica.
+- Ao final, entregar: arquivos alterados, resumo das correções, pontos não implementados com motivo e comandos de teste.
+
+Itens:
+
+1. Novo Paciente
+- Remover o campo manual “Frequência de atendimento”.
+- A frequência deve ser calculada automaticamente pelos horários/dias cadastrados.
+- Exemplo: segunda 10h + quinta 10h = 2x por semana.
+- Se o paciente tiver mais de um terapeuta, o cadastro deve permitir separar horários por terapeuta.
+
+2. Listagens
+- Em /admin/pacientes, tornar nomes dos pacientes clicáveis para abrir o perfil.
+- Em /admin/terapeutas, tornar nomes dos terapeutas clicáveis.
+- Nas listas de pacientes, responsáveis, terapeutas e usuários, adicionar filtro de texto no topo para filtrar por nome enquanto digita.
+
+3. CPF e dados de responsáveis
+- Verificar se CPF do paciente deve ser exibido na plataforma conforme LGPD/COFFITO. Se houver risco, documentar recomendação antes de expor.
+- No cadastro de responsável, adicionar CPF.
+- Dados do responsável: nome completo, CPF, e-mail, telefone, endereço e contato de emergência.
+- Endereço deve conter: CEP, rua, número e bairro.
+- Se viável, ao preencher CEP, autocompletar endereço usando serviço público de CEP. CEP deve aparecer como primeiro campo do endereço.
+
+4. Cadastro de responsável / vínculo com paciente
+- Remover da primeira tela de cadastro de responsável a seção opcional “Vincular paciente existente”.
+- Após criar o responsável, manter o fluxo atual que abre a tela “Vincular paciente”.
+- No perfil do responsável, em “Pacientes vinculados”, quando não houver paciente vinculado, mostrar duas ações:
+  - “Cadastrar paciente”: cria paciente novo.
+  - “Vincular paciente existente”: associa paciente já cadastrado ao responsável.
+
+5. Navegação / botão voltar
+- Corrigir redirecionamentos incorretos em fluxos de cadastro.
+- Caso identificado: após criar novo usuário e ir para a tela de vínculo, o botão voltar do navegador retorna para lista de usuários. O esperado é voltar para /admin/usuarios/novo preservando os dados inseridos, se possível.
+- Verificar outras telas onde o botão voltar retorna indevidamente para “Usuários” e corrigir a origem correta.
+
+6. Usuários desativados / acesso bloqueado
+- Se um responsável/usuário for desativado, sessões ativas desse usuário devem ser invalidadas ou bloqueadas no próximo carregamento.
+- Login de usuário desativado não deve mostrar “E-mail ou senha incorretos”.
+- Mensagem esperada: “Usuário desativado. Entre em contato.”
+- Para “Bloquear acesso ao portal da família”, quando o login for negado, mostrar: “Acesso bloqueado. Entre em contato.”
+
+7. Permissões de terapeutas
+- Terapeuta não pode editar dados de paciente se a permissão estiver desativada.
+- Se a permissão estiver ativada, pode editar.
+- Corrigir caso atual: terapeuta consegue editar mesmo sem permissão.
+- Corrigir também o caso da terapeuta “Camila Ferreira”: ao ativar permissões, elas não são aplicadas no perfil dela.
+
+8. Dashboard
+- Criar seção “Altas recentes” nas telas iniciais de:
+  - Admin
+  - Terapeuta
+  - Recepção
+- Exibir apenas altas recentes relevantes, com paciente, data e responsável/terapeuta quando disponível.
+
+9. Feriados
+- Em cadastro de feriados, adicionar opção “Anual”.
+- Quando marcada, o feriado deve se repetir todo ano na mesma data.
+- Exemplo: Natal em 25/12 anual.
+
+10. Comunicados
+- Ao cadastrar comunicado, permitir anexar imagem ou PDF.
+- Se for imagem, exibir na tela inicial após login e permitir abrir/zoom ao clicar.
+- Se for PDF, exibir opção para baixar.
+- Corrigir exclusão de comunicado:
+  - confirmação/cancelamento não deve aparecer no final da página quando a lista é grande;
+  - após confirmar, o comunicado deve ser realmente excluído.
+
+11. Auditoria
+- Corrigir tela de Auditoria, pois registros recentes não carregam.
+- Último registro visível atualmente: 24/04/2026, “André Nascimento visualizou relatório”.
+- Auditoria deve exibir apenas eventos relevantes.
+- Remover/ocultar eventos irrelevantes como “visualizou paciente”.
+- Criar uma lista clara de eventos auditáveis relevantes, por exemplo:
+  - criação/edição/desativação de usuário;
+  - criação/edição/desativação de paciente;
+  - alteração de permissões;
+  - bloqueio/desbloqueio de acesso;
+  - criação/exclusão de relatório;
+  - criação/exclusão de documento;
+  - solicitação/confirmação de alta;
+  - alteração de agenda;
+  - login bloqueado por usuário desativado ou portal bloqueado.
+
+12. Relatórios do paciente
+- No perfil do paciente > guia Relatório, remover botão “Anexar documento”.
+- Em “Novo Relatório”, o campo “Anexo (PDF ou imagem)” deve permitir múltiplos arquivos.
+- Ao gerar autenticação/hash do relatório, manter SHA-256 e acrescentar também:
+  - nome do terapeuta que criou o relatório;
+  - CREFITO do terapeuta, se existir no cadastro.

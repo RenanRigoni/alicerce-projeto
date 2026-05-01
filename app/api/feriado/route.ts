@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
   if (!payload) return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
   const dataFeriado: string = payload.data
   const descricao: string = payload.descricao
+  const anual: boolean = payload.anual === true
 
   if (!dataFeriado?.trim() || !descricao?.trim()) {
     return NextResponse.json({ error: 'Data e descrição são obrigatórias' }, { status: 400 })
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
   const { error } = await adminClient.from('feriados').insert({
     data: dataFeriado.trim(),
     descricao: descricao.trim(),
+    anual,
     criado_por: user.id,
   })
 

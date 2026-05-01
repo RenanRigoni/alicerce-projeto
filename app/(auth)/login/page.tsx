@@ -21,7 +21,13 @@ export default function LoginPage() {
     const supabase = createClient()
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha })
     if (error) { setErro('E-mail ou senha incorretos.'); setCarregando(false); return }
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+    const { data: profile } = await supabase.from('profiles').select('role, ativo').eq('id', data.user.id).single()
+    if (!profile?.ativo) {
+      await supabase.auth.signOut()
+      setErro('Usuário desativado. Entre em contato.')
+      setCarregando(false)
+      return
+    }
     const role = profile?.role
     if (role === 'pai')                               router.push('/portal/dashboard')
     else if (role === 'terapeuta')                    router.push('/terapia/dashboard')

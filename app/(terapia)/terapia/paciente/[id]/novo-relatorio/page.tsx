@@ -17,7 +17,7 @@ export default function NovoRelatorioPage() {
   const [titulo, setTitulo] = useState('')
   const [previa, setPrevia] = useState('')
   const [adicionais, setAdicionais] = useState('')
-  const [arquivo, setArquivo] = useState<File | null>(null)
+  const [arquivos, setArquivos] = useState<File[]>([])
   const [salvando, setSalvando] = useState(false)
   const [publicando, setPublicando] = useState(false)
   const [erro, setErro] = useState('')
@@ -33,11 +33,11 @@ export default function NovoRelatorioPage() {
   const [nomeConfirmacao, setNomeConfirmacao] = useState('')
   const [nomeUsuario, setNomeUsuario] = useState('')
 
-  async function uploadPdf(): Promise<{ path: string } | null> {
-    if (!arquivo) return null
+  async function uploadArquivos(): Promise<{ path: string } | null> {
+    if (arquivos.length === 0) return null
 
     const formData = new FormData()
-    formData.append('arquivo', arquivo)
+    formData.append('arquivo', arquivos[0])
     formData.append('paciente_id', pacienteId)
 
     const res = await fetch('/api/upload/relatorio-pdf', {
@@ -58,8 +58,8 @@ export default function NovoRelatorioPage() {
     setErro('')
     setSalvando(true)
 
-    const upload = await uploadPdf()
-    if (arquivo && !upload) { setSalvando(false); return }
+    const upload = await uploadArquivos()
+    if (arquivos.length > 0 && !upload) { setSalvando(false); return }
 
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -99,8 +99,8 @@ export default function NovoRelatorioPage() {
     setPublicando(true)
     setErro('')
 
-    const upload = await uploadPdf()
-    if (arquivo && !upload) { setPublicando(false); return }
+    const upload = await uploadArquivos()
+    if (arquivos.length > 0 && !upload) { setPublicando(false); return }
 
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -117,6 +117,8 @@ export default function NovoRelatorioPage() {
       relatorio_id: relatorioId,
       paciente_id: pacienteId,
       terapeuta_id: user!.id,
+      nome_terapeuta: nomeUsuario,
+      crefito_terapeuta: creditoUsuario.trim() || null,
       identificacao: titulo.trim(),
       conclusao: previa.trim() || null,
       obs_clinicas: adicionais.trim() || null,
@@ -224,21 +226,23 @@ export default function NovoRelatorioPage() {
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
               Anexo (PDF ou imagem)
             </label>
-            <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setArquivo(e.target.files?.[0] ?? null)} className="hidden" />
+            <input ref={inputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={e => setArquivos(Array.from(e.target.files ?? []))} className="hidden" />
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
               className="w-full rounded-xl px-4 py-5 text-sm text-center transition-colors"
               style={{
-                border: arquivo ? '2px dashed var(--color-rose-soft)' : '2px dashed var(--color-border)',
-                color: arquivo ? 'var(--color-rose-main)' : 'var(--color-ink-faint)',
+                border: arquivos.length > 0 ? '2px dashed var(--color-rose-soft)' : '2px dashed var(--color-border)',
+                color: arquivos.length > 0 ? 'var(--color-rose-main)' : 'var(--color-ink-faint)',
                 background: 'transparent',
               }}
             >
-              {arquivo ? `✓ ${arquivo.name}` : 'Clique para anexar o relatório em PDF'}
+              {arquivos.length > 0
+                ? arquivos.map(f => f.name).join(', ')
+                : 'Clique para anexar o relatório em PDF'}
             </button>
             <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
-              PDF ou imagem — máx. 15 MB. O arquivo contém o relatório completo.
+              PDF ou imagem — máx. 15 MB por arquivo. Primeiro arquivo será usado como anexo principal.
             </p>
           </div>
 

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { EditarPacienteTerapeutaForm } from './EditarPacienteTerapeutaForm'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export default async function EditarPacienteTerapeutaPage({
   params,
@@ -13,8 +14,9 @@ export default async function EditarPacienteTerapeutaPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
   if (profile?.role !== 'terapeuta') notFound()
+  if (!temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'editar_pacientes')) notFound()
 
   const { data: vinculo } = await supabase
     .from('paciente_terapeutas')

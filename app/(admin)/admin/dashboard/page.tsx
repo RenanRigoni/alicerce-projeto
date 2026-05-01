@@ -19,6 +19,7 @@ export default async function AdminDashboard() {
     { data: familiasDados },
     { count: totalTerapeutas },
     { data: altasPendentes },
+    { data: altasRecentes },
     { data: relatóriosRecentes },
     { data: feriados },
     { data: comunicados },
@@ -34,6 +35,12 @@ export default async function AdminDashboard() {
       .select('id, criado_em, motivo, pacientes(nome), profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
       .eq('status', 'pendente')
       .order('criado_em', { ascending: true }),
+    supabase
+      .from('solicitacoes_alta')
+      .select('criado_em, pacientes(id, nome), profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
+      .in('status', ['confirmada', 'registrada', 'aprovada'])
+      .order('criado_em', { ascending: false })
+      .limit(5),
     !isRecepcao
       ? supabase
           .from('relatorios')
@@ -144,6 +151,37 @@ export default async function AdminDashboard() {
           </Card>
         </Link>
       </div>
+
+      {/* Altas recentes */}
+      {altasRecentes && altasRecentes.length > 0 && (
+        <div>
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            Altas recentes
+          </h2>
+          <Card>
+            <ul className="space-y-2">
+              {altasRecentes.map((a: any, i: number) => (
+                <li key={i} className="flex items-center justify-between gap-3">
+                  <div className="text-sm min-w-0">
+                    <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
+                      {(a.pacientes as any)?.nome ?? '—'}
+                    </span>
+                    {(a.profiles as any)?.nome && (
+                      <span style={{ color: 'var(--color-ink-soft)' }}> · {(a.profiles as any).nome}</span>
+                    )}
+                  </div>
+                  <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-ink-faint)' }}>
+                    {new Date(a.criado_em).toLocaleDateString('pt-BR')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      )}
 
       {/* Relatórios recentes */}
       {!isRecepcao && (

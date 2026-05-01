@@ -16,6 +16,7 @@ export default async function TerapiaDashboard() {
     { data: especiais },
     { data: feriados },
     { data: comunicados },
+    { data: vinculosAlta },
   ] = await Promise.all([
     supabase
       .from('paciente_terapeutas')
@@ -40,9 +41,15 @@ export default async function TerapiaDashboard() {
       .select('id, titulo, conteudo, criado_em')
       .order('criado_em', { ascending: false })
       .limit(3),
+    supabase
+      .from('paciente_terapeutas')
+      .select('pacientes!inner(id, nome, status)')
+      .eq('terapeuta_id', user!.id)
+      .eq('pacientes.status', 'alta'),
   ])
 
   const pacientesAtivos = (vinculos ?? []).filter((v: any) => v.pacientes?.status === 'ativo')
+  const pacientesComAlta = (vinculosAlta ?? []).map((v: any) => v.pacientes).filter(Boolean)
 
   // Próximas sessões recorrentes (próximos 30 dias)
   const pacientesComHorario = pacientesAtivos.map((v: any) => v.pacientes).filter(Boolean)
@@ -114,6 +121,32 @@ export default async function TerapiaDashboard() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Altas recentes */}
+      {pacientesComAlta.length > 0 && (
+        <div>
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            Altas recentes
+          </h2>
+          <Card>
+            <ul className="space-y-2">
+              {pacientesComAlta.slice(0, 5).map((p: any) => (
+                <li key={p.id} className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
+                  <a href={`/terapia/paciente/${p.id}`} className="font-medium hover:underline" style={{ color: 'var(--color-ink)' }}>
+                    {p.nome}
+                  </a>
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded-full" style={{ background: '#EFF6FF', color: '#1D4ED8' }}>
+                    Alta
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </div>
       )}
 

@@ -20,6 +20,7 @@ interface Paciente {
 
 export function PacientesLista({ todos }: { todos: Paciente[] }) {
   const [filtros, setFiltros] = useState<Set<StatusPaciente>>(new Set(['ativo']))
+  const [busca, setBusca] = useState('')
 
   function toggleFiltro(status: StatusPaciente) {
     setFiltros(prev => {
@@ -30,7 +31,10 @@ export function PacientesLista({ todos }: { todos: Paciente[] }) {
     })
   }
 
-  const lista = todos.filter(p => filtros.has(p.status))
+  const lista = todos.filter(p =>
+    filtros.has(p.status) &&
+    (!busca.trim() || p.nome.toLowerCase().includes(busca.trim().toLowerCase()))
+  )
   const filtroLabel = filtros.size === 3
     ? 'Todos os pacientes'
     : Array.from(filtros).map(s => statusLabel[s]).join(' + ')
@@ -45,6 +49,13 @@ export function PacientesLista({ todos }: { todos: Paciente[] }) {
           <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>{filtroLabel}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <input
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+            placeholder="Filtrar por nome..."
+            className="input-base text-sm"
+            style={{ width: 200 }}
+          />
           <div className="flex items-center gap-2">
             {(['ativo', 'desativado', 'alta'] as StatusPaciente[]).map(s => (
               <button
@@ -89,7 +100,7 @@ export function PacientesLista({ todos }: { todos: Paciente[] }) {
                     </span>
                   )}
                   <div className="min-w-0">
-                    <div className="font-medium truncate" style={{ color: 'var(--color-ink)' }}>{p.nome}</div>
+                    <Link href={`/admin/pacientes/${p.id}`} className="font-medium truncate hover:underline" style={{ color: 'var(--color-ink)' }}>{p.nome}</Link>
                     {p.frequencia_atendimento && (
                       <div className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>{p.frequencia_atendimento}</div>
                     )}

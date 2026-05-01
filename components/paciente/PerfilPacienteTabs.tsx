@@ -700,17 +700,6 @@ export function PerfilPacienteTabs({
               </Card>
             </div>
           )}
-          {role === 'terapeuta' && paciente.status === 'ativo' && (
-            <div className="text-right">
-              <a
-                href={`/terapia/paciente/${paciente.id}/novo-documento`}
-                className="text-xs transition-opacity hover:opacity-70"
-                style={{ color: 'var(--color-ink-soft)' }}
-              >
-                + Anexar documento
-              </a>
-            </div>
-          )}
         </div>
       )}
 

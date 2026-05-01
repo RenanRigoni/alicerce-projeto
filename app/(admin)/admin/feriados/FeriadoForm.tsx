@@ -10,6 +10,7 @@ export function FeriadoForm() {
   const [aberto, setAberto] = useState(false)
   const [data, setData] = useState('')
   const [descricao, setDescricao] = useState('')
+  const [anual, setAnual] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -21,7 +22,7 @@ export function FeriadoForm() {
     const res = await fetch('/api/feriado', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data, descricao }),
+      body: JSON.stringify({ data, descricao, anual }),
     })
 
     const json = await res.json()
@@ -34,6 +35,7 @@ export function FeriadoForm() {
 
     setData('')
     setDescricao('')
+    setAnual(false)
     setAberto(false)
     router.refresh()
   }
@@ -68,6 +70,18 @@ export function FeriadoForm() {
           placeholder="Ex: Dia do Trabalho, Natal, Carnaval..."
           className="input-base"
         />
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={anual}
+            onChange={e => setAnual(e.target.checked)}
+            className="h-4 w-4 rounded"
+            style={{ accentColor: 'var(--color-rose-main)' }}
+          />
+          <span className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
+            Repetir anualmente nesta data
+          </span>
+        </label>
         {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
         <div className="flex gap-3">
           <Button onClick={handleSalvar} disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</Button>

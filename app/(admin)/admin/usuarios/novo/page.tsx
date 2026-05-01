@@ -220,46 +220,6 @@ export default function NovoUsuarioPage() {
             </div>
           )}
 
-          {/* Paciente pré-selecionado (role=pai) */}
-          {form.role === 'pai' && (
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium" style={labelStyle}>
-                  Vincular paciente existente
-                </label>
-                <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>opcional</span>
-              </div>
-              {pacientes.length === 0 ? (
-                <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhum paciente ativo encontrado.</p>
-              ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {pacientes.map(p => (
-                    <label key={p.id} className="flex items-center gap-2.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={pacientesSelecionados.includes(p.id)}
-                        onChange={() => togglePaciente(p.id)}
-                        className="w-4 h-4"
-                        style={{ accentColor: 'var(--color-rose-main)' }}
-                      />
-                      <span className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
-                        {p.codigo_interno && (
-                          <span className="font-mono text-xs mr-1.5" style={{ color: 'var(--color-ink-faint)' }}>
-                            #{p.codigo_interno}
-                          </span>
-                        )}
-                        {p.nome}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              <p className="text-xs mt-1.5" style={{ color: 'var(--color-ink-faint)' }}>
-                Se o paciente ainda não foi cadastrado, você pode cadastrá-lo na próxima etapa.
-              </p>
-            </div>
-          )}
-
           {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
 
           <div className="flex gap-3 pt-2">

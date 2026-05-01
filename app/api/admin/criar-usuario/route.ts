@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     email,
     password: senha,
     email_confirm: true,
-    user_metadata: { nome, role },
+    user_metadata: { nome, role, ...(crefito?.trim() ? { crefito: crefito.trim() } : {}) },
   })
 
   if (authError) {

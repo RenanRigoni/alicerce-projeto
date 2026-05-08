@@ -26,14 +26,21 @@ export async function proxy(request: NextRequest) {
   // getSession = local cookie read, sem chamada de rede (rápido)
   // Role protection é feita nos layouts (que já chamam getUser + verificam role)
   const { data: { session } } = await supabase.auth.getSession()
-  const pathname = request.nextUrl.pathname
+  const { pathname } = request.nextUrl
 
-  const publicRoutes = ['/login', '/recuperar-senha', '/privacidade']
-  if (publicRoutes.includes(pathname)) return supabaseResponse
+  // Rotas públicas (não exigem sessão)
+  const publicRoutes = ['/login', '/recuperar-senha', '/atualizar-senha', '/privacidade']
+  const isPublic = publicRoutes.some(r => pathname.startsWith(r))
 
-  // Não autenticado → login
-  if (!session) {
+  // Não autenticado tentando acessar rota protegida → login
+  if (!session && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Autenticado tentando acessar login/recuperar-senha → raiz (que redireciona ao dashboard)
+  const authOnlyRoutes = ['/login', '/recuperar-senha']
+  if (session && authOnlyRoutes.some(r => pathname.startsWith(r))) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   return supabaseResponse

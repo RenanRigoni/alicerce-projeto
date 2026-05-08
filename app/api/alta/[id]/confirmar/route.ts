@@ -1,16 +1,8 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarHash } from '@/lib/hash/gerar-hash'
 import { notificarResponsaveisDoPaciente } from '@/lib/notificacoes/inserir'
-
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export async function PATCH(
   _request: NextRequest,
@@ -26,7 +18,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Apenas terapeutas podem confirmar alta' }, { status: 403 })
   }
 
-  const admin = adminClient()
+  const admin = createAdminClient()
 
   const { data: solicitacao } = await admin
     .from('solicitacoes_alta')
@@ -59,14 +51,23 @@ export async function PATCH(
     confirmado_em: agora,
   })
 
-  const { error: errUpdate } = await admin.from('solicitacoes_alta').update({
-    status: 'confirmada',
-    confirmado_por: user.id,
-    confirmado_em: agora,
-    hash_integridade: hash,
-  }).eq('id', id)
+  // UPDATE atômico — só confirma se ainda estiver pendente (evita dupla confirmação)
+  const { data: rowsConfirmadas, error: errUpdate } = await admin
+    .from('solicitacoes_alta')
+    .update({
+      status: 'confirmada',
+      confirmado_por: user.id,
+      confirmado_em: agora,
+      hash_integridade: hash,
+    })
+    .eq('id', id)
+    .eq('status', 'pendente_confirmacao')
+    .select('id')
 
   if (errUpdate) return NextResponse.json({ error: 'Erro ao confirmar alta' }, { status: 500 })
+  if (!rowsConfirmadas?.length) {
+    return NextResponse.json({ error: 'Solicitação já foi processada por outra requisição' }, { status: 409 })
+  }
 
   // Desativa o paciente
   await admin.from('pacientes').update({ status: 'alta' }).eq('id', solicitacao.paciente_id)

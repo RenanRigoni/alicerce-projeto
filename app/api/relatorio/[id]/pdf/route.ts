@@ -1,5 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createElement } from 'react'
@@ -73,11 +73,7 @@ export async function POST(
     diagnostico: pacienteRaw?.pacientes_dados_clinicos?.diagnostico ?? null,
   }
 
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const adminClient = createAdminClient()
 
   const path = `${relatorio.paciente_id}/${id}.pdf`
   const sourcePath = typeof body.sourcePath === 'string' ? body.sourcePath : null
@@ -173,11 +169,7 @@ export async function GET(
     return NextResponse.redirect(json.url)
   }
 
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const adminClient = createAdminClient()
 
   const { data: signed } = await adminClient.storage
     .from('relatorios-pdf')

@@ -20,7 +20,14 @@ export async function POST(
 
   if (!relatorio) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
   if (relatorio.terapeuta_id !== user.id) return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
-  if (relatorio.status !== 'publicado') return NextResponse.json({ error: 'Relatório não publicado' }, { status: 409 })
+  if (relatorio.status === 'publicado') return NextResponse.json({ error: 'Relatório já publicado' }, { status: 409 })
+
+  const { error: updateError } = await supabase
+    .from('relatorios')
+    .update({ status: 'publicado' })
+    .eq('id', id)
+
+  if (updateError) return NextResponse.json({ error: 'Erro ao publicar relatório' }, { status: 500 })
 
   await notificarResponsaveisDoPaciente(
     relatorio.paciente_id,

@@ -1,5 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function PATCH(
@@ -21,11 +21,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Campo ativo deve ser boolean' }, { status: 400 })
   }
 
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const adminClient = createAdminClient()
 
   // Atualiza flag na tabela profiles
   await adminClient.from('profiles').update({ ativo }).eq('id', id)

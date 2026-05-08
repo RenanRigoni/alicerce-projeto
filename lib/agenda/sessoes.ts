@@ -36,22 +36,22 @@ export function gerarSessoes(
       const dow = DOW_MAP[h.dia]
       if (dow === undefined) continue
 
-      const [hh, mm] = h.hora.split(':').map(Number)
-
       const curr = new Date(dataInicio)
-      curr.setHours(hh, mm, 0, 0)
+      // Avança até o dia da semana correto sem alterar horas (evita confusão de timezone)
       const daysToAdd = (dow - curr.getDay() + 7) % 7
       curr.setDate(curr.getDate() + daysToAdd)
 
       while (curr <= dataFim) {
         const dateStr = localDateStr(curr)
         if (!ferSet.has(dateStr)) {
+          // Monta datetime com offset fixo de Brasília (UTC-3) — evita conversão pelo timezone do servidor
+          const dataHoraBRT = `${dateStr}T${h.hora}:00-03:00`
           sessoes.push({
             id: `rec-${pac.id}-${dateStr}-${h.hora.replace(':', '')}`,
             tipo: 'sessao',
             titulo: `Sessão — ${pac.nome}`,
             motivo: null,
-            data_hora: curr.toISOString(),
+            data_hora: dataHoraBRT,
             duracao_minutos: 50,
             paciente: { id: pac.id, nome: pac.nome },
           })

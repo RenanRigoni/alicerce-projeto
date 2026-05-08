@@ -36,7 +36,7 @@ export async function PATCH(
   const { error } = await supabase
     .from('relatorios')
     .update({
-      identificacao: identificacao ?? undefined,
+      ...(identificacao !== undefined ? { identificacao } : {}),
       conclusao: conclusao ?? null,
       obs_clinicas: obs_clinicas ?? null,
       ...(pdf_url !== undefined ? { pdf_url } : {}),

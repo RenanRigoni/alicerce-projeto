@@ -1,5 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function DELETE(
@@ -22,11 +22,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Sem permissão para excluir pacientes' }, { status: 403 })
   }
 
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const adminClient = createAdminClient()
 
   // LGPD + COFFITO: qualquer registro clínico implica guarda obrigatória de 20 anos.
   // Bloqueia exclusão física se existir QUALQUER dado clínico do paciente.

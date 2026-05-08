@@ -27,17 +27,14 @@ export function EditarRelatorioForm({ relatorio }: { relatorio: Relatorio }) {
   const [erro, setErro] = useState('')
 
   async function uploadPdf(): Promise<string | null> {
-    if (!arquivo) return undefined as any
+    if (!arquivo) return null
     const formData = new FormData()
     formData.append('arquivo', arquivo)
     formData.append('paciente_id', relatorio.paciente_id)
-    formData.append('tipo', 'pdf')
-    formData.append('descricao', titulo || 'Relatório')
-    formData.append('visivel_pais', 'false')
-    const res = await fetch('/api/documento/upload', { method: 'POST', body: formData })
+    const res = await fetch('/api/upload/relatorio-pdf', { method: 'POST', body: formData })
     if (!res.ok) return null
     const json = await res.json()
-    return json.url ?? null
+    return json.path ?? null
   }
 
   async function handleSalvar() {

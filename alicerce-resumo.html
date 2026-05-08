@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alicerce — Resumo do Sistema</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f7f8fc;
+      color: #1a1a2e;
+      line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, #4f7fff 0%, #7c53d4 100%);
+      color: white;
+      padding: 48px 32px 36px;
+      text-align: center;
+    }
+    header h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p { margin-top: 8px; opacity: 0.88; font-size: 1.05rem; }
+    .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.82rem;
+      margin-top: 14px;
+      letter-spacing: 0.4px;
+    }
+    main { max-width: 860px; margin: 0 auto; padding: 40px 24px 64px; }
+
+    section { margin-bottom: 40px; }
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #4f7fff;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e0e7ff;
+    }
+
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px 22px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      border: 1px solid #eaecf8;
+    }
+    .card .icon { font-size: 1.6rem; margin-bottom: 10px; }
+    .card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; color: #1a1a2e; }
+    .card p { font-size: 0.9rem; color: #555; }
+
+    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .feature-list li {
+      background: white;
+      border-radius: 10px;
+      padding: 14px 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      border: 1px solid #eaecf8;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 0.93rem;
+      color: #333;
+    }
+    .feature-list li .bullet {
+      background: #e0e7ff;
+      color: #4f7fff;
+      border-radius: 50%;
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+    .role-card {
+      background: white;
+      border-radius: 12px;
+      padding: 18px;
+      border: 1px solid #eaecf8;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    .role-card .role-icon { font-size: 2rem; margin-bottom: 8px; }
+    .role-card h3 { font-size: 0.95rem; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+    .role-card p { font-size: 0.83rem; color: #666; }
+
+    .tech-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .pill {
+      background: #e0e7ff;
+      color: #3a56c5;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .pill.green { background: #dcfce7; color: #166534; }
+    .pill.purple { background: #f3e8ff; color: #6b21a8; }
+
+    .highlight-box {
+      background: linear-gradient(135deg, #e0e7ff, #f3e8ff);
+      border-radius: 12px;
+      padding: 22px 24px;
+      border: 1px solid #c7d2fe;
+    }
+    .highlight-box p { font-size: 0.93rem; color: #3a3a6e; }
+    .highlight-box strong { color: #4f7fff; }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🏥 Alicerce Espaço Terapêutico Infantil</h1>
+  <p>Portal de Gestão Clínica e Comunicação com Famílias</p>
+  <span class="badge">Resumo do Sistema — Abril 2026</span>
+</header>
+
+<main>
+
+  <!-- O QUE É -->
+  <section>
+    <h2>O que foi desenvolvido</h2>
+    <div class="highlight-box">
+      <p>
+        Foi criado um <strong>sistema web completo e exclusivo</strong> para a clínica Alicerce,
+        com três portais integrados: um para <strong>administração/recepção</strong>,
+        um para <strong>terapeutas</strong> e um para <strong>responsáveis dos pacientes</strong>.
+        Todo o sistema é hospedado na nuvem, acessível por qualquer navegador,
+        com login seguro e dados protegidos de acordo com a <strong>LGPD</strong> e as normas do <strong>COFFITO</strong>.
+      </p>
+    </div>
+  </section>
+
+  <!-- PERFIS DE ACESSO -->
+  <section>
+    <h2>Quem usa o sistema</h2>
+    <div class="roles">
+      <div class="role-card">
+        <div class="role-icon">🛡️</div>
+        <h3>Administração</h3>
+        <p>Visão completa da clínica, gestão de usuários, auditoria e aprovações.</p>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">🗂️</div>
+        <h3>Recepção</h3>
+        <p>Cadastro de pacientes, agendamentos e comunicados.</p>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">🧑‍⚕️</div>
+        <h3>Terapeuta</h3>
+        <p>Agenda, prontuário clínico, relatórios, orientações e alta.</p>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">👨‍👩‍👧</div>
+        <h3>Responsável</h3>
+        <p>Acompanha o filho, vê relatórios, orientações e calendário de sessões.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNCIONALIDADES PRINCIPAIS -->
+  <section>
+    <h2>Funcionalidades principais</h2>
+    <ul class="feature-list">
+      <li>
+        <span class="bullet">1</span>
+        <div><strong>Cadastro completo de pacientes</strong> — dados pessoais, responsáveis, diagnóstico, escola, metas terapêuticas e horários de atendimento. CPF armazenado de forma criptografada.</div>
+      </li>
+      <li>
+        <span class="bullet">2</span>
+        <div><strong>Agenda e calendário de sessões</strong> — sistema gera automaticamente as sessões recorrentes com base nos horários cadastrados, respeita feriados e exibe visão mensal/semanal para cada terapeuta.</div>
+      </li>
+      <li>
+        <span class="bullet">3</span>
+        <div><strong>Relatórios clínicos com assinatura digital</strong> — terapeuta cria rascunho, preenche as seções do relatório, assina digitalmente e publica. Relatório publicado fica disponível para os responsáveis em PDF, com hash de integridade (norma COFFITO).</div>
+      </li>
+      <li>
+        <span class="bullet">4</span>
+        <div><strong>Prontuário clínico restrito</strong> — dados clínicos detalhados do paciente (objetivos, evolução, observações comportamentais) são acessíveis somente pelo terapeuta responsável.</div>
+      </li>
+      <li>
+        <span class="bullet">5</span>
+        <div><strong>Orientações para famílias</strong> — terapeuta envia orientações em texto, vídeo, imagem ou PDF diretamente para o portal dos responsáveis.</div>
+      </li>
+      <li>
+        <span class="bullet">6</span>
+        <div><strong>Portal do responsável</strong> — família acessa relatórios publicados, documentos, orientações, calendário de sessões e comunicados da clínica em um só lugar.</div>
+      </li>
+      <li>
+        <span class="bullet">7</span>
+        <div><strong>Fluxo de alta terapêutica</strong> — terapeuta solicita alta, administração analisa e aprova ou recusa, notificação gerada automaticamente para todos os envolvidos.</div>
+      </li>
+      <li>
+        <span class="bullet">8</span>
+        <div><strong>Comunicados da clínica</strong> — admin/recepção publica avisos que aparecem nos dashboards de todos os usuários.</div>
+      </li>
+      <li>
+        <span class="bullet">9</span>
+        <div><strong>Upload de documentos e mídias</strong> — arquivos (laudos, exames, vídeos, imagens) podem ser anexados ao prontuário ou às orientações, com controle de visibilidade para a família.</div>
+      </li>
+      <li>
+        <span class="bullet">10</span>
+        <div><strong>Notificações internas</strong> — sino de notificações no topo do sistema; eventos como alta, novo relatório e comunicados geram alertas em tempo real para os usuários.</div>
+      </li>
+      <li>
+        <span class="bullet">11</span>
+        <div><strong>Gestão de usuários e permissões</strong> — admin cria contas, define funções e pode personalizar permissões individuais de cada colaborador sem precisar de suporte técnico.</div>
+      </li>
+      <li>
+        <span class="bullet">12</span>
+        <div><strong>Log de auditoria</strong> — todo acesso, edição e ação realizada no sistema é registrada automaticamente (quem fez, o quê, quando), visível apenas pela administração.</div>
+      </li>
+      <li>
+        <span class="bullet">13</span>
+        <div><strong>Conformidade LGPD</strong> — responsáveis aceitam termo de consentimento no primeiro acesso, podem exportar todos os próprios dados e a clínica conta com documentos RIPD e ROPA gerados.</div>
+      </li>
+      <li>
+        <span class="bullet">14</span>
+        <div><strong>Recuperação de senha</strong> — usuários que esquecem a senha recebem link de redefinição por e-mail, sem precisar acionar ninguém da clínica.</div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- DASHBOARDS -->
+  <section>
+    <h2>Painéis de controle (dashboards)</h2>
+    <div class="card-grid">
+      <div class="card">
+        <div class="icon">📊</div>
+        <h3>Dashboard — Admin</h3>
+        <p>Total de pacientes ativos, famílias, terapeutas, solicitações de alta pendentes, relatórios recentes, próximos feriados e comunicados.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🗓️</div>
+        <h3>Dashboard — Terapeuta</h3>
+        <p>Próximas sessões do dia, pacientes ativos, agenda semanal, feriados e comunicados da clínica.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🌟</div>
+        <h3>Dashboard — Família</h3>
+        <p>Orientações recentes, próximas sessões do filho, últimos relatórios publicados, calendário mensal e comunicados.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECNOLOGIA -->
+  <section>
+    <h2>Tecnologia utilizada</h2>
+    <p style="font-size:0.9rem; color:#555; margin-bottom:12px;">
+      Sistema moderno, desenvolvido com tecnologias amplamente utilizadas no mercado, garantindo segurança, velocidade e facilidade de manutenção futura.
+    </p>
+    <div class="tech-pills">
+      <span class="pill">Next.js (React)</span>
+      <span class="pill">TypeScript</span>
+      <span class="pill green">Supabase</span>
+      <span class="pill green">PostgreSQL</span>
+      <span class="pill purple">Tailwind CSS</span>
+      <span class="pill">Autenticação segura (JWT)</span>
+      <span class="pill green">RLS (segurança por linha)</span>
+      <span class="pill purple">Geração de PDF</span>
+      <span class="pill">Criptografia AES (CPF)</span>
+      <span class="pill">Armazenamento em nuvem</span>
+    </div>
+  </section>
+
+  <!-- SEGURANÇA -->
+  <section>
+    <h2>Segurança e conformidade</h2>
+    <ul class="feature-list">
+      <li>
+        <span class="bullet">✓</span>
+        <div><strong>LGPD</strong> — consentimento, exportação de dados, política de privacidade e documentos RIPD/ROPA.</div>
+      </li>
+      <li>
+        <span class="bullet">✓</span>
+        <div><strong>COFFITO</strong> — relatórios com assinatura digital e hash de integridade (Art. 37).</div>
+      </li>
+      <li>
+        <span class="bullet">✓</span>
+        <div><strong>Isolamento de dados</strong> — cada usuário vê apenas o que tem permissão; segurança aplicada diretamente no banco de dados (Row Level Security).</div>
+      </li>
+      <li>
+        <span class="bullet">✓</span>
+        <div><strong>Auditoria completa</strong> — rastreabilidade total de todas as ações realizadas no sistema.</div>
+      </li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  Alicerce Espaço Terapêutico Infantil &mdash; Sistema desenvolvido sob medida &mdash; 2026
+</footer>
+
+</body>
+</html>

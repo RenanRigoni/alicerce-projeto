@@ -1,5 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -13,18 +13,25 @@ export async function POST(request: NextRequest) {
 
   if (!arquivo) return NextResponse.json({ error: 'Arquivo obrigatório.' }, { status: 400 })
 
+  const EXTS_PERMITIDAS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf']
+  const ext = arquivo.name.split('.').pop()?.toLowerCase() ?? ''
+  if (!EXTS_PERMITIDAS.includes(ext)) {
+    return NextResponse.json({ error: `Tipo de arquivo não permitido. Use: ${EXTS_PERMITIDAS.join(', ')}` }, { status: 400 })
+  }
+
+  // Previne path traversal no nome da pasta
+  const PASTA_RE = /^[a-zA-Z0-9_\-\/]+$/
+  if (!pasta || !PASTA_RE.test(pasta) || pasta.includes('..')) {
+    return NextResponse.json({ error: 'Pasta inválida.' }, { status: 400 })
+  }
+
   const maxBytes = 15 * 1024 * 1024
   if (arquivo.size > maxBytes) {
     return NextResponse.json({ error: 'Arquivo muito grande. Máximo 15 MB.' }, { status: 400 })
   }
 
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const adminClient = createAdminClient()
 
-  const ext = arquivo.name.split('.').pop()?.toLowerCase() ?? 'bin'
   const path = `${pasta}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
 
   const buffer = Buffer.from(await arquivo.arrayBuffer())

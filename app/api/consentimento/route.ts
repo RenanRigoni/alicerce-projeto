@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { POLICY_VERSION } from '@/lib/consentimento'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -7,7 +8,11 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const body = await request.json().catch(() => ({}))
-  const policy_versao: string = body?.policy_versao ?? 'v1'
+  const policy_versao: string = body?.policy_versao ?? POLICY_VERSION
+
+  if (policy_versao !== POLICY_VERSION) {
+    return NextResponse.json({ error: `Versão de política inválida. Use: ${POLICY_VERSION}` }, { status: 400 })
+  }
 
   const { error } = await supabase
     .from('profiles')

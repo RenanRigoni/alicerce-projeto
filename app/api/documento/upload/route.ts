@@ -1,5 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarHash } from '@/lib/hash/gerar-hash'
 
@@ -25,6 +25,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Arquivo e paciente_id são obrigatórios.' }, { status: 400 })
   }
 
+  const EXTS_PERMITIDAS = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']
+  const ext = arquivo.name.split('.').pop()?.toLowerCase() ?? ''
+  if (!EXTS_PERMITIDAS.includes(ext)) {
+    return NextResponse.json({ error: `Tipo de arquivo não permitido. Use: ${EXTS_PERMITIDAS.join(', ')}` }, { status: 400 })
+  }
+
   // Prontuário encerrado — bloqueia novos documentos (COFFITO: só leitura após alta)
   const { data: paciente } = await supabase.from('pacientes').select('status').eq('id', pacienteId).single()
   if (paciente && paciente.status !== 'ativo') {
@@ -36,13 +42,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Arquivo muito grande. Máximo 15 MB.' }, { status: 400 })
   }
 
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const adminClient = createAdminClient()
 
-  const ext = arquivo.name.split('.').pop()?.toLowerCase() ?? 'bin'
   const path = `${pacienteId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
 
   const arrayBuffer = await arquivo.arrayBuffer()

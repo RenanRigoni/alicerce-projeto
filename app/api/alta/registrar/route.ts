@@ -1,16 +1,8 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarHash } from '@/lib/hash/gerar-hash'
 import { notificarResponsaveisDoPaciente } from '@/lib/notificacoes/inserir'
-
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
@@ -73,10 +65,19 @@ export async function POST(request: NextRequest) {
 
   if (insertError) return NextResponse.json({ error: 'Erro ao registrar alta' }, { status: 500 })
 
-  const admin = adminClient()
+  const admin = createAdminClient()
 
-  // Desativa o paciente
-  await admin.from('pacientes').update({ status: 'alta' }).eq('id', paciente_id)
+  // UPDATE atômico — evita race condition: só desativa se ainda estiver ativo
+  const { data: rowsAfetadas } = await admin
+    .from('pacientes')
+    .update({ status: 'alta' })
+    .eq('id', paciente_id)
+    .eq('status', 'ativo')
+    .select('id')
+
+  if (!rowsAfetadas?.length) {
+    return NextResponse.json({ error: 'Paciente já foi alterado por outra requisição simultânea' }, { status: 409 })
+  }
 
   // Apaga agendamentos futuros
   await admin

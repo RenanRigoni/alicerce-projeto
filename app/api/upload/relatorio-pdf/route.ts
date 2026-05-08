@@ -1,5 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -20,18 +20,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'arquivo e paciente_id obrigatórios' }, { status: 400 })
   }
 
+  const EXTS_PERMITIDAS = ['pdf', 'jpg', 'jpeg', 'png']
+  const ext = arquivo.name.split('.').pop()?.toLowerCase() ?? ''
+  if (!EXTS_PERMITIDAS.includes(ext)) {
+    return NextResponse.json({ error: `Tipo de arquivo não permitido. Use: ${EXTS_PERMITIDAS.join(', ')}` }, { status: 400 })
+  }
+
   const maxBytes = 15 * 1024 * 1024
   if (arquivo.size > maxBytes) {
     return NextResponse.json({ error: 'Arquivo muito grande. Máximo 15 MB.' }, { status: 400 })
   }
 
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const adminClient = createAdminClient()
 
-  const ext = arquivo.name.split('.').pop()?.toLowerCase() ?? 'pdf'
   const path = `${pacienteId}/draft_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
 
   const arrayBuffer = await arquivo.arrayBuffer()

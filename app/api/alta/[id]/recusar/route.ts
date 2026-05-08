@@ -1,16 +1,8 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarHash } from '@/lib/hash/gerar-hash'
 import { notificarResponsaveisDoPaciente } from '@/lib/notificacoes/inserir'
-
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export async function PATCH(
   request: NextRequest,
@@ -29,7 +21,7 @@ export async function PATCH(
   const body = await request.json().catch(() => ({}))
   const argumentacao = body.argumentacao_recusa ?? ''
 
-  const admin = adminClient()
+  const admin = createAdminClient()
 
   const { data: solicitacao } = await admin
     .from('solicitacoes_alta')

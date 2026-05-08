@@ -1,15 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
-
-function adminClient() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export default async function ResponsavelTerapeutaPage({
   params,
@@ -34,7 +26,7 @@ export default async function ResponsavelTerapeutaPage({
 
   if (!usuario) notFound()
 
-  const { data: authUser } = await adminClient().auth.admin.getUserById(id)
+  const { data: authUser } = await createAdminClient().auth.admin.getUserById(id)
   const email = authUser?.user?.email ?? null
 
   const { data: detalhes } = await supabase

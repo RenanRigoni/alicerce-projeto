@@ -20,6 +20,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'arquivo e paciente_id obrigatórios' }, { status: 400 })
   }
 
+  // Bloqueia path traversal — pacienteId vai compor path no storage
+  if (!/^[0-9a-f-]{36}$/i.test(pacienteId)) {
+    return NextResponse.json({ error: 'paciente_id inválido' }, { status: 400 })
+  }
+
+  // Terapeuta precisa estar vinculado ao paciente (admin não precisa)
+  if (profile?.role === 'terapeuta') {
+    const { data: vinculo } = await supabase
+      .from('paciente_terapeutas')
+      .select('terapeuta_id')
+      .eq('paciente_id', pacienteId)
+      .eq('terapeuta_id', user.id)
+      .maybeSingle()
+    if (!vinculo) {
+      return NextResponse.json({ error: 'Sem vínculo com este paciente' }, { status: 403 })
+    }
+  }
+
   const EXTS_PERMITIDAS = ['pdf', 'jpg', 'jpeg', 'png']
   const ext = arquivo.name.split('.').pop()?.toLowerCase() ?? ''
   if (!EXTS_PERMITIDAS.includes(ext)) {

@@ -26,6 +26,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Paciente e título são obrigatórios.' }, { status: 400 })
   }
 
+  // Terapeuta deve estar vinculado ao paciente
+  const { data: vinculo } = await supabase
+    .from('paciente_terapeutas')
+    .select('terapeuta_id')
+    .eq('paciente_id', paciente_id)
+    .eq('terapeuta_id', user.id)
+    .maybeSingle()
+  if (!vinculo) {
+    return NextResponse.json({ error: 'Sem vínculo com este paciente' }, { status: 403 })
+  }
+
   // Prontuário encerrado — bloqueia novas orientações (COFFITO: só leitura após alta)
   const { data: paciente } = await supabase.from('pacientes').select('status').eq('id', paciente_id).single()
   if (paciente && paciente.status !== 'ativo') {

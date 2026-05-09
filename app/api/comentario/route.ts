@@ -1,7 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 type RefTipo = 'relatorio' | 'documento'
+
+// Confirma que o usuário tem visibilidade do recurso referenciado.
+// Aproveita RLS — se a query retornar 0 linhas, usuário não tem acesso.
+async function podeAcessarRef(
+  supabase: SupabaseClient,
+  ref_tipo: RefTipo,
+  ref_id: string,
+): Promise<boolean> {
+  const tabela = ref_tipo === 'relatorio' ? 'relatorios' : 'documentos'
+  const { data } = await supabase.from(tabela).select('id').eq('id', ref_id).maybeSingle()
+  return !!data
+}
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -17,6 +30,10 @@ export async function GET(request: NextRequest) {
   }
   if (!ref_id) {
     return NextResponse.json({ error: 'ref_id obrigatório' }, { status: 400 })
+  }
+
+  if (!(await podeAcessarRef(supabase, ref_tipo, ref_id))) {
+    return NextResponse.json({ error: 'Sem permissão para este recurso' }, { status: 403 })
   }
 
   const { data, error } = await supabase
@@ -50,6 +67,10 @@ export async function POST(request: NextRequest) {
   }
   if (!ref_id) return NextResponse.json({ error: 'ref_id obrigatório' }, { status: 400 })
   if (!conteudo?.trim()) return NextResponse.json({ error: 'conteudo obrigatório' }, { status: 400 })
+
+  if (!(await podeAcessarRef(supabase, ref_tipo, ref_id))) {
+    return NextResponse.json({ error: 'Sem permissão para comentar neste recurso' }, { status: 403 })
+  }
 
   const { data, error } = await supabase
     .from('comentarios')

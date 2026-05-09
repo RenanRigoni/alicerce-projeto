@@ -114,7 +114,7 @@ function AltaCard({ s }: { s: any }) {
           )}
           {s.documento_url && (
             <a
-              href={s.documento_url}
+              href={`/api/alta/${s.id}/documento`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs mt-1.5 inline-block font-medium transition-opacity hover:opacity-70"

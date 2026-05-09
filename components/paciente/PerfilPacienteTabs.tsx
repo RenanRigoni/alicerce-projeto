@@ -686,7 +686,7 @@ export function PerfilPacienteTabs({
                         </div>
                       </div>
                       <a
-                        href={d.arquivo_url}
+                        href={`/api/documento/${d.id}/download`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs font-medium transition-opacity hover:opacity-70"
@@ -983,7 +983,7 @@ export function PerfilPacienteTabs({
                 )}
                 {a.documento_url && (
                   <a
-                    href={a.documento_url}
+                    href={`/api/alta/${a.id}/documento`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs mt-2 inline-block font-medium transition-opacity hover:opacity-70"
@@ -1072,7 +1072,7 @@ export function PerfilPacienteTabs({
               if (item.tipo === 'documento') {
                 const d = item.data as Documento
                 return (
-                  <a key={`doc-${d.id}`} href={d.arquivo_url} target="_blank" rel="noopener noreferrer" className="flex gap-3 items-start group">
+                  <a key={`doc-${d.id}`} href={`/api/documento/${d.id}/download`} target="_blank" rel="noopener noreferrer" className="flex gap-3 items-start group">
                     <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'var(--color-lavender-main)' }} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>

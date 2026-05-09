@@ -1,0 +1,92 @@
+<h2>Que tipo de bloco agregaria mais valor ao dashboard?</h2>
+<p class="subtitle">Selecione os que te parecem mais úteis (pode marcar mais de um)</p>
+
+<div class="options" data-multiselect style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px">
+
+  <div class="option" data-choice="campanha" onclick="toggleSelect(this)" style="align-items:flex-start">
+    <div class="letter">A</div>
+    <div class="content" style="width:100%">
+      <h3>Campanha de Saúde do Mês</h3>
+      <p style="margin-bottom:12px">Banner colorido com a campanha de conscientização do mês (Setembro Amarelo, Outubro Rosa, etc). Automaticamente correto por mês.</p>
+      <div style="border-radius:12px;padding:14px 16px;background:linear-gradient(135deg,#FFF9C4,#FFFDE7);border-left:4px solid #F9A825;font-size:13px">
+        <strong style="color:#F57F17">🟡 Setembro Amarelo</strong><br>
+        <span style="color:#795548;font-size:12px">Mês de prevenção ao suicídio.<br>Converse com seus pacientes.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="presenca" onclick="toggleSelect(this)" style="align-items:flex-start">
+    <div class="letter">B</div>
+    <div class="content" style="width:100%">
+      <h3>Taxa de Presença do Mês</h3>
+      <p style="margin-bottom:12px">Percentual de sessões confirmadas vs canceladas no mês corrente. Útil para admin e terapeuta.</p>
+      <div style="border-radius:12px;padding:14px 16px;background:#F9FAFB;border:1px solid #E5E7EB;font-size:13px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span style="color:#374151">Sessões este mês</span>
+          <strong style="color:#111827">32</strong>
+        </div>
+        <div style="height:8px;border-radius:99px;background:#E5E7EB;overflow:hidden;margin-bottom:8px">
+          <div style="width:81%;height:100%;background:#16A34A;border-radius:99px"></div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:11px;color:#6B7280">
+          <span>✅ 26 realizadas</span>
+          <span>❌ 4 canceladas</span>
+          <span>⏳ 2 pendentes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="agenda-dia" onclick="toggleSelect(this)" style="align-items:flex-start">
+    <div class="letter">C</div>
+    <div class="content" style="width:100%">
+      <h3>Agenda de Hoje</h3>
+      <p style="margin-bottom:12px">Lista rápida das sessões do dia — hora, paciente e status. Útil na abertura do dia pela recepção.</p>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid #E5E7EB;font-size:12px">
+        <div style="padding:8px 12px;background:#FEF2F2;border-bottom:1px solid #FECACA;display:flex;gap:10px;align-items:center">
+          <span style="color:#B91C1C;font-weight:600;min-width:38px">08:00</span>
+          <span style="color:#1F2937;flex:1">Maria Oliveira</span>
+          <span style="color:#15803d;font-size:11px">✅ confirmada</span>
+        </div>
+        <div style="padding:8px 12px;background:#FEF2F2;border-bottom:1px solid #FECACA;display:flex;gap:10px;align-items:center">
+          <span style="color:#B91C1C;font-weight:600;min-width:38px">09:00</span>
+          <span style="color:#1F2937;flex:1">João Pedro</span>
+          <span style="color:#B45309;font-size:11px">⏳ pendente</span>
+        </div>
+        <div style="padding:8px 12px;background:#FEF2F2;display:flex;gap:10px;align-items:center">
+          <span style="color:#B91C1C;font-weight:600;min-width:38px">10:00</span>
+          <span style="color:#1F2937;flex:1">Ana Clara</span>
+          <span style="color:#6B7280;font-size:11px">— sem confirmação</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="resumo-semana" onclick="toggleSelect(this)" style="align-items:flex-start">
+    <div class="letter">D</div>
+    <div class="content" style="width:100%">
+      <h3>Resumo da Semana</h3>
+      <p style="margin-bottom:12px">Mini painel com totais da semana atual: sessões realizadas, cancelamentos, e variação vs semana anterior.</p>
+      <div style="border-radius:12px;padding:14px 16px;background:#F9FAFB;border:1px solid #E5E7EB;font-size:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+          <div style="padding:8px;background:white;border-radius:8px;border:1px solid #E5E7EB">
+            <div style="font-size:20px;font-weight:700;color:#16A34A">18</div>
+            <div style="color:#6B7280;font-size:10px">Realizadas</div>
+          </div>
+          <div style="padding:8px;background:white;border-radius:8px;border:1px solid #E5E7EB">
+            <div style="font-size:20px;font-weight:700;color:#DC2626">2</div>
+            <div style="color:#6B7280;font-size:10px">Canceladas</div>
+          </div>
+          <div style="padding:8px;background:white;border-radius:8px;border:1px solid #E5E7EB">
+            <div style="font-size:20px;font-weight:700;color:#D97706">3</div>
+            <div style="color:#6B7280;font-size:10px">Pendentes</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#6B7280;text-align:center">↑ 12% vs semana passada</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p style="margin-top:20px;font-size:13px;color:#6B7280">Pode selecionar mais de um. Ou me diga no terminal se tem outra ideia.</p>

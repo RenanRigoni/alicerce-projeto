@@ -91,6 +91,7 @@ export const DEFAULTS_POR_ROLE: Record<string, Partial<Record<Permissao, boolean
     editar_agendamentos_alheios: true,
     gerenciar_feriados:          true,
     criar_comunicados:           true,
+    gerenciar_usuarios:          true,
   },
 
   terapeuta: {

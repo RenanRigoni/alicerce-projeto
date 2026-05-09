@@ -14,7 +14,8 @@ interface Props {
 }
 
 export function AcoesUsuario({ usuarioId, ativo, isAdmin, isRecepcao, targetRole, isSelf }: Props) {
-  const podeToggleAtivo = isAdmin || (isRecepcao && targetRole !== 'terapeuta')
+  // Recepção só pode toggle responsáveis (pais). Admin pode tudo.
+  const podeToggleAtivo = isAdmin || (isRecepcao && targetRole === 'pai')
   const router = useRouter()
   const [carregando, setCarregando] = useState(false)
   const [confirmandoDelete, setConfirmandoDelete] = useState(false)

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — mockup fiel</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #FAF7F4; color: #2C1810; }
+
+  /* ── Navbar horizontal (fiel ao real) ── */
+  .navbar {
+    background: #FFFDF9;
+    border-bottom: 1px solid #EDE8E3;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .navbar-inner {
+    max-width: 900px; margin: 0 auto;
+    padding: 0 16px; height: 56px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .logo { font-size: 16px; font-weight: 800; color: #C0392B; letter-spacing: -.5px; flex-shrink: 0; }
+  .nav-links { display: flex; gap: 2px; flex: 1; }
+  .nav-link { padding: 6px 12px; border-radius: 8px; font-size: 13px; color: #7C6F65; white-space: nowrap; }
+  .nav-link.active { background: #FEE2E2; color: #B91C1C; font-weight: 600; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: #FEE2E2; color: #B91C1C; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .user-name { font-size: 13px; color: #7C6F65; }
+
+  /* ── Conteúdo principal ── */
+  .main { max-width: 900px; margin: 0 auto; padding: 32px 16px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* Tipografia */
+  .page-title { font-size: 22px; font-weight: 700; color: #1A1A1A; }
+  .page-sub { font-size: 13px; color: #8A7E78; margin-top: 3px; }
+  .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #8A7E78; margin-bottom: 10px; }
+
+  /* Card base */
+  .card { background: #FFFDF9; border: 1px solid #EDE8E3; border-radius: 16px; padding: 16px; }
+
+  /* Métricas */
+  .metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .metric-card { background: #FFFDF9; border: 1px solid #EDE8E3; border-radius: 16px; padding: 16px; cursor: pointer; }
+  .metric-num { font-size: 30px; font-weight: 700; color: #C0392B; }
+  .metric-label { font-size: 12px; color: #8A7E78; margin-top: 2px; }
+
+  /* Row items (altas, feriados, comunicados) */
+  .row-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #F5F1ED; font-size: 13px; }
+  .row-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .row-item:first-child { padding-top: 0; }
+
+  /* ── NOVOS BLOCOS ── */
+  .new-badge { font-size: 9px; background: #DCFCE7; color: #166534; border-radius: 99px; padding: 2px 7px; font-weight: 700; margin-left: 8px; vertical-align: middle; }
+
+  /* Campanha */
+  .campanha { border-radius: 16px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg,#FFF9C4,#FEF3C7); border: 1px solid #FDE68A; }
+  .campanha-circle { width: 18px; height: 18px; border-radius: 50%; background: #F59E0B; flex-shrink: 0; box-shadow: 0 0 0 5px #FEF9C3; }
+  .campanha-title { font-size: 14px; font-weight: 700; color: #92400E; }
+  .campanha-desc { font-size: 12px; color: #A16207; margin-top: 2px; }
+
+  /* Grid hoje + semana */
+  .hoje-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Agenda itens */
+  .ag-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #F5F1ED; }
+  .ag-item:last-child { border-bottom: none; }
+  .ag-hora { font-weight: 700; color: #B91C1C; font-size: 12px; min-width: 40px; }
+  .ag-nome { flex: 1; font-size: 12px; color: #2C1810; }
+  .ag-tag { font-size: 10px; }
+  .st-conf { color: #16A34A; }
+  .st-pend { color: #D97706; }
+  .st-none { color: #9CA3AF; }
+  .ag-tipo { font-size: 10px; background: #EDE8E3; color: #6B5E57; padding: 1px 6px; border-radius: 99px; }
+
+  /* Stats semana */
+  .semana-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-box { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px; padding: 10px; text-align: center; }
+  .stat-n { font-size: 22px; font-weight: 700; }
+  .stat-l { font-size: 10px; color: #6B7280; margin-top: 1px; }
+  .taxa-row { display: flex; justify-content: space-between; font-size: 11px; color: #6B7280; margin-bottom: 5px; }
+  .taxa-bar { height: 7px; border-radius: 99px; background: #E5E7EB; overflow: hidden; }
+  .taxa-fill { height: 100%; border-radius: 99px; background: #16A34A; }
+  .taxa-sub { font-size: 10px; color: #9CA3AF; margin-top: 5px; }
+
+  /* Ações */
+  .acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn { font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 10px; }
+  .btn-primary { background: #C0392B; color: white; }
+  .btn-rose { background: #FEE2E2; color: #B91C1C; }
+  .btn-ghost { background: #F3F4F6; color: #6B7280; }
+</style>
+</head>
+<body>
+
+<!-- ── Navbar horizontal real ── -->
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="logo">Alicerce</div>
+    <div class="nav-links">
+      <div class="nav-link active">Início</div>
+      <div class="nav-link">Pacientes</div>
+      <div class="nav-link">Responsáveis</div>
+      <div class="nav-link">Terapeutas</div>
+      <div class="nav-link">Agenda</div>
+      <div class="nav-link">Feriados</div>
+      <div class="nav-link">Comunicados</div>
+      <div class="nav-link">Usuários</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="avatar">AD</div>
+      <div class="user-name">Admin</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Conteúdo principal ── -->
+<div class="main">
+
+  <!-- Título -->
+  <div>
+    <div class="page-title">Visão geral</div>
+    <div class="page-sub">Painel administrativo</div>
+  </div>
+
+  <!-- ① NOVO — Campanha de saúde -->
+  <div>
+    <div class="section-label">Campanha do mês <span class="new-badge">NOVO</span></div>
+    <div class="campanha">
+      <div class="campanha-circle"></div>
+      <div>
+        <div class="campanha-title">Setembro Amarelo</div>
+        <div class="campanha-desc">Mês de prevenção ao suicídio. Converse com seus pacientes e famílias sobre saúde mental.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXISTENTE — Métricas -->
+  <div class="metrics">
+    <div class="metric-card">
+      <div class="metric-num">32</div>
+      <div class="metric-label">Pacientes ativos</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-num">18</div>
+      <div class="metric-label">Famílias ativas</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-num">4</div>
+      <div class="metric-label">Terapeutas</div>
+    </div>
+  </div>
+
+  <!-- ② + ③ NOVOS — Agenda de hoje + Resumo da semana -->
+  <div>
+    <div class="section-label">Hoje &amp; esta semana <span class="new-badge">NOVO</span></div>
+    <div class="hoje-grid">
+
+      <!-- Agenda do dia -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;color:#1A1A1A;margin-bottom:10px">📅 Agenda de hoje</div>
+        <div class="ag-item">
+          <span class="ag-hora">08:00</span>
+          <span class="ag-nome">Maria Oliveira</span>
+          <span class="ag-tag st-conf">✅ confirmada</span>
+        </div>
+        <div class="ag-item">
+          <span class="ag-hora">09:00</span>
+          <span class="ag-nome">João Pedro</span>
+          <span class="ag-tag st-pend">⏳ pendente</span>
+        </div>
+        <div class="ag-item">
+          <span class="ag-hora">10:00</span>
+          <span class="ag-nome">Ana Clara</span>
+          <span class="ag-tag st-none">— sem envio</span>
+        </div>
+        <div class="ag-item">
+          <span class="ag-hora">14:00</span>
+          <span class="ag-nome">Devolutiva — Gabriel</span>
+          <span class="ag-tipo">reunião</span>
+        </div>
+        <div class="ag-item">
+          <span class="ag-hora">15:30</span>
+          <span class="ag-nome">Pedro Henrique</span>
+          <span class="ag-tag st-conf">✅ confirmada</span>
+        </div>
+      </div>
+
+      <!-- Esta semana + taxa -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;color:#1A1A1A;margin-bottom:10px">📊 Esta semana</div>
+        <div class="semana-nums">
+          <div class="stat-box">
+            <div class="stat-n" style="color:#16A34A">18</div>
+            <div class="stat-l">Realizadas</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-n" style="color:#DC2626">2</div>
+            <div class="stat-l">Canceladas</div>
+          </div>
+        </div>
+        <div class="taxa-row">
+          <span>Taxa de presença — setembro</span>
+          <strong style="color:#16A34A">81%</strong>
+        </div>
+        <div class="taxa-bar"><div class="taxa-fill" style="width:81%"></div></div>
+        <div class="taxa-sub">26 realizadas · 4 canceladas · 2 pendentes no mês</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- EXISTENTE — Altas recentes -->
+  <div>
+    <div class="section-label">Altas recentes</div>
+    <div class="card">
+      <div class="row-item">
+        <span>Lucas Ferreira <span style="color:#8A7E78">· Dra. Camila</span></span>
+        <span style="font-size:11px;color:#8A7E78;flex-shrink:0">12/04/2026</span>
+      </div>
+      <div class="row-item">
+        <span>Sofia Mendes <span style="color:#8A7E78">· Dr. Rafael</span></span>
+        <span style="font-size:11px;color:#8A7E78;flex-shrink:0">03/04/2026</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXISTENTE — Próximos feriados -->
+  <div>
+    <div class="section-label">Próximos feriados</div>
+    <div class="card">
+      <div class="row-item" style="border:none;padding:0">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:8px;height:8px;border-radius:50%;background:#FBBF24;flex-shrink:0"></div>
+          <span style="font-size:13px;font-weight:500">Independência do Brasil</span>
+        </div>
+        <span style="font-size:11px;color:#8A7E78;flex-shrink:0">sáb, 07 de setembro</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXISTENTE — Comunicados -->
+  <div>
+    <div class="section-label">Comunicados recentes</div>
+    <div class="card">
+      <div class="row-item" style="flex-direction:column;align-items:flex-start;gap:3px;border:none;padding:0">
+        <span style="font-weight:600;font-size:13px">Recesso de julho</span>
+        <span style="font-size:12px;color:#8A7E78">A clínica estará fechada de 14 a 18 de julho. Reagendar sessões com antecedência.</span>
+        <span style="font-size:11px;color:#B0A49C;margin-top:2px">Admin · 28/06/2026</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXISTENTE — Ações rápidas -->
+  <div>
+    <div class="section-label">Ações rápidas</div>
+    <div class="card">
+      <div class="acoes">
+        <span class="btn btn-primary">+ Novo paciente</span>
+        <span class="btn btn-rose">+ Novo usuário</span>
+        <span class="btn btn-rose">+ Agendamento</span>
+        <span class="btn btn-ghost">Comunicados</span>
+        <span class="btn btn-ghost">Feriados</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

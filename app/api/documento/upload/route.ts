@@ -25,6 +25,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Arquivo e paciente_id são obrigatórios.' }, { status: 400 })
   }
 
+  // Bloqueia path traversal — pacienteId vai compor path no storage
+  if (!/^[0-9a-f-]{36}$/i.test(pacienteId)) {
+    return NextResponse.json({ error: 'paciente_id inválido' }, { status: 400 })
+  }
+
+  // Verifica vínculo com paciente, exceto admin/recepcao
+  if (profile?.role === 'terapeuta') {
+    const { data: vinculo } = await supabase
+      .from('paciente_terapeutas')
+      .select('terapeuta_id')
+      .eq('paciente_id', pacienteId)
+      .eq('terapeuta_id', user.id)
+      .maybeSingle()
+    if (!vinculo) {
+      return NextResponse.json({ error: 'Sem vínculo com este paciente' }, { status: 403 })
+    }
+  } else if (profile?.role === 'pai') {
+    const { data: vinculo } = await supabase
+      .from('paciente_responsaveis')
+      .select('responsavel_id')
+      .eq('paciente_id', pacienteId)
+      .eq('responsavel_id', user.id)
+      .maybeSingle()
+    if (!vinculo) {
+      return NextResponse.json({ error: 'Sem vínculo com este paciente' }, { status: 403 })
+    }
+  }
+
   const EXTS_PERMITIDAS = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']
   const ext = arquivo.name.split('.').pop()?.toLowerCase() ?? ''
   if (!EXTS_PERMITIDAS.includes(ext)) {
@@ -60,8 +88,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Erro ao enviar arquivo: ${uploadError.message}` }, { status: 500 })
   }
 
-  const { data: { publicUrl } } = adminClient.storage.from('documentos').getPublicUrl(path)
-
   const agora = new Date().toISOString()
   const hash = await gerarHash({
     paciente_id: pacienteId,
@@ -72,20 +98,21 @@ export async function POST(request: NextRequest) {
     assinado_em: agora,
   })
 
-  const { error: dbError } = await adminClient.from('documentos').insert({
+  const { data: docInserido, error: dbError } = await adminClient.from('documentos').insert({
     paciente_id: pacienteId,
     enviado_por: user.id,
     tipo,
     descricao: descricao?.trim() || null,
-    arquivo_url: publicUrl,
+    arquivo_url: '', // legacy, mantido por compat
+    arquivo_path: path,
     visivel_pais: visivelPais,
     hash_integridade: hash,
     assinado_em: agora,
-  })
+  }).select('id').single()
 
-  if (dbError) {
+  if (dbError || !docInserido) {
     return NextResponse.json({ error: 'Erro ao salvar registro do documento.' }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true, url: publicUrl })
+  return NextResponse.json({ success: true, id: docInserido.id, url: `/api/documento/${docInserido.id}/download` })
 }

@@ -103,7 +103,7 @@ export default async function PacientePortalPage({
     ...(documentos ?? []).map(d => ({
       tipo: 'documento' as const, id: d.id,
       titulo: d.descricao ?? d.tipo, data: d.criado_em,
-      href: d.arquivo_url,
+      href: `/api/documento/${d.id}/download`,
     })),
     ...(orientacoes ?? []).map(o => ({
       tipo: 'orientacao' as const, id: o.id,
@@ -375,7 +375,7 @@ export default async function PacientePortalPage({
                     {new Date(d.criado_em).toLocaleDateString('pt-BR')}
                   </div>
                 </div>
-                <a href={d.arquivo_url} target="_blank" rel="noopener noreferrer"
+                <a href={`/api/documento/${d.id}/download`} target="_blank" rel="noopener noreferrer"
                   className="text-sm font-medium transition-opacity hover:opacity-70"
                   style={{ color: 'var(--color-rose-main)' }}>
                   Abrir

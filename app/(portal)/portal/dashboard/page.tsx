@@ -5,6 +5,7 @@ import { OrientacaoCard } from '@/components/portal/OrientacaoCard'
 import { CalendarioMensalPortal } from '@/components/portal/CalendarioMensalPortal'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
 import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
+import { CAMPANHAS } from '@/lib/campanhas-saude'
 
 const tipoLabel: Record<string, string> = {
   sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
@@ -66,6 +67,9 @@ export default async function PortalDashboard() {
     .filter((p: any) => p && p.status === 'ativo')
 
   const agora = new Date()
+  const agoraBRT = new Date(agora.getTime() - 3 * 60 * 60 * 1000)
+  const campanha = CAMPANHAS[agoraBRT.getUTCMonth()]
+
   const em3meses = new Date(agora.getFullYear(), agora.getMonth() + 3, agora.getDate())
   const inicio3meses = new Date(agora.getFullYear(), agora.getMonth() - 1, 1)
   const anoAtual = new Date().getFullYear()
@@ -296,6 +300,29 @@ export default async function PortalDashboard() {
           </div>
         </div>
       )}
+
+      {/* Campanha do mês */}
+      <div>
+        <h2
+          className="text-xs font-semibold uppercase tracking-wider mb-3"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Campanha do mês
+        </h2>
+        <div
+          className="rounded-2xl px-5 py-4 flex items-center gap-4"
+          style={{ background: campanha.bg, border: `1px solid ${campanha.border}` }}
+        >
+          <div
+            className="w-4 h-4 rounded-full flex-shrink-0"
+            style={{ background: campanha.cor, boxShadow: `0 0 0 5px ${campanha.bg}` }}
+          />
+          <div>
+            <div className="text-sm font-bold" style={{ color: campanha.cor }}>{campanha.titulo}</div>
+            <div className="text-xs mt-0.5" style={{ color: campanha.cor, opacity: 0.8 }}>{campanha.descricao}</div>
+          </div>
+        </div>
+      </div>
 
       {/* Calendário mensal */}
       <CalendarioMensalPortal eventos={eventosCalendario} />

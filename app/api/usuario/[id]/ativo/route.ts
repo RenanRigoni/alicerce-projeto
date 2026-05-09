@@ -16,9 +16,23 @@ export async function PATCH(
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
+  // Bloqueia auto-banimento
+  if (id === user.id) {
+    return NextResponse.json({ error: 'Não é possível alterar o próprio status' }, { status: 400 })
+  }
+
   const { ativo } = await request.json()
   if (typeof ativo !== 'boolean') {
     return NextResponse.json({ error: 'Campo ativo deve ser boolean' }, { status: 400 })
+  }
+
+  // Recepção só pode toggle pais (não pode banir admin, recepção, ou terapeuta)
+  if (profile?.role === 'recepcao') {
+    const { data: alvo } = await supabase.from('profiles').select('role').eq('id', id).single()
+    if (!alvo) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
+    if (alvo.role !== 'pai') {
+      return NextResponse.json({ error: 'Recepção só pode alterar status de responsáveis' }, { status: 403 })
+    }
   }
 
   const adminClient = createAdminClient()

@@ -1,0 +1,102 @@
+<h2>Como organizar os 4 novos blocos no dashboard?</h2>
+<p class="subtitle">3 propostas de layout — escolha a que faz mais sentido visualmente</p>
+
+<div class="options" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;max-width:1100px">
+
+  <!-- OPÇÃO A -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)" style="align-items:flex-start">
+    <div class="letter">A</div>
+    <div class="content" style="width:100%">
+      <h3>Topo + Dois em coluna</h3>
+      <p style="font-size:12px;color:#6B7280;margin-bottom:10px">Campanha no topo como banner. Agenda do dia em destaque abaixo. Resumo e Taxa lado a lado.</p>
+      <div style="font-size:10px;display:flex;flex-direction:column;gap:4px">
+        <div style="background:#FEF9C3;border:1px solid #FDE68A;border-radius:6px;padding:6px 8px;color:#92400E;font-weight:600">🟡 Setembro Amarelo — banner</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+          <div style="background:#FFF0F0;border:1px solid #FECACA;border-radius:6px;padding:6px;text-align:center;color:#B91C1C;font-weight:600">32<br><span style="font-weight:400;color:#6B7280">Pacientes</span></div>
+          <div style="background:#FFF0F0;border:1px solid #FECACA;border-radius:6px;padding:6px;text-align:center;color:#B91C1C;font-weight:600">12<br><span style="font-weight:400;color:#6B7280">Famílias</span></div>
+          <div style="background:#FFF0F0;border:1px solid #FECACA;border-radius:6px;padding:6px;text-align:center;color:#B91C1C;font-weight:600">4<br><span style="font-weight:400;color:#6B7280">Terapeutas</span></div>
+        </div>
+        <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:6px 8px;color:#374151;font-weight:600">📅 Agenda de Hoje — lista completa</div>
+        <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:5px 7px;font-size:9px;color:#6B7280">08:00 Maria Oliveira ✅</div>
+        <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:5px 7px;font-size:9px;color:#6B7280">09:00 João Pedro ⏳</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:6px;color:#374151;font-size:9px;font-weight:600">📊 Resumo Semana<br><span style="color:#16A34A">18 realizadas</span></div>
+          <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:6px;color:#374151;font-size:9px;font-weight:600">✅ Taxa Mês<br><span style="color:#16A34A">81% presença</span></div>
+        </div>
+        <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:5px 7px;font-size:9px;color:#6B7280">Altas recentes…</div>
+        <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:5px 7px;font-size:9px;color:#6B7280">Comunicados…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPÇÃO B -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)" style="align-items:flex-start">
+    <div class="letter">B</div>
+    <div class="content" style="width:100%">
+      <h3>Seção "Hoje" integrada</h3>
+      <p style="font-size:12px;color:#6B7280;margin-bottom:10px">Campanha discreta no canto dos métricas. Agenda + Resumo + Taxa agrupados em seção "Hoje na clínica".</p>
+      <div style="font-size:10px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+          <div style="background:#FFF0F0;border:1px solid #FECACA;border-radius:6px;padding:6px;text-align:center;color:#B91C1C;font-weight:600">32<br><span style="font-weight:400;color:#6B7280">Pacientes</span></div>
+          <div style="background:#FFF0F0;border:1px solid #FECACA;border-radius:6px;padding:6px;text-align:center;color:#B91C1C;font-weight:600">12<br><span style="font-weight:400;color:#6B7280">Famílias</span></div>
+          <div style="background:#FFF0F0;border:1px solid #FECACA;border-radius:6px;padding:6px;text-align:center;color:#B91C1C;font-weight:600">4<br><span style="font-weight:400;color:#6B7280">Terapeutas</span></div>
+        </div>
+        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:5px 8px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">🟡</span>
+          <span style="color:#92400E;font-size:9px"><strong>Setembro Amarelo</strong> · Prevenção ao suicídio</span>
+        </div>
+        <div style="background:#F9FAFB;border:1px solid #D1D5DB;border-radius:6px;padding:6px 8px">
+          <div style="color:#374151;font-weight:600;margin-bottom:4px">Hoje na clínica</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px">
+            <div style="background:white;border:1px solid #E5E7EB;border-radius:5px;padding:5px;font-size:9px;color:#374151">📊 <strong>18</strong> sessões · <strong>2</strong> cancel.</div>
+            <div style="background:white;border:1px solid #E5E7EB;border-radius:5px;padding:5px;font-size:9px;color:#374151">✅ Taxa: <strong>81%</strong> mês</div>
+          </div>
+          <div style="background:white;border:1px solid #E5E7EB;border-radius:5px;padding:5px 7px;font-size:9px;color:#6B7280;margin-bottom:2px">08:00 Maria Oliveira ✅ confirmada</div>
+          <div style="background:white;border:1px solid #E5E7EB;border-radius:5px;padding:5px 7px;font-size:9px;color:#6B7280">09:00 João Pedro ⏳ pendente</div>
+        </div>
+        <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:5px 7px;font-size:9px;color:#6B7280">Altas recentes…</div>
+        <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:5px 7px;font-size:9px;color:#6B7280">Comunicados…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPÇÃO C -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)" style="align-items:flex-start">
+    <div class="letter">C</div>
+    <div class="content" style="width:100%">
+      <h3>Campanha no topo + agenda após métricas</h3>
+      <p style="font-size:12px;color:#6B7280;margin-bottom:10px">Campanha como banner topo. Métricas. Depois agenda do dia + taxa + resumo antes do restante.</p>
+      <div style="font-size:10px;display:flex;flex-direction:column;gap:4px">
+        <div style="background:linear-gradient(135deg,#FEF9C3,#FEF3C7);border:1px solid #FDE68A;border-radius:6px;padding:7px 10px;color:#92400E">
+          <strong>🟡 Setembro Amarelo</strong>
+          <div style="font-size:9px;color:#A16207;margin-top:2px">Prevenção ao suicídio · Converse com seus pacientes</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+          <div style="background:#FFF0F0;border:1px solid #FECACA;border-radius:6px;padding:6px;text-align:center;color:#B91C1C;font-weight:600">32<br><span style="font-weight:400;color:#6B7280">Pacientes</span></div>
+          <div style="background:#FFF0F0;border:1px solid #FECACA;border-radius:6px;padding:6px;text-align:center;color:#B91C1C;font-weight:600">12<br><span style="font-weight:400;color:#6B7280">Famílias</span></div>
+          <div style="background:#FFF0F0;border:1px solid #FECACA;border-radius:6px;padding:6px;text-align:center;color:#B91C1C;font-weight:600">4<br><span style="font-weight:400;color:#6B7280">Terapeutas</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:6px">
+            <div style="font-weight:600;color:#374151;margin-bottom:4px;font-size:10px">📅 Hoje</div>
+            <div style="font-size:9px;color:#6B7280;margin-bottom:2px">08:00 Maria ✅</div>
+            <div style="font-size:9px;color:#6B7280;margin-bottom:2px">09:00 João ⏳</div>
+            <div style="font-size:9px;color:#6B7280">10:00 Ana —</div>
+          </div>
+          <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:6px">
+            <div style="font-weight:600;color:#374151;margin-bottom:4px;font-size:10px">📊 Esta semana</div>
+            <div style="font-size:9px;color:#16A34A;margin-bottom:2px">✅ 18 realizadas</div>
+            <div style="font-size:9px;color:#DC2626;margin-bottom:2px">❌ 2 canceladas</div>
+            <div style="height:5px;background:#E5E7EB;border-radius:99px;overflow:hidden;margin-top:4px"><div style="width:81%;height:100%;background:#16A34A"></div></div>
+            <div style="font-size:9px;color:#6B7280;margin-top:2px">81% taxa mês</div>
+          </div>
+        </div>
+        <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:5px 7px;font-size:9px;color:#6B7280">Altas recentes…</div>
+        <div style="background:white;border:1px solid #E5E7EB;border-radius:6px;padding:5px 7px;font-size:9px;color:#6B7280">Comunicados…</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p style="margin-top:16px;font-size:12px;color:#6B7280">Minha recomendação: <strong>C</strong> — campanha visível mas sem dominar, novos blocos integrados naturalmente no fluxo existente.</p>

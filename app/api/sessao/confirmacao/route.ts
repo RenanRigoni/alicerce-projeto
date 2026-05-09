@@ -20,7 +20,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'paciente_id e data_hora são obrigatórios' }, { status: 400 })
   }
 
+  // Terapeuta precisa estar vinculado ao paciente (admin/recepcao não precisam)
+  if (profile?.role === 'terapeuta') {
+    const { data: vinculo } = await supabase
+      .from('paciente_terapeutas')
+      .select('terapeuta_id')
+      .eq('paciente_id', paciente_id)
+      .eq('terapeuta_id', user.id)
+      .maybeSingle()
+    if (!vinculo) {
+      return NextResponse.json({ error: 'Sem vínculo com este paciente' }, { status: 403 })
+    }
+  }
+
   const dataHoraDate = new Date(data_hora)
+  if (isNaN(dataHoraDate.getTime())) {
+    return NextResponse.json({ error: 'data_hora inválida' }, { status: 400 })
+  }
   const agora = new Date()
 
   if (dataHoraDate <= agora) {

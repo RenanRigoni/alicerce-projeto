@@ -113,7 +113,7 @@ export default async function AltaDetalheTerapeutaPage({
             Documento anexado
           </div>
           <a
-            href={s.documento_url}
+            href={`/api/alta/${s.id}/documento`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm underline transition-opacity hover:opacity-70"

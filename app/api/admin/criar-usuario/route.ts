@@ -29,6 +29,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Campos obrigatórios faltando' }, { status: 400 })
   }
 
+  const ROLES_VALIDOS = ['admin', 'recepcao', 'terapeuta', 'pai']
+  if (!ROLES_VALIDOS.includes(role)) {
+    return NextResponse.json({ error: 'Role inválido' }, { status: 400 })
+  }
+
+  // Recepção só pode criar terapeuta ou pai (sem privilege escalation)
+  if (profile.role === 'recepcao' && !['terapeuta', 'pai'].includes(role)) {
+    return NextResponse.json({ error: 'Recepção só pode cadastrar terapeutas e responsáveis' }, { status: 403 })
+  }
+
   if (role === 'terapeuta' && !crefito?.trim()) {
     return NextResponse.json({ error: 'CREFITO é obrigatório para terapeutas (CREFITO Res. 426/2015)' }, { status: 400 })
   }

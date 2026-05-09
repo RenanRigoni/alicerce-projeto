@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
   const horaLimite = expiraEm.toLocaleTimeString('pt-BR', {
     hour: '2-digit', minute: '2-digit',
     timeZone: 'America/Sao_Paulo',
-  }).replace(':', 'h')
+  })
   const dataLimite = expiraEm.toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'long',
     timeZone: 'America/Sao_Paulo',

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
+import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
 import { AgendamentosLista, type AgendamentoItem } from '@/components/admin/AgendamentosLista'
 
 export default async function AgendamentosPage() {
@@ -44,9 +45,7 @@ export default async function AgendamentosPage() {
       .limit(20),
     supabase
       .from('feriados')
-      .select('data')
-      .gte('data', hoje.toISOString().slice(0, 10))
-      .lte('data', em14dias.toISOString().slice(0, 10)),
+      .select('data, anual'),
     supabase
       .from('sessao_confirmacoes')
       .select('paciente_id, data_hora, token, status')
@@ -54,7 +53,8 @@ export default async function AgendamentosPage() {
       .lte('data_hora', em14dias.toISOString()),
   ])
 
-  const feriadosDatas = (feriados ?? []).map((f: any) => f.data)
+  const anoAtual = new Date().getFullYear()
+  const feriadosDatas = expandirFeriadosAnuais(feriados ?? [], anoAtual - 1, anoAtual + 2)
 
   const pacientesParaGerar = (pacientesAtivos ?? []).map((p: any) => ({
     id: p.id,

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { CalendarioAgenda } from '@/components/terapia/CalendarioAgenda'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
+import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
 
 export default async function AgendaPage() {
   const supabase = await createClient()
@@ -27,7 +28,7 @@ export default async function AgendaPage() {
       .order('data_hora'),
     supabase
       .from('feriados')
-      .select('data, descricao')
+      .select('data, descricao, anual')
       .order('data'),
     supabase
       .from('sessao_confirmacoes')
@@ -40,7 +41,8 @@ export default async function AgendaPage() {
     .map((v: any) => v.pacientes)
     .filter((p: any) => p && p.status === 'ativo')
 
-  const feriadosDatas = (feriados ?? []).map((f: any) => f.data)
+  const anoAtual = new Date().getFullYear()
+  const feriadosDatas = expandirFeriadosAnuais(feriados ?? [], anoAtual - 1, anoAtual + 2)
   const sessoesRec = gerarSessoes(pacientes, inicio, fim, feriadosDatas)
 
   // Monta mapa de confirmações: "paciente_id_YYYY-MM-DD_HH:MM" → { token, status }

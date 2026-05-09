@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { notFound } from 'next/navigation'
 import { AcoesUsuario } from './AcoesUsuario'
 import { AgendaSemanalTerapeuta } from '@/components/admin/AgendaSemanalTerapeuta'
+import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
 import { PermissoesEditor } from '@/components/admin/PermissoesEditor'
 
 const roleLabel: Record<string, string> = {
@@ -93,12 +94,13 @@ export default async function UsuarioDetalhePage({
         .from('paciente_terapeutas')
         .select('pacientes(id, nome, status, horarios_atendimento)')
         .eq('terapeuta_id', id),
-      supabase.from('feriados').select('data'),
+      supabase.from('feriados').select('data, anual'),
     ])
     pacientesTerapeuta = (vinculos ?? [])
       .map((v: any) => v.pacientes)
       .filter((p: any) => p && p.status === 'ativo')
-    feriadosDatas = (feriados ?? []).map((f: any) => f.data)
+    const anoAtual = new Date().getFullYear()
+    feriadosDatas = expandirFeriadosAnuais(feriados ?? [], anoAtual - 1, anoAtual + 2)
 
     const pacientesIds = pacientesTerapeuta.map(p => p.id)
     if (pacientesIds.length > 0) {

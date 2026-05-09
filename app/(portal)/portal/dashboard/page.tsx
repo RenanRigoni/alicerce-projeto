@@ -4,6 +4,7 @@ import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 import { OrientacaoCard } from '@/components/portal/OrientacaoCard'
 import { CalendarioMensalPortal } from '@/components/portal/CalendarioMensalPortal'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
+import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
 
 const tipoLabel: Record<string, string> = {
   sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
@@ -38,7 +39,7 @@ export default async function PortalDashboard() {
       : Promise.resolve({ data: [] }),
     supabase
       .from('feriados')
-      .select('data, descricao')
+      .select('data, descricao, anual')
       .order('data'),
     pacienteIds.length > 0
       ? supabase
@@ -67,7 +68,8 @@ export default async function PortalDashboard() {
   const agora = new Date()
   const em3meses = new Date(agora.getFullYear(), agora.getMonth() + 3, agora.getDate())
   const inicio3meses = new Date(agora.getFullYear(), agora.getMonth() - 1, 1)
-  const feriadosDatas = (feriados ?? []).map((f: any) => f.data)
+  const anoAtual = new Date().getFullYear()
+  const feriadosDatas = expandirFeriadosAnuais(feriados ?? [], anoAtual - 1, anoAtual + 2)
 
   const sessoesRec = gerarSessoes(pacientesAtivos, inicio3meses, em3meses, feriadosDatas)
 

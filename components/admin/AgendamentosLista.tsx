@@ -85,9 +85,6 @@ export function AgendamentosLista({ porDia, diasOrdenados }: Props) {
       })
       const json = await res.json()
       if (res.ok && json.waUrl) {
-        console.log('msgDebug:', json.msgDebug)
-        console.log('waUrl recebida:', json.waUrl)
-        console.log('tem caractere quebrado:', json.waUrl.includes('%EF%BF%BD'))
         window.open(json.waUrl, '_blank', 'noopener,noreferrer')
         setLocalConf(prev => ({ ...prev, [item.id]: { token: json.token, status: json.status ?? 'pendente' } }))
       }

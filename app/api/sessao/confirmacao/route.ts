@@ -149,8 +149,8 @@ export async function POST(request: NextRequest) {
   // Formato: 55 + DDD + número (strip tudo não-numérico)
   const telStripped = telefone ? telefone.replace(/\D/g, '') : null
   const waUrl = telStripped
-    ? `https://wa.me/55${telStripped}?text=${encodeURIComponent(msg)}`
-    : `https://wa.me/?text=${encodeURIComponent(msg)}`
+    ? `https://api.whatsapp.com/send?phone=55${telStripped}&text=${encodeURIComponent(msg)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`
 
-  return NextResponse.json({ waUrl, token, status: currentStatus, msgDebug: msg, waUrlDebug: waUrl })
+  return NextResponse.json({ waUrl, token, status: currentStatus })
 }

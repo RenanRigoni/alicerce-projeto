@@ -42,29 +42,23 @@ export default async function CancelarPage({ params }: Props) {
     return <Resultado tipo="ja_cancelado" paciente={pac?.nome} data={data} hora={hora} />
   }
 
-  if (conf.status === 'confirmada') {
-    const { data: pac } = await adminClient.from('pacientes').select('nome').eq('id', conf.paciente_id).single()
-    const { data, hora } = formatarDataHora(conf.data_hora)
-    return <Resultado tipo="ja_confirmado" paciente={pac?.nome} data={data} hora={hora} />
-  }
-
   if (isExpired || conf.status === 'expirada') {
     await adminClient
       .from('sessao_confirmacoes')
       .update({ status: 'expirada' })
       .eq('token', token)
-      .eq('status', 'pendente')
+      .in('status', ['pendente', 'confirmada'])
     const { data: pac } = await adminClient.from('pacientes').select('nome').eq('id', conf.paciente_id).single()
     const { data, hora } = formatarDataHora(conf.data_hora)
     return <Resultado tipo="expirado" paciente={pac?.nome} data={data} hora={hora} />
   }
 
-  // Cancela atomicamente
+  // Cancela atomicamente — aceita pendente ou confirmada (responsável pode mudar de ideia antes do prazo)
   const { data: updated } = await adminClient
     .from('sessao_confirmacoes')
     .update({ status: 'cancelada', respondido_em: agoraISO })
     .eq('token', token)
-    .eq('status', 'pendente')
+    .in('status', ['pendente', 'confirmada'])
     .select('paciente_id, data_hora')
     .maybeSingle()
 

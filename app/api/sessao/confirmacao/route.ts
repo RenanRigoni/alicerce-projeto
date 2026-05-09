@@ -115,14 +115,28 @@ export async function POST(request: NextRequest) {
     timeZone: 'America/Sao_Paulo',
   })
 
+  // Prazo = 24h antes da sessão, formatado como "10h00 do dia 10 de maio"
+  const horaLimite = expiraEm.toLocaleTimeString('pt-BR', {
+    hour: '2-digit', minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  }).replace(':', 'h')
+  const dataLimite = expiraEm.toLocaleDateString('pt-BR', {
+    day: '2-digit', month: 'long',
+    timeZone: 'America/Sao_Paulo',
+  })
+
   const nomePaciente = paciente?.nome ?? 'seu filho(a)'
+  const E_CALENDARIO = String.fromCodePoint(0x1F4C5)             // calendario
+  const E_CONFIRMAR  = String.fromCodePoint(0x2705)               // check verde
+  const E_CANCELAR   = String.fromCodePoint(0x274C)               // X vermelho
+  const E_AVISO      = String.fromCodePoint(0x26A0, 0xFE0F)      // triangulo aviso
   const msg =
     `Olá! Seguem os detalhes da sessão de *${nomePaciente}*:\n\n` +
-    `📅 ${dataFormatada} às ${horaFormatada}\n\n` +
-    `Por favor, confirme ou cancele até 24h antes:\n\n` +
-    `✅ *Confirmar presença:*\n${confirmarUrl}\n\n` +
-    `❌ *Cancelar sessão:*\n${cancelarUrl}\n\n` +
-    `⚠️ _Sem resposta até o prazo, a sessão será confirmada automaticamente e cobrada normalmente._`
+    `${E_CALENDARIO} ${dataFormatada} às ${horaFormatada}\n\n` +
+    `Por favor, confirme ou cancele até ${horaLimite} do dia ${dataLimite}:\n\n` +
+    `${E_CONFIRMAR} *Confirmar presença:*\n${confirmarUrl}\n\n` +
+    `${E_CANCELAR} *Cancelar sessão:*\n${cancelarUrl}\n\n` +
+    `${E_AVISO} _Sem resposta até o prazo, a sessão será confirmada automaticamente e cobrada normalmente._`
 
   // Formato: 55 + DDD + número (strip tudo não-numérico)
   const telStripped = telefone ? telefone.replace(/\D/g, '') : null

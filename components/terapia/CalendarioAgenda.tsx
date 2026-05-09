@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export interface EventoAgenda {
   id: string
@@ -10,6 +10,7 @@ export interface EventoAgenda {
   data_hora: string
   duracao_minutos: number
   paciente: { id: string; nome: string } | null
+  confirmacao?: { token: string; status: string } | null
 }
 
 interface Feriado {
@@ -31,6 +32,13 @@ const tipoStyle: Record<string, { background: string; color: string; border: str
 
 const tipoLabel: Record<string, string> = {
   sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
+}
+
+const confirmacaoConfig: Record<string, { label: string; bg: string; color: string; border: string }> = {
+  pendente:   { label: '⏳ Aguardando confirmação', bg: '#fffbeb', color: '#b45309', border: '#fde68a' },
+  confirmada: { label: '✅ Confirmada pelo responsável', bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
+  cancelada:  { label: '❌ Cancelada pelo responsável', bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+  expirada:   { label: '⚠️ Expirada — confirmada para cobrança', bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' },
 }
 
 const diasCurtos = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -76,11 +84,59 @@ function horaEvento(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function IconeWhatsApp() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  )
+}
+
 export function CalendarioAgenda({ eventos, feriados }: Props) {
   const [view, setView] = useState<'semana' | 'mes'>('semana')
   const [dataBase, setDataBase] = useState(new Date())
   const [eventoAberto, setEventoAberto] = useState<EventoAgenda | null>(null)
   const [diaAberto, setDiaAberto] = useState<{ dateStr: string; evs: EventoAgenda[] } | null>(null)
+  const [waLoading, setWaLoading] = useState(false)
+  const [waConfirmacao, setWaConfirmacao] = useState<{ token: string; status: string } | null>(null)
+
+  useEffect(() => {
+    setWaConfirmacao(null)
+    setWaLoading(false)
+  }, [eventoAberto?.id])
+
+  async function handleEnviarWhatsApp() {
+    if (!eventoAberto?.paciente) return
+    setWaLoading(true)
+    try {
+      const res = await fetch('/api/sessao/confirmacao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paciente_id: eventoAberto.paciente.id,
+          data_hora: eventoAberto.data_hora,
+        }),
+      })
+      const json = await res.json()
+      if (res.ok && json.waUrl) {
+        window.open(json.waUrl, '_blank', 'noopener,noreferrer')
+        setWaConfirmacao({ token: json.token, status: json.status ?? 'pendente' })
+      }
+    } catch {
+      // silent — usuário pode tentar novamente
+    } finally {
+      setWaLoading(false)
+    }
+  }
+
+  const confirmacaoStatus =
+    waConfirmacao?.status ?? eventoAberto?.confirmacao?.status ?? null
+
+  const podaEnviarWA =
+    confirmacaoStatus === null ||
+    confirmacaoStatus === 'cancelada' ||
+    confirmacaoStatus === 'expirada' ||
+    confirmacaoStatus === 'pendente'
 
   // ── SEMANA ──────────────────────────────────────────────────
   const monday = getMondayOfWeek(dataBase)
@@ -472,6 +528,55 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                   Observação
                 </span>
                 {eventoAberto.motivo}
+              </div>
+            )}
+
+            {/* Confirmação via WhatsApp — apenas para sessões com paciente */}
+            {eventoAberto.tipo === 'sessao' && eventoAberto.paciente && (
+              <div
+                className="pt-2 space-y-2"
+                style={{ borderTop: '1px solid var(--color-border-soft)' }}
+              >
+                <span
+                  className="text-xs uppercase tracking-wide block"
+                  style={{ color: 'var(--color-ink-faint)' }}
+                >
+                  Confirmação de presença
+                </span>
+
+                {/* Badge de status */}
+                {confirmacaoStatus && confirmacaoConfig[confirmacaoStatus] && (
+                  <div
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                    style={{
+                      background: confirmacaoConfig[confirmacaoStatus].bg,
+                      color: confirmacaoConfig[confirmacaoStatus].color,
+                      border: `1px solid ${confirmacaoConfig[confirmacaoStatus].border}`,
+                    }}
+                  >
+                    {confirmacaoConfig[confirmacaoStatus].label}
+                  </div>
+                )}
+
+                {/* Botão WhatsApp */}
+                {podaEnviarWA && (
+                  <button
+                    onClick={handleEnviarWhatsApp}
+                    disabled={waLoading}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-85 disabled:opacity-50"
+                    style={{
+                      background: '#25D366',
+                      color: '#fff',
+                    }}
+                  >
+                    <IconeWhatsApp />
+                    {waLoading
+                      ? 'Preparando...'
+                      : confirmacaoStatus === 'pendente'
+                      ? 'Reenviar via WhatsApp'
+                      : 'Enviar via WhatsApp'}
+                  </button>
+                )}
               </div>
             )}
           </div>

@@ -1,17 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
-
-const tipoLabel: Record<string, string> = {
-  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
-}
-
-const tipoStyle: Record<string, { background: string; color: string }> = {
-  sessao:     { background: 'var(--color-rose-blush)',     color: 'var(--color-rose-deep)' },
-  devolutiva: { background: 'var(--color-lavender-light)', color: 'var(--color-lavender-main)' },
-  reuniao:    { background: 'var(--color-sage-light)',     color: 'var(--color-sage-deep)' },
-  outro:      { background: 'var(--color-border-soft)',    color: 'var(--color-ink-mid)' },
-}
+import { AgendamentosLista, type AgendamentoItem } from '@/components/admin/AgendamentosLista'
 
 export default async function AgendamentosPage() {
   const supabase = await createClient()
@@ -25,13 +15,12 @@ export default async function AgendamentosPage() {
     { data: especiais },
     { data: passados },
     { data: feriados },
+    { data: confirmacoes },
   ] = await Promise.all([
-    // Todos pacientes ativos com horários e terapeuta vinculado
     supabase
       .from('pacientes')
       .select('id, nome, horarios_atendimento, paciente_terapeutas(terapeuta_id, profiles(nome))')
       .eq('status', 'ativo'),
-    // Eventos excepcionais futuros (devolutivas, reuniões, etc)
     supabase
       .from('agendamentos')
       .select(`
@@ -43,7 +32,6 @@ export default async function AgendamentosPage() {
       .gte('data_hora', hoje.toISOString())
       .order('data_hora')
       .limit(50),
-    // Histórico recente (todos os tipos, já passados)
     supabase
       .from('agendamentos')
       .select(`
@@ -59,11 +47,15 @@ export default async function AgendamentosPage() {
       .select('data')
       .gte('data', hoje.toISOString().slice(0, 10))
       .lte('data', em14dias.toISOString().slice(0, 10)),
+    supabase
+      .from('sessao_confirmacoes')
+      .select('paciente_id, data_hora, token, status')
+      .gte('data_hora', hoje.toISOString())
+      .lte('data_hora', em14dias.toISOString()),
   ])
 
   const feriadosDatas = (feriados ?? []).map((f: any) => f.data)
 
-  // Gera sessões recorrentes para os próximos 14 dias
   const pacientesParaGerar = (pacientesAtivos ?? []).map((p: any) => ({
     id: p.id,
     nome: p.nome,
@@ -73,7 +65,6 @@ export default async function AgendamentosPage() {
 
   const sessoesRec = gerarSessoes(pacientesParaGerar, hoje, em14dias, feriadosDatas)
 
-  // Enriquece sessões com nome do terapeuta
   const terapeutaByPaciente = Object.fromEntries(
     (pacientesAtivos ?? []).map((p: any) => [
       p.id,
@@ -81,19 +72,40 @@ export default async function AgendamentosPage() {
     ])
   )
 
-  // Merge sessões + especiais, ordena por data
-  const proximos = [
-    ...sessoesRec.map(s => ({
-      id: s.id,
-      tipo: s.tipo,
-      titulo: s.titulo,
-      motivo: null,
-      data_hora: s.data_hora,
-      duracao_minutos: s.duracao_minutos,
-      visivel_responsavel: true,
-      pacienteNome: s.paciente?.nome ?? null,
-      terapeutaNome: s.paciente ? terapeutaByPaciente[s.paciente.id] : null,
-    })),
+  // Mapa de confirmações: "paciente_id_YYYY-MM-DD_HH:MM" → { token, status }
+  const confirmacaoMap = new Map<string, { token: string; status: string }>()
+  for (const c of confirmacoes ?? []) {
+    const dt = new Date(c.data_hora as string)
+    const brt = new Date(dt.getTime() - 3 * 60 * 60 * 1000)
+    const brtDate = brt.toISOString().slice(0, 10)
+    const brtHora = brt.toISOString().slice(11, 16)
+    confirmacaoMap.set(`${c.paciente_id}_${brtDate}_${brtHora}`, {
+      token: c.token as string,
+      status: c.status as string,
+    })
+  }
+
+  const proximos: AgendamentoItem[] = [
+    ...sessoesRec.map(s => {
+      const brtDate = s.data_hora.slice(0, 10)
+      const brtHora = s.data_hora.slice(11, 16)
+      const confirmacao = s.paciente
+        ? (confirmacaoMap.get(`${s.paciente.id}_${brtDate}_${brtHora}`) ?? null)
+        : null
+      return {
+        id: s.id,
+        tipo: s.tipo,
+        titulo: s.titulo,
+        motivo: null,
+        data_hora: s.data_hora,
+        duracao_minutos: s.duracao_minutos,
+        pacienteId: s.paciente?.id ?? null,
+        pacienteNome: s.paciente?.nome ?? null,
+        terapeutaNome: s.paciente ? terapeutaByPaciente[s.paciente.id] : null,
+        visivel_responsavel: true,
+        confirmacao,
+      }
+    }),
     ...(especiais ?? []).map((a: any) => ({
       id: a.id,
       tipo: a.tipo,
@@ -101,33 +113,22 @@ export default async function AgendamentosPage() {
       motivo: a.motivo,
       data_hora: a.data_hora,
       duracao_minutos: a.duracao_minutos,
-      visivel_responsavel: a.visivel_responsavel,
+      pacienteId: a.pacientes?.id ?? null,
       pacienteNome: a.pacientes?.nome ?? null,
       terapeutaNome: (a.profiles as any)?.nome ?? null,
+      visivel_responsavel: a.visivel_responsavel,
+      confirmacao: null,
     })),
   ].sort((a, b) => a.data_hora.localeCompare(b.data_hora))
 
-  const DIAS_PT = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
-
-  // Agrupa próximos por dia
-  const porDia: Record<string, typeof proximos> = {}
+  // Agrupa por dia
+  const porDia: Record<string, AgendamentoItem[]> = {}
   for (const a of proximos) {
     const dia = a.data_hora.slice(0, 10)
     if (!porDia[dia]) porDia[dia] = []
     porDia[dia].push(a)
   }
   const diasOrdenados = Object.keys(porDia).sort()
-
-  function formatarHora(iso: string) {
-    return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  }
-
-  function formatarCabecalhoDia(dateStr: string) {
-    const d = new Date(dateStr + 'T12:00:00')
-    const diaSemana = DIAS_PT[d.getDay()]
-    const data = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-    return `${diaSemana} · ${data}`
-  }
 
   function formatarDataHora(iso: string) {
     const d = new Date(iso)
@@ -158,70 +159,13 @@ export default async function AgendamentosPage() {
         </a>
       </div>
 
-      {/* Próximos — agrupados por dia */}
+      {/* Próximos — agrupados por dia (client component com WA inline) */}
       <div className="space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-ink-soft)' }}>
           Próximos (14 dias)
         </h2>
         {diasOrdenados.length > 0 ? (
-          <div className="space-y-4">
-            {diasOrdenados.map(dateStr => (
-              <div key={dateStr}>
-                <div
-                  className="text-xs font-semibold uppercase tracking-wide mb-2"
-                  style={{ color: 'var(--color-rose-main)' }}
-                >
-                  {formatarCabecalhoDia(dateStr)}
-                </div>
-                <div
-                  className="rounded-2xl overflow-hidden"
-                  style={{ background: 'var(--color-warm-white)', border: '1px solid var(--color-border)' }}
-                >
-                  {porDia[dateStr].map((a, i) => (
-                    <div
-                      key={a.id}
-                      className="px-4 py-3 flex items-start justify-between gap-3"
-                      style={{ borderTop: i > 0 ? '1px solid var(--color-border-soft)' : 'none' }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                          <span
-                            className="text-xs px-2 py-0.5 rounded-full font-medium"
-                            style={tipoStyle[a.tipo] ?? tipoStyle.outro}
-                          >
-                            {tipoLabel[a.tipo] ?? a.tipo}
-                          </span>
-                          <span className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>
-                            {a.titulo}
-                          </span>
-                        </div>
-                        <div className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
-                          {a.pacienteNome && <span>{a.pacienteNome} · </span>}
-                          {a.terapeutaNome}
-                        </div>
-                        {a.motivo && (
-                          <div className="text-xs italic mt-0.5" style={{ color: 'var(--color-ink-faint)' }}>
-                            {a.motivo}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-sm font-medium tabular-nums" style={{ color: 'var(--color-ink-mid)' }}>
-                          {formatarHora(a.data_hora)}
-                        </div>
-                        <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-                          {a.duracao_minutos} min
-                        </div>
-                        {!a.visivel_responsavel && (
-                          <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>Interno</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <AgendamentosLista porDia={porDia} diasOrdenados={diasOrdenados} />
         ) : (
           <Card>
             <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>

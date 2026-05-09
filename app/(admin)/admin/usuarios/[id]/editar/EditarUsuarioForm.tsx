@@ -10,6 +10,26 @@ const roleLabel: Record<string, string> = {
   admin: 'Admin', recepcao: 'Recepção', terapeuta: 'Terapeuta', pai: 'Família',
 }
 
+function mascaraTelefone(valor: string) {
+  const d = valor.replace(/\D/g, '').slice(0, 11)
+  if (d.length <= 2) return d.length ? `(${d}` : ''
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+}
+
+function mascaraCEP(valor: string) {
+  const d = valor.replace(/\D/g, '').slice(0, 8)
+  if (d.length <= 5) return d
+  return `${d.slice(0, 5)}-${d.slice(5)}`
+}
+
+function parsarEmergencia(raw: string | null) {
+  if (!raw) return { nome: '', telefone: '' }
+  const idx = raw.indexOf(' — ')
+  if (idx === -1) return { nome: raw, telefone: '' }
+  return { nome: raw.slice(0, idx), telefone: raw.slice(idx + 3) }
+}
+
 interface Props {
   usuario: { id: string; nome: string; role: string; telefone: string | null; crefito: string | null }
   detalhes: { endereco: string | null; cidade: string | null; cep: string | null; telefone_principal: string | null; contato_emergencia: string | null } | null
@@ -27,6 +47,8 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
+  const emergenciaInicial = parsarEmergencia(detalhes?.contato_emergencia ?? null)
+
   const [form, setForm] = useState({
     nome: usuario.nome ?? '',
     telefone: usuario.telefone ?? '',
@@ -36,11 +58,20 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     endereco: detalhes?.endereco ?? '',
     cidade: detalhes?.cidade ?? '',
     cep: detalhes?.cep ?? '',
-    contato_emergencia: detalhes?.contato_emergencia ?? '',
+    emergencia_nome: emergenciaInicial.nome,
+    emergencia_telefone: emergenciaInicial.telefone,
   })
 
   function handle(e: React.ChangeEvent<HTMLInputElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  function handleTelefone(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm(prev => ({ ...prev, [e.target.name]: mascaraTelefone(e.target.value) }))
+  }
+
+  function handleCEP(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm(prev => ({ ...prev, cep: mascaraCEP(e.target.value) }))
   }
 
   async function salvar(e: React.FormEvent) {
@@ -68,6 +99,12 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     if (errProfile) { setErro(errProfile.message); setSalvando(false); return }
 
     if (usuario.role === 'pai') {
+      const emergenciaNome = form.emergencia_nome.trim()
+      const emergenciaTel  = form.emergencia_telefone.trim()
+      const contato_emergencia = emergenciaNome && emergenciaTel
+        ? `${emergenciaNome} — ${emergenciaTel}`
+        : emergenciaNome || emergenciaTel || null
+
       const { error: errDet } = await supabase
         .from('responsaveis_detalhes')
         .upsert({
@@ -76,7 +113,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
           endereco: form.endereco || null,
           cidade: form.cidade || null,
           cep: form.cep || null,
-          contato_emergencia: form.contato_emergencia || null,
+          contato_emergencia,
         }, { onConflict: 'id' })
 
       if (errDet) { setErro(errDet.message); setSalvando(false); return }
@@ -158,7 +195,15 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
                 <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
                   Telefone principal
                 </label>
-                <input name="telefone_principal" value={form.telefone_principal} onChange={handle} className={inputCls} style={inputStyle} />
+                <input
+                  name="telefone_principal"
+                  value={form.telefone_principal}
+                  onChange={handleTelefone}
+                  placeholder="(34) 99999-9999"
+                  inputMode="numeric"
+                  className={inputCls}
+                  style={inputStyle}
+                />
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
@@ -177,14 +222,40 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
                   <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
                     CEP
                   </label>
-                  <input name="cep" value={form.cep} onChange={handle} className={inputCls} style={inputStyle} />
+                  <input
+                    name="cep"
+                    value={form.cep}
+                    onChange={handleCEP}
+                    placeholder="00000-000"
+                    inputMode="numeric"
+                    className={inputCls}
+                    style={inputStyle}
+                  />
                 </div>
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
                   Contato de emergência
                 </label>
-                <input name="contato_emergencia" value={form.contato_emergencia} onChange={handle} className={inputCls} style={inputStyle} />
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    name="emergencia_nome"
+                    value={form.emergencia_nome}
+                    onChange={handle}
+                    placeholder="Nome"
+                    className={inputCls}
+                    style={inputStyle}
+                  />
+                  <input
+                    name="emergencia_telefone"
+                    value={form.emergencia_telefone}
+                    onChange={handleTelefone}
+                    placeholder="(34) 99999-9999"
+                    inputMode="numeric"
+                    className={inputCls}
+                    style={inputStyle}
+                  />
+                </div>
               </div>
             </>
           )}

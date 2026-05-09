@@ -51,10 +51,8 @@ export default async function AdminDashboard() {
       : Promise.resolve({ data: [] }),
     supabase
       .from('feriados')
-      .select('data, descricao')
-      .gte('data', new Date().toISOString().slice(0, 10))
-      .order('data')
-      .limit(3),
+      .select('data, descricao, anual')
+      .order('data'),
     supabase
       .from('comunicados')
       .select('id, titulo, conteudo, criado_em, profiles(nome)')
@@ -63,6 +61,22 @@ export default async function AdminDashboard() {
   ])
 
   const totalFamilias = new Set((familiasDados ?? []).map((f: any) => f.responsavel_id)).size
+
+  // Feriados do mês atual — expande anuais para o ano corrente
+  const hoje = new Date()
+  const anoAtual = hoje.getFullYear()
+  const mesAtualStr = String(hoje.getMonth() + 1).padStart(2, '0')
+
+  const feriadosDoMes = (feriados ?? [])
+    .flatMap((f: any) => {
+      const [, fMes, fDia] = (f.data as string).split('-')
+      if (fMes !== mesAtualStr) return []
+      const dataAnoAtual = `${anoAtual}-${fMes}-${fDia}`
+      const dt = new Date(`${dataAnoAtual}T12:00:00`)
+      if (String(dt.getMonth() + 1).padStart(2, '0') !== fMes) return [] // bissexto edge case
+      return [{ data: dataAnoAtual, descricao: f.descricao as string }]
+    })
+    .sort((a, b) => a.data.localeCompare(b.data))
 
   return (
     <div className="space-y-6">
@@ -242,18 +256,18 @@ export default async function AdminDashboard() {
         </div>
       )}
 
-      {/* Próximos feriados */}
-      {feriados && feriados.length > 0 && (
+      {/* Feriados do mês atual */}
+      {feriadosDoMes.length > 0 && (
         <div>
           <h2
             className="text-xs font-semibold uppercase tracking-wider mb-3"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Próximos feriados
+            Feriados deste mês
           </h2>
           <Card>
             <div className="space-y-2.5">
-              {feriados.map((f: any) => (
+              {feriadosDoMes.map((f) => (
                 <div key={f.data} className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-rose-soft)' }} />
                   <div>

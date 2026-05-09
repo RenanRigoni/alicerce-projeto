@@ -57,11 +57,19 @@ export async function POST(request: NextRequest) {
         .eq('data_hora', dataHoraISO)
     }
 
+    // Usa o terapeuta vinculado ao paciente, não o usuário logado
+    const { data: vinculoTerapeuta } = await adminClient
+      .from('paciente_terapeutas')
+      .select('terapeuta_id')
+      .eq('paciente_id', paciente_id)
+      .maybeSingle()
+    const terapeutaId = vinculoTerapeuta?.terapeuta_id ?? user.id
+
     const { data: nova, error } = await adminClient
       .from('sessao_confirmacoes')
       .insert({
         paciente_id,
-        terapeuta_id: user.id,
+        terapeuta_id: terapeutaId,
         data_hora: dataHoraISO,
         expira_em: expiraEm.toISOString(),
         status: 'pendente',
@@ -126,11 +134,10 @@ export async function POST(request: NextRequest) {
   })
 
   const nomePaciente = paciente?.nome ?? 'seu filho(a)'
-  // EMOJI: cole aqui os emoji que quiser substituir (abra este arquivo no VS Code)
-  const E_DATA      = '🗓️' // linha ~129 — substitua pelo emoji desejado
-  const E_CONFIRMAR = '✅' // linha ~130
-  const E_CANCELAR  = '❌' // linha ~131
-  const E_AVISO     = '⚠️' // linha ~132
+  const E_DATA      = '\u{1F5D3}\u{FE0F}'  // 🗓️ espiral
+  const E_CONFIRMAR = '\u{2705}'            // ✅
+  const E_CANCELAR  = '\u{274C}'            // ❌
+  const E_AVISO     = '\u{26A0}\u{FE0F}'   // ⚠️
   const msg =
     `Olá! Seguem os detalhes da sessão de *${nomePaciente}*:\n\n` +
     `${E_DATA} ${dataFormatada} às ${horaFormatada}\n\n` +
@@ -145,5 +152,5 @@ export async function POST(request: NextRequest) {
     ? `https://wa.me/55${telStripped}?text=${encodeURIComponent(msg)}`
     : `https://wa.me/?text=${encodeURIComponent(msg)}`
 
-  return NextResponse.json({ waUrl, token, status: currentStatus })
+  return NextResponse.json({ waUrl, token, status: currentStatus, msgDebug: msg, waUrlDebug: waUrl })
 }

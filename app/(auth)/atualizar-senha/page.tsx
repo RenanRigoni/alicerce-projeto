@@ -16,9 +16,21 @@ export default function AtualizarSenhaPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSessaoValida(!!session)
+
+    // PKCE: Supabase redireciona com ?code=... — o cliente troca o code por sessão
+    // onAuthStateChange captura tanto SIGNED_IN quanto PASSWORD_RECOVERY
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        setSessaoValida(!!session)
+      }
     })
+
+    // Fallback: sessão já existe (ex: link implícito com hash)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setSessaoValida(true)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {

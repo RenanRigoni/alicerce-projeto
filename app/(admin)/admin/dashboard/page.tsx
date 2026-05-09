@@ -67,13 +67,16 @@ export default async function AdminDashboard() {
   const anoAtual = hoje.getFullYear()
   const mesAtualStr = String(hoje.getMonth() + 1).padStart(2, '0')
 
+  const hojeStr = hoje.toISOString().slice(0, 10)
+
   const feriadosDoMes = (feriados ?? [])
     .flatMap((f: any) => {
       const [, fMes, fDia] = (f.data as string).split('-')
       if (fMes !== mesAtualStr) return []
       const dataAnoAtual = `${anoAtual}-${fMes}-${fDia}`
       const dt = new Date(`${dataAnoAtual}T12:00:00`)
-      if (String(dt.getMonth() + 1).padStart(2, '0') !== fMes) return [] // bissexto edge case
+      if (String(dt.getMonth() + 1).padStart(2, '0') !== fMes) return []
+      if (dataAnoAtual < hojeStr) return [] // já passou
       return [{ data: dataAnoAtual, descricao: f.descricao as string }]
     })
     .sort((a, b) => a.data.localeCompare(b.data))
@@ -263,7 +266,7 @@ export default async function AdminDashboard() {
             className="text-xs font-semibold uppercase tracking-wider mb-3"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Feriados deste mês
+            Próximos feriados
           </h2>
           <Card>
             <div className="space-y-2.5">

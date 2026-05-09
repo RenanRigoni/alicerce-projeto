@@ -60,15 +60,13 @@ export default async function AgendaPage() {
 
   const eventosList = [
     ...sessoesRec.map(s => {
-      // Extrai data e hora BRT diretamente da string ISO com offset -03:00
-      // Formato: "2026-05-12T09:00:00-03:00"
       const brtDate = s.data_hora.slice(0, 10)
       const brtHora = s.data_hora.slice(11, 16)
       const confirmacao = s.paciente
         ? (confirmacaoMap.get(`${s.paciente.id}_${brtDate}_${brtHora}`) ?? null)
         : null
       return { ...s, confirmacao }
-    }),
+    }).filter(s => s.confirmacao?.status !== 'cancelada'),
     ...(especiais ?? []).map((a: any) => ({
       id: a.id,
       tipo: a.tipo as string,

@@ -12,6 +12,7 @@ interface Paciente {
 interface Props {
   pacientes: Paciente[]
   feriadosDatas: string[]
+  canceladasKeys?: string[]
 }
 
 const DIAS_PT = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
@@ -32,14 +33,20 @@ function addDays(d: Date, n: number): Date {
   return r
 }
 
-export function AgendaSemanalTerapeuta({ pacientes, feriadosDatas }: Props) {
+export function AgendaSemanalTerapeuta({ pacientes, feriadosDatas, canceladasKeys = [] }: Props) {
   const [weekOffset, setWeekOffset] = useState(0)
 
   const monday = getMondayOfWeek(weekOffset)
   const sunday = addDays(monday, 6)
   sunday.setHours(23, 59, 59, 999)
 
-  const sessoes = gerarSessoes(pacientes, monday, sunday, feriadosDatas)
+  const canceladasSet = new Set(canceladasKeys)
+
+  const sessoes = gerarSessoes(pacientes, monday, sunday, feriadosDatas).filter(s => {
+    if (!s.paciente) return true
+    const key = `${s.paciente.id}_${s.data_hora.slice(0, 10)}_${s.data_hora.slice(11, 16)}`
+    return !canceladasSet.has(key)
+  })
 
   // Agrupa por data
   const porDia: Record<string, typeof sessoes> = {}

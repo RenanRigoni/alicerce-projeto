@@ -84,19 +84,29 @@ export default async function UsuarioDetalhePage({
   // Pacientes do terapeuta (apenas ativos, para agenda)
   let pacientesTerapeuta: Array<{ id: string; nome: string; horarios_atendimento: Array<{ dia: string; hora: string }> }> = []
   let feriadosDatas: string[] = []
+  let canceladasKeys: string[] = []
 
   if (usuario.role === 'terapeuta') {
-    const [{ data: vinculos }, { data: feriados }] = await Promise.all([
+    const [{ data: vinculos }, { data: feriados }, { data: canceladas }] = await Promise.all([
       supabase
         .from('paciente_terapeutas')
         .select('pacientes(id, nome, status, horarios_atendimento)')
         .eq('terapeuta_id', id),
       supabase.from('feriados').select('data'),
+      supabase
+        .from('sessao_confirmacoes')
+        .select('paciente_id, data_hora')
+        .eq('terapeuta_id', id)
+        .eq('status', 'cancelada'),
     ])
     pacientesTerapeuta = (vinculos ?? [])
       .map((v: any) => v.pacientes)
       .filter((p: any) => p && p.status === 'ativo')
     feriadosDatas = (feriados ?? []).map((f: any) => f.data)
+    canceladasKeys = (canceladas ?? []).map((c: any) => {
+      const brt = new Date(new Date(c.data_hora).getTime() - 3 * 60 * 60 * 1000)
+      return `${c.paciente_id}_${brt.toISOString().slice(0, 10)}_${brt.toISOString().slice(11, 16)}`
+    })
   }
 
   const isAdminOuRecepcao = meProfile?.role === 'admin' || meProfile?.role === 'recepcao'
@@ -184,6 +194,7 @@ export default async function UsuarioDetalhePage({
         <AgendaSemanalTerapeuta
           pacientes={pacientesTerapeuta}
           feriadosDatas={feriadosDatas}
+          canceladasKeys={canceladasKeys}
         />
       )}
 

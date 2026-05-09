@@ -126,13 +126,14 @@ export async function POST(request: NextRequest) {
   })
 
   const nomePaciente = paciente?.nome ?? 'seu filho(a)'
-  const E_CALENDARIO = String.fromCodePoint(0x1F4C5)             // calendario
-  const E_CONFIRMAR  = String.fromCodePoint(0x2705)               // check verde
-  const E_CANCELAR   = String.fromCodePoint(0x274C)               // X vermelho
-  const E_AVISO      = String.fromCodePoint(0x26A0, 0xFE0F)      // triangulo aviso
+  // EMOJI: cole aqui os emoji que quiser substituir (abra este arquivo no VS Code)
+  const E_DATA      = '🗓️' // linha ~129 — substitua pelo emoji desejado
+  const E_CONFIRMAR = '✅' // linha ~130
+  const E_CANCELAR  = '❌' // linha ~131
+  const E_AVISO     = '⚠️' // linha ~132
   const msg =
     `Olá! Seguem os detalhes da sessão de *${nomePaciente}*:\n\n` +
-    `${E_CALENDARIO} ${dataFormatada} às ${horaFormatada}\n\n` +
+    `${E_DATA} ${dataFormatada} às ${horaFormatada}\n\n` +
     `Por favor, confirme ou cancele até ${horaLimite} do dia ${dataLimite}:\n\n` +
     `${E_CONFIRMAR} *Confirmar presença:*\n${confirmarUrl}\n\n` +
     `${E_CANCELAR} *Cancelar sessão:*\n${cancelarUrl}\n\n` +

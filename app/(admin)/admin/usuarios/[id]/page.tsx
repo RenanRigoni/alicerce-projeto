@@ -85,6 +85,7 @@ export default async function UsuarioDetalhePage({
   let pacientesTerapeuta: Array<{ id: string; nome: string; horarios_atendimento: Array<{ dia: string; hora: string }> }> = []
   let feriadosDatas: string[] = []
   let canceladasKeys: string[] = []
+  let confirmacoesIniciais: Record<string, { token: string; status: string }> = {}
 
   if (usuario.role === 'terapeuta') {
     const [{ data: vinculos }, { data: feriados }] = await Promise.all([
@@ -101,15 +102,19 @@ export default async function UsuarioDetalhePage({
 
     const pacientesIds = pacientesTerapeuta.map(p => p.id)
     if (pacientesIds.length > 0) {
-      const { data: canceladas } = await adminClient
+      const { data: confirmacoes } = await adminClient
         .from('sessao_confirmacoes')
-        .select('paciente_id, data_hora')
+        .select('paciente_id, data_hora, token, status')
         .in('paciente_id', pacientesIds)
-        .eq('status', 'cancelada')
-      canceladasKeys = (canceladas ?? []).map((c: any) => {
+      for (const c of confirmacoes ?? []) {
         const brt = new Date(new Date(c.data_hora).getTime() - 3 * 60 * 60 * 1000)
-        return `${c.paciente_id}_${brt.toISOString().slice(0, 10)}_${brt.toISOString().slice(11, 16)}`
-      })
+        const key = `${c.paciente_id}_${brt.toISOString().slice(0, 10)}_${brt.toISOString().slice(11, 16)}`
+        if (c.status === 'cancelada') {
+          canceladasKeys.push(key)
+        } else {
+          confirmacoesIniciais[key] = { token: c.token, status: c.status }
+        }
+      }
     }
   }
 
@@ -199,6 +204,7 @@ export default async function UsuarioDetalhePage({
           pacientes={pacientesTerapeuta}
           feriadosDatas={feriadosDatas}
           canceladasKeys={canceladasKeys}
+          confirmacoesIniciais={confirmacoesIniciais}
         />
       )}
 

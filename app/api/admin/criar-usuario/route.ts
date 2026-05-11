@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
 
   const {
     nome, email, role, crefito, cpf_cnpj, paciente_id,
-    // campos responsável
-    telefone, cep, endereco, numero, complemento, cidade, contato_emergencia,
+    telefone, cep, endereco, numero, complemento, cidade,
+    contato_emergencia_nome, contato_emergencia_telefone,
   } = body
 
   if (!nome || !email || !role) {
@@ -98,7 +98,8 @@ export async function POST(request: NextRequest) {
       numero: numero?.trim() ?? null,
       complemento: complemento?.trim() ?? null,
       cidade: cidade?.trim() ?? null,
-      contato_emergencia: contato_emergencia?.trim() ?? null,
+      contato_emergencia: contato_emergencia_nome?.trim() ?? null,
+      contato_emergencia_telefone: contato_emergencia_telefone?.trim() ?? null,
     })
   }
 
@@ -116,16 +117,40 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Dispara e-mail de redefinição de senha via SMTP do Supabase
-  // resetPasswordForEmail usa POST /auth/v1/recover — envia e-mail real
-  // (ao contrário de generateLink que só retorna o link sem enviar)
+  // Tenta enviar e-mail via SMTP do Supabase.
+  // Fallback: retorna o link direto para o admin compartilhar manualmente
+  // (necessário quando rate limit de 2 emails/hora do free tier é atingido).
+  let emailEnviado = false
+  let linkRecuperacao: string | null = null
+
   try {
-    await adminClient.auth.resetPasswordForEmail(email, {
+    const { error: emailError } = await adminClient.auth.resetPasswordForEmail(email, {
       redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
     })
+    emailEnviado = !emailError
   } catch {
-    // falha no e-mail não bloqueia criação do usuário
+    emailEnviado = false
   }
 
-  return NextResponse.json({ success: true, user_id: userId })
+  if (!emailEnviado) {
+    try {
+      const { data: linkData } = await adminClient.auth.admin.generateLink({
+        type: 'recovery',
+        email,
+        options: {
+          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
+        },
+      })
+      linkRecuperacao = linkData?.properties?.action_link ?? null
+    } catch {
+      // ignora falha no fallback
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    user_id: userId,
+    email_enviado: emailEnviado,
+    ...(linkRecuperacao ? { link_recuperacao: linkRecuperacao } : {}),
+  })
 }

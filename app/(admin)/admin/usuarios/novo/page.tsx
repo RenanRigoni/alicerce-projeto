@@ -11,8 +11,9 @@ interface Paciente { id: string; nome: string; codigo_interno: string | null }
 
 const FORM_INICIAL = {
   nome: '', telefone: '', cep: '', endereco: '', numero: '',
-  complemento: '', cidade: '', contato_emergencia: '', email: '',
-  role: 'pai', cpf_cnpj: '', crefito: '', cpf_cnpj_terapeuta: '',
+  complemento: '', cidade: '',
+  contato_emergencia_nome: '', contato_emergencia_telefone: '',
+  email: '', role: 'pai', cpf_cnpj: '', crefito: '', cpf_cnpj_terapeuta: '',
 }
 
 async function buscarCep(cep: string): Promise<{ logradouro: string; localidade: string } | null> {
@@ -36,6 +37,8 @@ export default function NovoUsuarioPage() {
   const [novoUserId, setNovoUserId] = useState('')
   const [buscandoCep, setBuscandoCep] = useState(false)
   const [form, setForm] = useState(FORM_INICIAL)
+  const [linkRecuperacao, setLinkRecuperacao] = useState<string | null>(null)
+  const [linkCopiado, setLinkCopiado] = useState(false)
 
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [pacientesSelecionados, setPacientesSelecionados] = useState<string[]>([])
@@ -51,12 +54,8 @@ export default function NovoUsuarioPage() {
       .then(({ data }) => setPacientes(data ?? []))
   }, [form.role])
 
-  function set(field: string, value: string) {
-    setForm(prev => ({ ...prev, [field]: value }))
-  }
-
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    set(e.target.name, e.target.value)
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   async function handleCepBlur(e: React.FocusEvent<HTMLInputElement>) {
@@ -66,11 +65,7 @@ export default function NovoUsuarioPage() {
     const resultado = await buscarCep(cep)
     setBuscandoCep(false)
     if (resultado) {
-      setForm(prev => ({
-        ...prev,
-        endereco: resultado.logradouro,
-        cidade: resultado.localidade,
-      }))
+      setForm(prev => ({ ...prev, endereco: resultado.logradouro, cidade: resultado.localidade }))
     }
   }
 
@@ -80,9 +75,17 @@ export default function NovoUsuarioPage() {
     )
   }
 
+  async function copiarLink() {
+    if (!linkRecuperacao) return
+    await navigator.clipboard.writeText(linkRecuperacao)
+    setLinkCopiado(true)
+    setTimeout(() => setLinkCopiado(false), 2500)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setErro('')
+    setLinkRecuperacao(null)
 
     if (form.role === 'pai') {
       const cpfDigits = form.cpf_cnpj.replace(/\D/g, '')
@@ -105,7 +108,8 @@ export default function NovoUsuarioPage() {
         numero: form.numero,
         complemento: form.complemento,
         cidade: form.cidade,
-        contato_emergencia: form.contato_emergencia,
+        contato_emergencia_nome: form.contato_emergencia_nome,
+        contato_emergencia_telefone: form.contato_emergencia_telefone,
         cpf_cnpj: form.cpf_cnpj,
       } : {}),
       ...(form.role === 'terapeuta' ? {
@@ -124,6 +128,10 @@ export default function NovoUsuarioPage() {
     setCarregando(false)
 
     if (!res.ok) { setErro(json.error ?? 'Erro ao criar usuário.'); return }
+
+    if (json.link_recuperacao) {
+      setLinkRecuperacao(json.link_recuperacao)
+    }
 
     if (form.role === 'pai' && json.user_id) {
       setNovoUserId(json.user_id)
@@ -162,9 +170,35 @@ export default function NovoUsuarioPage() {
             Vincular paciente
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-ink-soft)' }}>
-            Responsável criado. E-mail para definir senha foi enviado. Vincule um paciente ou cadastre um novo.
+            Responsável criado com sucesso.
           </p>
         </div>
+
+        {/* Link de recuperação (fallback quando e-mail não foi enviado) */}
+        {linkRecuperacao && (
+          <div className="rounded-xl p-4 space-y-3"
+            style={{ background: '#FFFBEB', border: '1px solid #FCD34D' }}>
+            <p className="text-sm font-medium" style={{ color: '#92400E' }}>
+              E-mail não enviado — limite do plano gratuito Supabase atingido (2/hora).
+              Compartilhe este link diretamente com o responsável:
+            </p>
+            <div className="flex gap-2 items-start">
+              <code className="text-xs break-all flex-1 bg-white rounded-lg p-2 border border-yellow-200"
+                style={{ color: '#78350F' }}>
+                {linkRecuperacao}
+              </code>
+              <button onClick={copiarLink}
+                className="shrink-0 text-xs font-medium px-3 py-2 rounded-lg transition-all"
+                style={{ background: linkCopiado ? '#D1FAE5' : '#FEF3C7', color: linkCopiado ? '#065F46' : '#92400E' }}>
+                {linkCopiado ? 'Copiado!' : 'Copiar'}
+              </button>
+            </div>
+            <p className="text-xs" style={{ color: '#B45309' }}>
+              Link válido por 24 horas. Instrua o usuário a abrir no navegador para definir a senha.
+            </p>
+          </div>
+        )}
+
         <Card>
           <div className="space-y-4">
             <label className="block text-sm font-medium mb-2" style={L}>Pacientes existentes</label>
@@ -207,10 +241,12 @@ export default function NovoUsuarioPage() {
   return (
     <div className="space-y-6 max-w-xl">
       <div className="flex items-center gap-3">
-        <Link href="/admin/usuarios" className="text-sm transition-colors hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
+        <Link href="/admin/usuarios" className="text-sm transition-colors hover:opacity-70"
+          style={{ color: 'var(--color-ink-soft)' }}>
           ← Voltar
         </Link>
-        <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
+        <h1 className="text-2xl font-semibold"
+          style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
           Novo usuário
         </h1>
       </div>
@@ -218,7 +254,7 @@ export default function NovoUsuarioPage() {
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* ── RESPONSÁVEL (pai) ── campos na ordem especificada ── */}
+          {/* ── RESPONSÁVEL (pai) ────────────────────────── */}
           {form.role === 'pai' && (<>
 
             <div>
@@ -242,16 +278,17 @@ export default function NovoUsuarioPage() {
                 CEP <span style={{ color: 'var(--color-rose-main)' }}>*</span>
               </label>
               <div className="relative">
-                <input name="cep" value={form.cep} onChange={handleChange} onBlur={handleCepBlur} required
-                  placeholder="00000-000" maxLength={9} className="input-base pr-8" />
+                <input name="cep" value={form.cep} onChange={handleChange} onBlur={handleCepBlur}
+                  required placeholder="00000-000" maxLength={9} className="input-base pr-8" />
                 {buscandoCep && (
-                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin"
+                    viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 )}
               </div>
-              <p className="text-xs mt-1" style={hint}>Endereço preenchido automaticamente ao sair do campo</p>
+              <p className="text-xs mt-1" style={hint}>Endereço e cidade preenchidos automaticamente</p>
             </div>
 
             <div>
@@ -285,13 +322,16 @@ export default function NovoUsuarioPage() {
                 placeholder="Cidade" className="input-base" />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={L}>
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium mb-1.5" style={L}>
                 Contato de Emergência <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-              </label>
-              <input name="contato_emergencia" value={form.contato_emergencia} onChange={handleChange} required
-                placeholder="Nome e telefone do contato" className="input-base" />
-            </div>
+              </legend>
+              <input name="contato_emergencia_nome" value={form.contato_emergencia_nome}
+                onChange={handleChange} required placeholder="Nome do contato" className="input-base" />
+              <input name="contato_emergencia_telefone" value={form.contato_emergencia_telefone}
+                onChange={handleChange} required placeholder="Telefone do contato — (00) 00000-0000"
+                className="input-base" />
+            </fieldset>
 
             <div>
               <label className="block text-sm font-medium mb-1.5" style={L}>
@@ -324,7 +364,7 @@ export default function NovoUsuarioPage() {
 
           </>)}
 
-          {/* ── OUTROS PERFIS ── ordem padrão ── */}
+          {/* ── OUTROS PERFIS ───────────────────────────── */}
           {form.role !== 'pai' && (<>
 
             <div>
@@ -368,8 +408,9 @@ export default function NovoUsuarioPage() {
                 <label className="block text-sm font-medium mb-1.5" style={L}>
                   CPF ou CNPJ <span className="text-xs font-normal" style={hint}>(opcional)</span>
                 </label>
-                <input name="cpf_cnpj_terapeuta" value={form.cpf_cnpj_terapeuta} onChange={handleChange}
-                  placeholder="000.000.000-00 ou 00.000.000/0001-00" className="input-base" />
+                <input name="cpf_cnpj_terapeuta" value={form.cpf_cnpj_terapeuta}
+                  onChange={handleChange} placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                  className="input-base" />
               </div>
             </>)}
 

@@ -179,8 +179,7 @@ export default function NovoUsuarioPage() {
           <div className="rounded-xl p-4 space-y-3"
             style={{ background: '#FFFBEB', border: '1px solid #FCD34D' }}>
             <p className="text-sm font-medium" style={{ color: '#92400E' }}>
-              E-mail não enviado — limite do plano gratuito Supabase atingido (2/hora).
-              Compartilhe este link diretamente com o responsável:
+              E-mail não enviado automaticamente. Compartilhe este link diretamente com o usuário para ele definir a senha:
             </p>
             <div className="flex gap-2 items-start">
               <code className="text-xs break-all flex-1 bg-white rounded-lg p-2 border border-yellow-200"

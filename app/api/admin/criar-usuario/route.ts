@@ -122,14 +122,17 @@ export async function POST(request: NextRequest) {
   // (necessário quando rate limit de 2 emails/hora do free tier é atingido).
   let emailEnviado = false
   let linkRecuperacao: string | null = null
+  let emailErro: string | null = null
 
   try {
     const { error: emailError } = await adminClient.auth.resetPasswordForEmail(email, {
       redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
     })
     emailEnviado = !emailError
-  } catch {
+    if (emailError) emailErro = emailError.message
+  } catch (e) {
     emailEnviado = false
+    emailErro = e instanceof Error ? e.message : 'unknown'
   }
 
   if (!emailEnviado) {
@@ -151,6 +154,7 @@ export async function POST(request: NextRequest) {
     success: true,
     user_id: userId,
     email_enviado: emailEnviado,
+    ...(emailErro ? { email_erro: emailErro } : {}),
     ...(linkRecuperacao ? { link_recuperacao: linkRecuperacao } : {}),
   })
 }

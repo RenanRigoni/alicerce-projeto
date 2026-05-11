@@ -29,7 +29,11 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
 
-  const { nome, email, role, crefito, cpf_cnpj, paciente_id } = body
+  const {
+    nome, email, role, crefito, cpf_cnpj, paciente_id,
+    // campos responsável
+    telefone, cep, endereco, numero, complemento, cidade, contato_emergencia,
+  } = body
 
   if (!nome || !email || !role) {
     return NextResponse.json({ error: 'Campos obrigatórios faltando' }, { status: 400 })
@@ -72,43 +76,56 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: authError.message }, { status: 400 })
   }
 
+  const userId = newUser.user.id
   const cpfCnpjNorm = cpf_cnpj ? normalizarCpfCnpj(cpf_cnpj) : null
 
   await adminClient
     .from('profiles')
     .update({
       nome,
+      ...(telefone?.trim() ? { telefone: telefone.trim() } : {}),
       ...(crefito?.trim() ? { crefito: crefito.trim() } : {}),
       ...(cpfCnpjNorm ? { cpf_cnpj: cpfCnpjNorm } : {}),
     })
-    .eq('id', newUser.user.id)
+    .eq('id', userId)
+
+  if (role === 'pai') {
+    await adminClient.from('responsaveis_detalhes').upsert({
+      id: userId,
+      telefone_principal: telefone?.trim() ?? null,
+      cep: cep?.replace(/\D/g, '') ?? null,
+      endereco: endereco?.trim() ?? null,
+      numero: numero?.trim() ?? null,
+      complemento: complemento?.trim() ?? null,
+      cidade: cidade?.trim() ?? null,
+      contato_emergencia: contato_emergencia?.trim() ?? null,
+    })
+  }
 
   if (paciente_id) {
     if (role === 'pai') {
       await adminClient.from('paciente_responsaveis').insert({
         paciente_id,
-        responsavel_id: newUser.user.id,
+        responsavel_id: userId,
       })
     } else if (role === 'terapeuta') {
       await adminClient.from('paciente_terapeutas').insert({
         paciente_id,
-        terapeuta_id: newUser.user.id,
+        terapeuta_id: userId,
       })
     }
   }
 
-  // Enviar e-mail para o usuário definir senha
+  // Dispara e-mail de redefinição de senha via SMTP do Supabase
+  // resetPasswordForEmail usa POST /auth/v1/recover — envia e-mail real
+  // (ao contrário de generateLink que só retorna o link sem enviar)
   try {
-    await adminClient.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
-      },
+    await adminClient.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
     })
   } catch {
-    // E-mail de boas-vindas falhou — usuário ainda foi criado
+    // falha no e-mail não bloqueia criação do usuário
   }
 
-  return NextResponse.json({ success: true, user_id: newUser.user.id })
+  return NextResponse.json({ success: true, user_id: userId })
 }

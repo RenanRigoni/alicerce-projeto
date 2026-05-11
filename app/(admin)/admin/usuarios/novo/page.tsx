@@ -16,7 +16,13 @@ export default function NovoUsuarioPage() {
   const [etapa, setEtapa] = useState<'form' | 'vincular'>('form')
   const [novoUserId, setNovoUserId] = useState('')
 
-  const [form, setForm] = useState({ nome: '', email: '', senha: '', role: 'pai', crefito: '' })
+  const [form, setForm] = useState({
+    nome: '',
+    email: '',
+    role: 'pai',
+    crefito: '',
+    cpf_cnpj: '',
+  })
 
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [pacientesSelecionados, setPacientesSelecionados] = useState<string[]>([])
@@ -45,6 +51,15 @@ export default function NovoUsuarioPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setErro('')
+
+    if (form.role === 'pai') {
+      const cpfDigits = form.cpf_cnpj.replace(/\D/g, '')
+      if (cpfDigits.length !== 11) {
+        setErro('CPF deve ter 11 dígitos.')
+        return
+      }
+    }
+
     setCarregando(true)
 
     const res = await fetch('/api/admin/criar-usuario', {
@@ -97,7 +112,7 @@ export default function NovoUsuarioPage() {
             Vincular paciente
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-ink-soft)' }}>
-            Responsável criado com sucesso. Agora vincule um paciente existente ou cadastre um novo.
+            Responsável criado. Um e-mail foi enviado para definir a senha. Vincule um paciente ou cadastre um novo.
           </p>
         </div>
 
@@ -184,13 +199,6 @@ export default function NovoUsuarioPage() {
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
-              Senha inicial <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-            </label>
-            <input type="password" name="senha" value={form.senha} onChange={handleChange} required minLength={6} placeholder="Mínimo 6 caracteres" className="input-base" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
               Perfil <span style={{ color: 'var(--color-rose-main)' }}>*</span>
             </label>
             <select name="role" value={form.role} onChange={handleChange} className="input-base">
@@ -219,6 +227,47 @@ export default function NovoUsuarioPage() {
               </p>
             </div>
           )}
+
+          {form.role === 'terapeuta' && (
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
+                CPF ou CNPJ <span className="text-xs font-normal" style={{ color: 'var(--color-ink-faint)' }}>(opcional)</span>
+              </label>
+              <input
+                name="cpf_cnpj"
+                value={form.cpf_cnpj}
+                onChange={handleChange}
+                placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                className="input-base"
+              />
+            </div>
+          )}
+
+          {form.role === 'pai' && (
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
+                CPF <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+              </label>
+              <input
+                name="cpf_cnpj"
+                value={form.cpf_cnpj}
+                onChange={handleChange}
+                required
+                placeholder="000.000.000-00"
+                className="input-base"
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
+                Obrigatório — permite acesso pelo CPF no login
+              </p>
+            </div>
+          )}
+
+          <div
+            className="rounded-xl px-4 py-3 text-sm"
+            style={{ background: 'var(--color-rose-blush)', color: 'var(--color-ink-mid)' }}
+          >
+            Senha inicial: <strong>alicerce</strong> — o usuário receberá um e-mail para definir uma nova senha.
+          </div>
 
           {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
 

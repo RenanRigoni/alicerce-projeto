@@ -5,9 +5,28 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
+function isCPF(valor: string): boolean {
+  const digits = valor.replace(/\D/g, '')
+  return digits.length === 11
+}
+
+async function resolverEmail(identificador: string): Promise<string | null> {
+  if (!isCPF(identificador)) return identificador
+
+  const res = await fetch('/api/auth/email-from-cpf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cpf: identificador }),
+  })
+
+  if (!res.ok) return null
+  const { email } = await res.json()
+  return email ?? null
+}
+
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const [identificador, setIdentificador] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
@@ -18,16 +37,31 @@ export default function LoginPage() {
     if (carregando) return
     setErro('')
     setCarregando(true)
+
+    const email = await resolverEmail(identificador.trim())
+    if (!email) {
+      setErro('CPF não encontrado ou não autorizado.')
+      setCarregando(false)
+      return
+    }
+
     const supabase = createClient()
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha })
-    if (error) { setErro('E-mail ou senha incorretos.'); setCarregando(false); return }
-    const { data: profile } = await supabase.from('profiles').select('role, ativo').eq('id', data.user.id).single()
+    if (error) { setErro('E-mail, CPF ou senha incorretos.'); setCarregando(false); return }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, ativo')
+      .eq('id', data.user.id)
+      .single()
+
     if (!profile?.ativo) {
       await supabase.auth.signOut()
       setErro('Usuário desativado. Entre em contato.')
       setCarregando(false)
       return
     }
+
     const role = profile?.role
     if (role === 'pai')                               router.push('/portal/dashboard')
     else if (role === 'terapeuta')                    router.push('/terapia/dashboard')
@@ -38,7 +72,7 @@ export default function LoginPage() {
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
       e.preventDefault()
-      if (email && senha) handleLogin()
+      if (identificador && senha) handleLogin()
     }
   }
 
@@ -166,22 +200,25 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="w-full space-y-4">
 
-            {/* E-mail */}
+            {/* E-mail ou CPF */}
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: '#6B5B4E' }}>
-                E-mail
+                E-mail ou CPF
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                type="text"
+                value={identificador}
+                onChange={e => setIdentificador(e.target.value)}
                 onKeyDown={handleKeyDown}
                 required
-                autoComplete="email"
-                placeholder="seu@email.com"
+                autoComplete="username"
+                placeholder="seu@email.com ou 000.000.000-00"
                 className="glass-input w-full rounded-xl px-4 py-3 text-sm"
                 style={{ color: '#2C2018' }}
               />
+              <p className="text-xs mt-1" style={{ color: '#C8B8B0' }}>
+                Responsáveis podem usar CPF para entrar
+              </p>
             </div>
 
             {/* Senha */}

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect } from 'next/navigation'
 import { EditarUsuarioForm } from './EditarUsuarioForm'
 
@@ -9,17 +10,24 @@ export default async function EditarUsuarioPage({
 }) {
   const { id } = await params
   const supabase = await createClient()
+  const adminClient = createAdminClient()
 
   const { data: { user: me } } = await supabase.auth.getUser()
   const { data: meProfile } = await supabase.from('profiles').select('role').eq('id', me!.id).single()
 
   if (meProfile?.role !== 'admin' && meProfile?.role !== 'recepcao') redirect('/admin/usuarios')
 
-  const { data: usuario } = await supabase
-    .from('profiles')
-    .select('id, nome, role, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero')
-    .eq('id', id)
-    .single()
+  const [
+    { data: usuario },
+    { data: authUser },
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, nome, role, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero')
+      .eq('id', id)
+      .single(),
+    adminClient.auth.admin.getUserById(id),
+  ])
 
   if (!usuario) notFound()
 
@@ -36,7 +44,7 @@ export default async function EditarUsuarioPage({
 
   return (
     <EditarUsuarioForm
-      usuario={usuario}
+      usuario={{ ...usuario, email: authUser.user?.email ?? '' }}
       detalhes={detalhes}
     />
   )

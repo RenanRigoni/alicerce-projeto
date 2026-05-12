@@ -24,6 +24,16 @@ function mascaraCEP(valor: string) {
   return `${d.slice(0, 5)}-${d.slice(5)}`
 }
 
+function mascaraCpfCnpj(valor: string) {
+  const d = valor.replace(/\D/g, '').slice(0, 14)
+  if (d.length <= 3) return d
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`
+  if (d.length <= 11) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
+}
+
 function parsarEmergencia(raw: string | null) {
   if (!raw) return { nome: '', telefone: '' }
   const idx = raw.indexOf(' — ')
@@ -35,9 +45,11 @@ interface Props {
   usuario: {
     id: string
     nome: string
+    email: string | null
     role: string
     telefone: string | null
     crefito: string | null
+    cpf_cnpj?: string | null
     tipo_profissional?: string | null
     conselho_tipo?: string | null
     conselho_numero?: string | null
@@ -67,7 +79,9 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
 
   const [form, setForm] = useState({
     nome: usuario.nome ?? '',
+    email: usuario.email ?? '',
     telefone: usuario.telefone ?? '',
+    cpf_cnpj: mascaraCpfCnpj(usuario.cpf_cnpj ?? ''),
     tipo_profissional: usuario.tipo_profissional ?? 'terapeuta_ocupacional',
     conselho_numero: usuario.conselho_numero ?? usuario.crefito ?? '',
     telefone_principal: detalhes?.telefone_principal ?? '',
@@ -92,36 +106,53 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     setForm(prev => ({ ...prev, cep: mascaraCEP(e.target.value) }))
   }
 
+  function handleCpfCnpj(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm(prev => ({ ...prev, cpf_cnpj: mascaraCpfCnpj(e.target.value) }))
+  }
+
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
     setErro('')
+
+    if (!form.email.trim()) {
+      setErro('E-mail é obrigatório.')
+      return
+    }
 
     if (usuario.role === 'terapeuta' && !form.conselho_numero.trim()) {
       setErro(`${tipoConfig.conselho} é obrigatório para profissionais.`)
       return
     }
 
-    setSalvando(true)
-
-    const supabase = createClient()
-
-    const profileUpdate: Record<string, string> = { nome: form.nome }
-    if (usuario.role !== 'pai') profileUpdate.telefone = form.telefone
-    if (usuario.role === 'terapeuta') {
-      profileUpdate.tipo_profissional = tipoConfig.value
-      profileUpdate.conselho_tipo = tipoConfig.conselho
-      profileUpdate.conselho_numero = form.conselho_numero.trim()
-      profileUpdate.crefito = form.conselho_numero.trim()
+    const cpfCnpjDigits = form.cpf_cnpj.replace(/\D/g, '')
+    if (usuario.role === 'terapeuta' && cpfCnpjDigits && ![11, 14].includes(cpfCnpjDigits.length)) {
+      setErro('CPF/CNPJ deve ter 11 ou 14 dígitos.')
+      return
     }
 
-    const { error: errProfile } = await supabase
-      .from('profiles')
-      .update(profileUpdate)
-      .eq('id', usuario.id)
+    setSalvando(true)
 
-    if (errProfile) { setErro(errProfile.message); setSalvando(false); return }
+    const res = await fetch(`/api/usuario/${usuario.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome: form.nome,
+        email: form.email,
+        telefone: form.telefone,
+        ...(usuario.role === 'terapeuta' ? {
+          tipo_profissional: form.tipo_profissional,
+          conselho_numero: form.conselho_numero,
+          cpf_cnpj: form.cpf_cnpj,
+        } : {}),
+      }),
+    })
+
+    const json = await res.json().catch(() => ({}))
+
+    if (!res.ok) { setErro(json.error ?? 'Erro ao salvar usuário.'); setSalvando(false); return }
 
     if (usuario.role === 'pai') {
+      const supabase = createClient()
       const emergenciaNome = form.emergencia_nome.trim()
       const emergenciaTel = form.emergencia_telefone.trim()
       const contato_emergencia = emergenciaNome && emergenciaTel
@@ -171,6 +202,13 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
             <input name="nome" value={form.nome} onChange={handle} required className={inputCls} style={inputStyle} />
           </div>
 
+          <div>
+            <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
+              E-mail
+            </label>
+            <input type="email" name="email" value={form.email} onChange={handle} required className={inputCls} style={inputStyle} />
+          </div>
+
           {usuario.role !== 'pai' && (
             <div>
               <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
@@ -198,6 +236,21 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
                   {tipoConfig.conselho}
                 </label>
                 <input name="conselho_numero" value={form.conselho_numero} onChange={handle} className={inputCls} style={inputStyle} />
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
+                  CPF/CNPJ
+                </label>
+                <input
+                  name="cpf_cnpj"
+                  value={form.cpf_cnpj}
+                  onChange={handleCpfCnpj}
+                  placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                  inputMode="numeric"
+                  className={inputCls}
+                  style={inputStyle}
+                />
               </div>
             </>
           )}

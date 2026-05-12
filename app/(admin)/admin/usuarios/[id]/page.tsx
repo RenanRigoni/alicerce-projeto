@@ -30,6 +30,13 @@ function Campo({ label, valor }: { label: string; valor?: string | null }) {
   )
 }
 
+function formatarCpfCnpj(valor?: string | null) {
+  const d = valor?.replace(/\D/g, '') ?? ''
+  if (d.length === 11) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
+  if (d.length === 14) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
+  return valor ?? null
+}
+
 export default async function UsuarioDetalhePage({
   params,
 }: {
@@ -52,7 +59,7 @@ export default async function UsuarioDetalhePage({
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, nome, role, ativo, criado_em, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero, permissoes')
+      .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, permissoes')
       .eq('id', id)
       .single(),
     adminClient.auth.admin.getUserById(id),
@@ -172,6 +179,7 @@ export default async function UsuarioDetalhePage({
           <Campo label="Telefone" valor={detalhesResponsavel?.telefone_principal ?? usuario.telefone} />
           {tipoProfissional && <Campo label="Tipo profissional" valor={tipoProfissional.label} />}
           {usuario.role === 'terapeuta' && <Campo label="Conselho" valor={conselhoProfissional} />}
+          {usuario.role === 'terapeuta' && <Campo label="CPF/CNPJ" valor={formatarCpfCnpj(usuario.cpf_cnpj)} />}
           {detalhesResponsavel?.endereco && (
             <div className="col-span-2">
               <Campo label="Endereço" valor={`${detalhesResponsavel.endereco}${detalhesResponsavel.cidade ? ` — ${detalhesResponsavel.cidade}` : ''}${detalhesResponsavel.cep ? `, CEP ${detalhesResponsavel.cep}` : ''}`} />

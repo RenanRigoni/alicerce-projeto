@@ -127,6 +127,39 @@ docs/                       documentação + LGPD (RIPD, ROPA)
 
 ---
 
+## PWA
+
+Manifesto em `public/manifest.json`. Service worker em `public/sw.js`.
+
+### Assets
+
+| Arquivo | Uso |
+|---|---|
+| `public/logo_ico.png` | Ícone base 512×512 — fonte para geração de todos os ícones PWA |
+| `public/mobile.png` | Intro screen + splash iOS para telefones |
+| `public/tablet.png` | Intro screen + splash iOS para tablets (iPad) |
+| `public/icons/icon-*.png` | Ícones PWA (48→512px) |
+| `public/icons/icon-maskable-*.png` | Ícones maskable (192, 512px) |
+| `public/icons/splash-*.png` | Splash screens iOS por tamanho de device |
+
+### Scripts de assets
+
+```bash
+node scripts/regen-icons.mjs          # Regenera ícones PWA a partir de logo_ico.png
+node scripts/gen-splash.mjs           # Regenera splashes iOS (mobile.png → phones, tablet.png → iPads)
+node scripts/generate-pwa-assets.mjs  # Geração completa
+```
+
+### Tela de intro (`app/page.tsx`)
+
+Exibe splash animado (fade-in/out, 2.8s) uma vez por sessão (`sessionStorage`).
+- Largura ≥ 768px → `tablet.png`
+- Largura < 768px → `mobile.png`
+
+Splash estático iOS (`apple-touch-startup-image`) segue a mesma divisão: 6 tamanhos de iPhone gerados de `mobile.png`, 3 tamanhos de iPad gerados de `tablet.png`.
+
+---
+
 ## Deploy (Vercel)
 
 1. Conectar repositório no Vercel.

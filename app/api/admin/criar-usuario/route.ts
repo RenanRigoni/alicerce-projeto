@@ -1,3 +1,4 @@
+import { getTipoProfissionalConfig, isTipoProfissional } from '@/lib/profissionais'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
 
   const {
     nome, email, role, crefito, cpf_cnpj, paciente_id,
+    tipo_profissional, conselho_numero,
     telefone, cep, endereco, numero, complemento, cidade,
     contato_emergencia_nome, contato_emergencia_telefone,
   } = body
@@ -45,11 +47,24 @@ export async function POST(request: NextRequest) {
   }
 
   if (profile.role === 'recepcao' && !['terapeuta', 'pai'].includes(role)) {
-    return NextResponse.json({ error: 'Recepção só pode cadastrar terapeutas e responsáveis' }, { status: 403 })
+    return NextResponse.json({ error: 'Recepção só pode cadastrar profissionais e responsáveis' }, { status: 403 })
   }
 
-  if (role === 'terapeuta' && !crefito?.trim()) {
-    return NextResponse.json({ error: 'CREFITO é obrigatório para terapeutas (CREFITO Res. 426/2015)' }, { status: 400 })
+  const tipoProfissional = role === 'terapeuta'
+    ? (isTipoProfissional(tipo_profissional) ? tipo_profissional : null)
+    : null
+  const tipoConfig = tipoProfissional ? getTipoProfissionalConfig(tipoProfissional) : null
+  const conselhoNumero = typeof conselho_numero === 'string'
+    ? conselho_numero.trim()
+    : (typeof crefito === 'string' ? crefito.trim() : '')
+  const conselhoTipo = tipoConfig?.conselho ?? null
+
+  if (role === 'terapeuta' && !tipoProfissional) {
+    return NextResponse.json({ error: 'Tipo profissional inválido' }, { status: 400 })
+  }
+
+  if (role === 'terapeuta' && !conselhoNumero) {
+    return NextResponse.json({ error: `${conselhoTipo ?? 'Conselho'} é obrigatório para profissionais` }, { status: 400 })
   }
 
   if (role === 'pai') {
@@ -68,7 +83,9 @@ export async function POST(request: NextRequest) {
     user_metadata: {
       nome,
       role,
-      ...(crefito?.trim() ? { crefito: crefito.trim() } : {}),
+      ...(tipoProfissional ? { tipo_profissional: tipoProfissional } : {}),
+      ...(conselhoTipo ? { conselho_tipo: conselhoTipo } : {}),
+      ...(conselhoNumero ? { conselho_numero: conselhoNumero, crefito: conselhoNumero } : {}),
     },
   })
 
@@ -84,7 +101,9 @@ export async function POST(request: NextRequest) {
     .update({
       nome,
       ...(telefone?.trim() ? { telefone: telefone.trim() } : {}),
-      ...(crefito?.trim() ? { crefito: crefito.trim() } : {}),
+      ...(tipoProfissional ? { tipo_profissional: tipoProfissional } : {}),
+      ...(conselhoTipo ? { conselho_tipo: conselhoTipo } : {}),
+      ...(conselhoNumero ? { conselho_numero: conselhoNumero, crefito: conselhoNumero } : {}),
       ...(cpfCnpjNorm ? { cpf_cnpj: cpfCnpjNorm } : {}),
     })
     .eq('id', userId)
@@ -117,9 +136,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Tenta enviar e-mail via SMTP do Supabase.
-  // Fallback: retorna o link direto para o admin compartilhar manualmente
-  // (necessário quando rate limit de 2 emails/hora do free tier é atingido).
   let emailEnviado = false
   let linkRecuperacao: string | null = null
   let emailErro: string | null = null

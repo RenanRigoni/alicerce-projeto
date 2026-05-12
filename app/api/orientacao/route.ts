@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (profile?.role !== 'terapeuta') {
-    return NextResponse.json({ error: 'Apenas terapeutas podem criar orientações' }, { status: 403 })
+    return NextResponse.json({ error: 'Apenas profissionais podem criar orientações' }, { status: 403 })
   }
 
   const body = await request.json().catch(() => null)

@@ -75,7 +75,7 @@ export default async function RelatorioPortalPage({
             className="flex items-center gap-3 text-xs mt-2 pt-2"
             style={{ borderTop: '1px solid var(--color-border-soft)', color: 'var(--color-ink-faint)' }}
           >
-            <span>Terapeuta: {(relatorio.profiles as any)?.nome}</span>
+            <span>Profissional: {(relatorio.profiles as any)?.nome}</span>
             {dataPublicacao && <span>· {dataPublicacao}</span>}
           </div>
         </div>

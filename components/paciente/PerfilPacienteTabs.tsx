@@ -404,7 +404,7 @@ export function PerfilPacienteTabs({
                   className="text-xs uppercase tracking-wide mb-2"
                   style={{ color: 'var(--color-ink-faint)' }}
                 >
-                  Terapeutas
+                  Profissionais
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {terapeutas.map(t => (
@@ -955,7 +955,7 @@ export function PerfilPacienteTabs({
               pendente:             'Pendente',
               recusada:             'Recusada',
             }
-            const tipoLabel = a.tipo === 'responsavel' ? 'Solicitada pelo responsável' : 'Registrada pela terapeuta'
+            const tipoLabel = a.tipo === 'responsavel' ? 'Solicitada pelo responsável' : 'Registrada pela profissional'
             return (
               <Card key={a.id}>
                 <div className="flex items-start justify-between gap-2 flex-wrap">

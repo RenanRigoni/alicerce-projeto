@@ -15,7 +15,7 @@ export async function PATCH(
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'terapeuta') {
-    return NextResponse.json({ error: 'Apenas terapeutas podem confirmar alta' }, { status: 403 })
+    return NextResponse.json({ error: 'Apenas profissionais podem confirmar alta' }, { status: 403 })
   }
 
   const admin = createAdminClient()
@@ -90,7 +90,7 @@ export async function PATCH(
     solicitacao.paciente_id,
     'alta_confirmada',
     `Alta confirmada — ${paciente?.nome ?? 'Paciente'}`,
-    'A solicitação de alta foi confirmada pela terapeuta.',
+    'A solicitação de alta foi confirmada pela profissional.',
     `/portal/paciente/${solicitacao.paciente_id}`
   )
 

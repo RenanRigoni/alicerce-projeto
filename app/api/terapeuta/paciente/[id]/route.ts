@@ -14,7 +14,7 @@ export async function PATCH(
 
   const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
   if (profile?.role !== 'terapeuta') {
-    return NextResponse.json({ error: 'Apenas terapeutas podem usar esta rota' }, { status: 403 })
+    return NextResponse.json({ error: 'Apenas profissionais podem usar esta rota' }, { status: 403 })
   }
   if (!temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'editar_pacientes')) {
     return NextResponse.json({ error: 'Sem permissão para editar dados de pacientes' }, { status: 403 })

@@ -15,7 +15,7 @@ export async function PATCH(
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'terapeuta') {
-    return NextResponse.json({ error: 'Apenas terapeutas podem recusar alta' }, { status: 403 })
+    return NextResponse.json({ error: 'Apenas profissionais podem recusar alta' }, { status: 403 })
   }
 
   const body = await request.json().catch(() => ({}))
@@ -70,8 +70,8 @@ export async function PATCH(
     'alta_recusada',
     `Solicitação de alta recusada — ${paciente?.nome ?? 'Paciente'}`,
     argumentacao
-      ? `A terapeuta recusou a solicitação de alta. Justificativa: ${argumentacao}`
-      : 'A terapeuta recusou a solicitação de alta.',
+      ? `A profissional recusou a solicitação de alta. Justificativa: ${argumentacao}`
+      : 'A profissional recusou a solicitação de alta.',
     `/portal/paciente/${solicitacao.paciente_id}`
   )
 

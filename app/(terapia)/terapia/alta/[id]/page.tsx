@@ -46,7 +46,7 @@ export default async function AltaDetalheTerapeutaPage({
   }
 
   const tipoLabel: Record<string, string> = {
-    terapeuta:   'Registrada pela terapeuta',
+    terapeuta:   'Registrada pela profissional',
     responsavel: 'Solicitada pela família',
   }
 
@@ -135,7 +135,7 @@ export default async function AltaDetalheTerapeutaPage({
           <p className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
             {s.status === 'confirmada' && confirmadoPor
               ? `Confirmada por ${confirmadoPor}`
-              : 'Alta registrada pela terapeuta responsável.'}
+              : 'Alta registrada pela profissional responsável.'}
             {s.confirmado_em && (
               <> Em {new Date(s.confirmado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.</>
             )}

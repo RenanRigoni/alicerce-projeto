@@ -275,7 +275,7 @@ export default async function AdminDashboard() {
             >
               {totalTerapeutas ?? 0}
             </div>
-            <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Terapeutas</div>
+            <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Profissionais</div>
           </Card>
         </Link>
       </div>

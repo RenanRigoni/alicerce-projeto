@@ -50,14 +50,14 @@ export default async function AltaPage() {
         </p>
       </div>
 
-      {/* Aguardando confirmação da terapeuta */}
+      {/* Aguardando confirmação da profissional */}
       {aguardando.length > 0 && (
         <div className="space-y-3">
           <h2
             className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Aguardando confirmação da terapeuta
+            Aguardando confirmação da profissional
             <span
               className="text-xs px-2 py-0.5 rounded-full font-semibold"
               style={{ background: '#FFFBEB', color: '#92400E' }}
@@ -94,7 +94,7 @@ export default async function AltaPage() {
 }
 
 function AltaCard({ s }: { s: any }) {
-  const tipoLabel = s.tipo === 'responsavel' ? 'Solicitada pelo responsável' : 'Registrada pela terapeuta'
+  const tipoLabel = s.tipo === 'responsavel' ? 'Solicitada pelo responsável' : 'Registrada pela profissional'
   const dataRef = s.confirmado_em ?? s.decidido_em ?? s.criado_em
 
   return (

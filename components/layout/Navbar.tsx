@@ -24,7 +24,7 @@ const navLinks = {
     { href: '/admin/dashboard',       label: 'Início' },
     { href: '/admin/pacientes',       label: 'Pacientes' },
     { href: '/admin/responsaveis',    label: 'Responsáveis' },
-    { href: '/admin/terapeutas',      label: 'Terapeutas' },
+    { href: '/admin/terapeutas',      label: 'Profissionais' },
     { href: '/admin/agendamentos',    label: 'Agenda' },
     { href: '/admin/feriados',        label: 'Feriados' },
     { href: '/admin/comunicados',     label: 'Comunicados' },
@@ -34,7 +34,7 @@ const navLinks = {
     { href: '/admin/dashboard',       label: 'Início' },
     { href: '/admin/pacientes',       label: 'Pacientes' },
     { href: '/admin/responsaveis',    label: 'Responsáveis' },
-    { href: '/admin/terapeutas',      label: 'Terapeutas' },
+    { href: '/admin/terapeutas',      label: 'Profissionais' },
     { href: '/admin/agendamentos',    label: 'Agenda' },
     { href: '/admin/feriados',        label: 'Feriados' },
     { href: '/admin/comunicados',     label: 'Comunicados' },
@@ -183,7 +183,7 @@ export function Navbar({ role, nome }: NavbarProps) {
                   <div className="px-4 py-2.5 border-b" style={{ borderColor: 'var(--color-border-soft)' }}>
                     <div className="text-xs font-medium truncate" style={{ color: 'var(--color-ink)' }}>{nome}</div>
                     <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
-                      {role === 'admin' ? 'Administrador' : role === 'recepcao' ? 'Recepção' : role === 'terapeuta' ? 'Terapeuta' : 'Família'}
+                      {role === 'admin' ? 'Administrador' : role === 'recepcao' ? 'Recepção' : role === 'terapeuta' ? 'Profissional' : 'Família'}
                     </div>
                   </div>
                   {role === 'pai' && (
@@ -322,7 +322,7 @@ export function Navbar({ role, nome }: NavbarProps) {
                 <div>
                   <div className="text-sm font-medium leading-tight" style={{ color: 'var(--color-ink)' }}>{nome}</div>
                   <div className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
-                    {role === 'admin' ? 'Administrador' : role === 'recepcao' ? 'Recepção' : role === 'terapeuta' ? 'Terapeuta' : 'Família'}
+                    {role === 'admin' ? 'Administrador' : role === 'recepcao' ? 'Recepção' : role === 'terapeuta' ? 'Profissional' : 'Família'}
                   </div>
                 </div>
               </div>

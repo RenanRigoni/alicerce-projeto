@@ -29,7 +29,7 @@ export async function POST(
     .select(`
       *,
       pacientes(nome, data_nascimento, frequencia_atendimento, pacientes_dados_clinicos(diagnostico)),
-      profiles(nome, crefito)
+      profiles(nome, crefito, tipo_profissional, conselho_tipo, conselho_numero)
     `)
     .eq('id', id)
     .single()

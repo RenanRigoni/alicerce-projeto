@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { gerarHash } from '@/lib/hash/gerar-hash'
+import { getTipoProfissionalConfig } from '@/lib/profissionais'
 
 export default function NovoRelatorioPage() {
   const router = useRouter()
@@ -24,6 +25,7 @@ export default function NovoRelatorioPage() {
   const [declaracaoCoffito, setDeclaracaoCoffito] = useState(false)
   const [modalAberto, setModalAberto] = useState(false)
   const [creditoUsuario, setCreditoUsuario] = useState('')
+  const [conselhoTipoUsuario, setConselhoTipoUsuario] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -84,9 +86,15 @@ export default function NovoRelatorioPage() {
     setErro('')
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase.from('profiles').select('nome, crefito').eq('id', user!.id).single()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nome, crefito, tipo_profissional, conselho_tipo, conselho_numero')
+      .eq('id', user!.id)
+      .single()
+    const conselhoTipo = profile?.conselho_tipo ?? getTipoProfissionalConfig(profile?.tipo_profissional).conselho
     setNomeUsuario(profile?.nome ?? '')
-    setCreditoUsuario(profile?.crefito ?? '')
+    setCreditoUsuario(profile?.conselho_numero ?? profile?.crefito ?? '')
+    setConselhoTipoUsuario(conselhoTipo)
     setModalAberto(true)
   }
 
@@ -107,8 +115,9 @@ export default function NovoRelatorioPage() {
     const agora = new Date().toISOString()
     const relatorioId = crypto.randomUUID()
     const finalPdfPath = `${pacienteId}/${relatorioId}.pdf`
-    const assinatura = creditoUsuario.trim()
-      ? `${nomeUsuario} — CREFITO ${creditoUsuario.trim()} — ${new Date().toLocaleString('pt-BR')}`
+
+    const assinaturaProfissional = creditoUsuario.trim()
+      ? `${nomeUsuario} — ${conselhoTipoUsuario} ${creditoUsuario.trim()} — ${new Date().toLocaleString('pt-BR')}`
       : `${nomeUsuario} — ${new Date().toLocaleString('pt-BR')}`
 
     const sourcePdfPath = upload?.path ?? null
@@ -119,6 +128,8 @@ export default function NovoRelatorioPage() {
       terapeuta_id: user!.id,
       nome_terapeuta: nomeUsuario,
       crefito_terapeuta: creditoUsuario.trim() || null,
+      conselho_tipo_terapeuta: conselhoTipoUsuario || null,
+      conselho_numero_terapeuta: creditoUsuario.trim() || null,
       identificacao: titulo.trim(),
       conclusao: previa.trim() || null,
       obs_clinicas: adicionais.trim() || null,
@@ -136,7 +147,7 @@ export default function NovoRelatorioPage() {
       obs_clinicas: adicionais.trim() || null,
       pdf_url: finalPdfPath,
       status: 'rascunho',
-      assinatura_digital: assinatura,
+      assinatura_digital: assinaturaProfissional,
       assinado_em: agora,
       publicado_em: agora,
       hash_integridade: hash,
@@ -273,7 +284,6 @@ export default function NovoRelatorioPage() {
             />
           </div>
 
-          {/* Declaração de responsabilidade COFFITO */}
           <label className="flex items-start gap-3 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -283,7 +293,7 @@ export default function NovoRelatorioPage() {
             />
             <span className="text-sm leading-snug" style={{ color: 'var(--color-ink-mid)' }}>
               Declaro responsabilidade ética pelo conteúdo deste relatório, conforme{' '}
-              <strong>COFFITO Res. 424/2013</strong>, e confirmo que as informações são
+              <strong>as normas do conselho profissional aplicável</strong>, e confirmo que as informações são
               verídicas e correspondem à evolução clínica do paciente.
             </span>
           </label>

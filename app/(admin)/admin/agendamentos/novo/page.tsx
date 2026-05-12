@@ -72,7 +72,7 @@ export default function NovoAgendamentoPage() {
 
   async function salvar() {
     setErro('')
-    if (!form.terapeuta_id) { setErro('Selecione a terapeuta.'); return }
+    if (!form.terapeuta_id) { setErro('Selecione a profissional.'); return }
     if (!form.titulo.trim()) { setErro('Informe um título.'); return }
     if (!form.data || !form.hora) { setErro('Informe data e hora.'); return }
 
@@ -123,9 +123,9 @@ export default function NovoAgendamentoPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
 
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Terapeuta {asterisk}</label>
+            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Profissional {asterisk}</label>
             <select name="terapeuta_id" value={form.terapeuta_id} onChange={handle} required className="input-base">
-              <option value="">Selecione a terapeuta</option>
+              <option value="">Selecione a profissional</option>
               {terapeutas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
             </select>
           </div>
@@ -159,9 +159,9 @@ export default function NovoAgendamentoPage() {
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
               Motivo / observação interna{' '}
-              <span style={{ color: 'var(--color-ink-faint)', fontWeight: 400 }}>(visível à terapeuta)</span>
+              <span style={{ color: 'var(--color-ink-faint)', fontWeight: 400 }}>(visível à profissional)</span>
             </label>
-            <textarea name="motivo" value={form.motivo} onChange={handle} rows={2} placeholder="Informações úteis para a terapeuta sobre este agendamento" className="input-base resize-none" />
+            <textarea name="motivo" value={form.motivo} onChange={handle} rows={2} placeholder="Informações úteis para a profissional sobre este agendamento" className="input-base resize-none" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

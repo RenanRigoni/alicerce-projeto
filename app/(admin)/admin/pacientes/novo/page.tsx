@@ -244,14 +244,14 @@ function NovoPacienteForm() {
             </select>
           </div>
 
-          {/* Terapeutas */}
+          {/* Profissionais */}
           <div>
             <label className="block text-sm font-medium mb-2" style={labelStyle}>
-              Terapeutas responsáveis
+              Profissionais responsáveis
             </label>
             {terapeutas.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                Nenhum terapeuta cadastrado ainda.
+                Nenhum profissional cadastrado ainda.
               </p>
             ) : (
               <div className="space-y-2">

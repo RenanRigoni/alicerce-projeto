@@ -6,10 +6,11 @@ import { notFound } from 'next/navigation'
 import { AcoesUsuario } from './AcoesUsuario'
 import { AgendaSemanalTerapeuta } from '@/components/admin/AgendaSemanalTerapeuta'
 import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
+import { formatarConselhoProfissional, getTipoProfissionalConfig } from '@/lib/profissionais'
 import { PermissoesEditor } from '@/components/admin/PermissoesEditor'
 
 const roleLabel: Record<string, string> = {
-  admin: 'Admin', recepcao: 'Recepção', terapeuta: 'Terapeuta', pai: 'Família',
+  admin: 'Admin', recepcao: 'Recepção', terapeuta: 'Profissional', pai: 'Família',
 }
 const roleColor: Record<string, 'blue' | 'yellow' | 'green' | 'rose' | 'gray'> = {
   admin: 'blue', recepcao: 'yellow', terapeuta: 'green', pai: 'rose',
@@ -51,7 +52,7 @@ export default async function UsuarioDetalhePage({
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, nome, role, ativo, criado_em, telefone, crefito, permissoes')
+      .select('id, nome, role, ativo, criado_em, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero, permissoes')
       .eq('id', id)
       .single(),
     adminClient.auth.admin.getUserById(id),
@@ -61,6 +62,17 @@ export default async function UsuarioDetalhePage({
 
   const email = authUser.user?.email ?? null
   const ativo: boolean = usuario.ativo ?? true
+  const tipoProfissional = usuario.role === 'terapeuta'
+    ? getTipoProfissionalConfig(usuario.tipo_profissional)
+    : null
+  const conselhoProfissional = usuario.role === 'terapeuta'
+    ? formatarConselhoProfissional({
+        tipoProfissional: usuario.tipo_profissional,
+        conselhoTipo: usuario.conselho_tipo,
+        conselhoNumero: usuario.conselho_numero,
+        crefitoLegado: usuario.crefito,
+      })
+    : ''
 
   // Dados específicos por role
   let pacientes: Array<{ id: string; nome: string; codigo_interno: string | null; status: string; horarios_atendimento: any[]; convenio_ou_particular: string | null }> = []
@@ -158,7 +170,8 @@ export default async function UsuarioDetalhePage({
           <Campo label="Nome completo" valor={usuario.nome} />
           <Campo label="E-mail" valor={email} />
           <Campo label="Telefone" valor={detalhesResponsavel?.telefone_principal ?? usuario.telefone} />
-          {usuario.role === 'terapeuta' && <Campo label="CREFITO" valor={usuario.crefito} />}
+          {tipoProfissional && <Campo label="Tipo profissional" valor={tipoProfissional.label} />}
+          {usuario.role === 'terapeuta' && <Campo label="Conselho" valor={conselhoProfissional} />}
           {detalhesResponsavel?.endereco && (
             <div className="col-span-2">
               <Campo label="Endereço" valor={`${detalhesResponsavel.endereco}${detalhesResponsavel.cidade ? ` — ${detalhesResponsavel.cidade}` : ''}${detalhesResponsavel.cep ? `, CEP ${detalhesResponsavel.cep}` : ''}`} />

@@ -1,28 +1,28 @@
+import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
 
 const roleLabel: Record<string, string> = {
   admin: 'Admin',
   recepcao: 'Recepção',
-  terapeuta: 'Terapeuta',
+  terapeuta: 'Profissional',
   pai: 'Família',
 }
 
 const roleColor: Record<string, 'blue' | 'yellow' | 'green' | 'rose' | 'gray'> = {
-  admin:     'blue',
-  recepcao:  'yellow',
+  admin: 'blue',
+  recepcao: 'yellow',
   terapeuta: 'green',
-  pai:       'rose',
+  pai: 'rose',
 }
 
 const filtros = [
-  { label: 'Todos',      role: null },
-  { label: 'Famílias',   role: 'pai' },
-  { label: 'Terapeutas', role: 'terapeuta' },
-  { label: 'Recepção',   role: 'recepcao' },
-  { label: 'Admin',      role: 'admin' },
+  { label: 'Todos', role: null },
+  { label: 'Famílias', role: 'pai' },
+  { label: 'Profissionais', role: 'terapeuta' },
+  { label: 'Recepção', role: 'recepcao' },
+  { label: 'Admin', role: 'admin' },
 ]
 
 export default async function UsuariosPage({
@@ -48,14 +48,11 @@ export default async function UsuariosPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1
-            className="text-2xl font-semibold"
-            style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
-          >
+          <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
             Usuários
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
-            Gerencie famílias, terapeutas e equipe
+            Gerencie famílias, profissionais e equipe
           </p>
         </div>
         <Link
@@ -67,7 +64,6 @@ export default async function UsuariosPage({
         </Link>
       </div>
 
-      {/* Filtros de role */}
       <div className="flex gap-1.5 flex-wrap">
         {filtros.map(f => {
           const isActive = (filtroRole ?? null) === f.role
@@ -93,11 +89,7 @@ export default async function UsuariosPage({
           <ul className="divide-y" style={{ borderColor: 'var(--color-border-soft)' }}>
             {usuarios.map((u) => (
               <li key={u.id} className="py-3 flex items-center justify-between first:pt-0 last:pb-0">
-                <Link
-                  href={`/admin/usuarios/${u.id}`}
-                  className="font-medium transition-colors hover:opacity-80"
-                  style={{ color: 'var(--color-ink)' }}
-                >
+                <Link href={`/admin/usuarios/${u.id}`} className="font-medium transition-colors hover:opacity-80" style={{ color: 'var(--color-ink)' }}>
                   {u.nome}
                 </Link>
                 <Badge color={roleColor[u.role] ?? 'gray'}>

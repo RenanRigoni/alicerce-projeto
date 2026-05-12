@@ -88,7 +88,7 @@ export function SolicitarAltaPortal({ pacienteId, pacienteNome }: Props) {
                 Solicitar alta — {pacienteNome}
               </h2>
               <p className="text-sm mt-1" style={{ color: 'var(--color-ink-soft)' }}>
-                A terapeuta receberá sua solicitação e confirmará a alta em breve.
+                A profissional receberá sua solicitação e confirmará a alta em breve.
               </p>
             </div>
 

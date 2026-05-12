@@ -188,7 +188,7 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={labelStyle}>Terapeutas</label>
+            <label className="block text-sm font-medium mb-2" style={labelStyle}>Profissionais</label>
             <div className="space-y-2">
               {todosTerapeutas.map(t => (
                 <label key={t.id} className="flex items-center gap-2.5 cursor-pointer">

@@ -147,14 +147,14 @@ export default async function PortalDashboard() {
         </Card>
       )}
 
-      {/* Orientações recentes dos terapeutas */}
+      {/* Orientações recentes dos profissionais */}
       {(orientacoes ?? []).length > 0 && (
         <div>
           <h2
             className="text-xs font-semibold uppercase tracking-wider mb-3"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Orientações dos terapeutas
+            Orientações dos profissionais
           </h2>
           <div className="space-y-3">
             {(orientacoes ?? []).map((o: any) => (

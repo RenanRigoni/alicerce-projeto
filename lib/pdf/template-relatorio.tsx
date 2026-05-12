@@ -5,6 +5,7 @@ import {
   View,
   StyleSheet,
 } from '@react-pdf/renderer'
+import { formatarConselhoProfissional } from '@/lib/profissionais'
 
 const styles = StyleSheet.create({
   page: {
@@ -129,6 +130,9 @@ interface TemplateRelatorioProps {
   terapeuta: {
     nome: string
     crefito?: string | null
+    tipo_profissional?: string | null
+    conselho_tipo?: string | null
+    conselho_numero?: string | null
   }
 }
 
@@ -147,6 +151,12 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta }: TemplateRe
         return `${anos} anos`
       })()
     : null
+  const conselhoProfissional = formatarConselhoProfissional({
+    tipoProfissional: terapeuta.tipo_profissional,
+    conselhoTipo: terapeuta.conselho_tipo,
+    conselhoNumero: terapeuta.conselho_numero,
+    crefitoLegado: terapeuta.crefito,
+  })
 
   return (
     <Document>
@@ -158,7 +168,7 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta }: TemplateRe
           <Text style={styles.clinicaSub}>Espaço Terapêutico Infantil</Text>
         </View>
 
-        <Text style={styles.titulo}>Relatório de Avaliação em Terapia Ocupacional</Text>
+        <Text style={styles.titulo}>Relatório clínico</Text>
 
         {/* Dados do paciente */}
         <View style={styles.pacienteBox}>
@@ -167,7 +177,7 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta }: TemplateRe
           {paciente.diagnostico && <Text style={styles.pacienteMeta}>Diagnóstico: {paciente.diagnostico}</Text>}
           {paciente.frequencia_atendimento && <Text style={styles.pacienteMeta}>Frequência: {paciente.frequencia_atendimento}</Text>}
           <Text style={styles.pacienteMeta}>
-            Terapeuta: {terapeuta.nome}{terapeuta.crefito ? ` — CREFITO ${terapeuta.crefito}` : ''}
+            Profissional: {terapeuta.nome}{conselhoProfissional ? ` — ${conselhoProfissional}` : ''}
           </Text>
           {dataPublicacao && <Text style={styles.pacienteMeta}>Data: {dataPublicacao}</Text>}
         </View>

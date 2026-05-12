@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { TIPOS_PROFISSIONAIS, getTipoProfissionalConfig } from '@/lib/profissionais'
 import { createClient } from '@/lib/supabase/client'
-import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 const roleLabel: Record<string, string> = {
-  admin: 'Admin', recepcao: 'Recepção', terapeuta: 'Terapeuta', pai: 'Família',
+  admin: 'Admin', recepcao: 'Recepção', terapeuta: 'Profissional', pai: 'Família',
 }
 
 function mascaraTelefone(valor: string) {
@@ -31,8 +32,23 @@ function parsarEmergencia(raw: string | null) {
 }
 
 interface Props {
-  usuario: { id: string; nome: string; role: string; telefone: string | null; crefito: string | null }
-  detalhes: { endereco: string | null; cidade: string | null; cep: string | null; telefone_principal: string | null; contato_emergencia: string | null } | null
+  usuario: {
+    id: string
+    nome: string
+    role: string
+    telefone: string | null
+    crefito: string | null
+    tipo_profissional?: string | null
+    conselho_tipo?: string | null
+    conselho_numero?: string | null
+  }
+  detalhes: {
+    endereco: string | null
+    cidade: string | null
+    cep: string | null
+    telefone_principal: string | null
+    contato_emergencia: string | null
+  } | null
 }
 
 const inputCls = 'w-full rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 transition-all'
@@ -52,8 +68,8 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
   const [form, setForm] = useState({
     nome: usuario.nome ?? '',
     telefone: usuario.telefone ?? '',
-    crefito: usuario.crefito ?? '',
-    // pai extras (in responsaveis_detalhes)
+    tipo_profissional: usuario.tipo_profissional ?? 'terapeuta_ocupacional',
+    conselho_numero: usuario.conselho_numero ?? usuario.crefito ?? '',
     telefone_principal: detalhes?.telefone_principal ?? '',
     endereco: detalhes?.endereco ?? '',
     cidade: detalhes?.cidade ?? '',
@@ -62,7 +78,9 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     emergencia_telefone: emergenciaInicial.telefone,
   })
 
-  function handle(e: React.ChangeEvent<HTMLInputElement>) {
+  const tipoConfig = getTipoProfissionalConfig(form.tipo_profissional)
+
+  function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
@@ -78,8 +96,8 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     e.preventDefault()
     setErro('')
 
-    if (usuario.role === 'terapeuta' && !form.crefito.trim()) {
-      setErro('CREFITO é obrigatório para terapeutas (CREFITO Res. 426/2015).')
+    if (usuario.role === 'terapeuta' && !form.conselho_numero.trim()) {
+      setErro(`${tipoConfig.conselho} é obrigatório para profissionais.`)
       return
     }
 
@@ -89,7 +107,12 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
 
     const profileUpdate: Record<string, string> = { nome: form.nome }
     if (usuario.role !== 'pai') profileUpdate.telefone = form.telefone
-    if (usuario.role === 'terapeuta') profileUpdate.crefito = form.crefito.trim()
+    if (usuario.role === 'terapeuta') {
+      profileUpdate.tipo_profissional = tipoConfig.value
+      profileUpdate.conselho_tipo = tipoConfig.conselho
+      profileUpdate.conselho_numero = form.conselho_numero.trim()
+      profileUpdate.crefito = form.conselho_numero.trim()
+    }
 
     const { error: errProfile } = await supabase
       .from('profiles')
@@ -100,7 +123,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
 
     if (usuario.role === 'pai') {
       const emergenciaNome = form.emergencia_nome.trim()
-      const emergenciaTel  = form.emergencia_telefone.trim()
+      const emergenciaTel = form.emergencia_telefone.trim()
       const contato_emergencia = emergenciaNome && emergenciaTel
         ? `${emergenciaNome} — ${emergenciaTel}`
         : emergenciaNome || emergenciaTel || null
@@ -127,11 +150,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
   return (
     <form onSubmit={salvar} className="space-y-6 max-w-xl">
       <div className="flex items-center gap-3 flex-wrap">
-        <a
-          href={`/admin/usuarios/${usuario.id}`}
-          className="text-sm transition-colors hover:opacity-70"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <a href={`/admin/usuarios/${usuario.id}`} className="text-sm transition-colors hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
           ← Voltar
         </a>
         <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
@@ -149,14 +168,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
             <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
               Nome completo
             </label>
-            <input
-              name="nome"
-              value={form.nome}
-              onChange={handle}
-              required
-              className={inputCls}
-              style={inputStyle}
-            />
+            <input name="nome" value={form.nome} onChange={handle} required className={inputCls} style={inputStyle} />
           </div>
 
           {usuario.role !== 'pai' && (
@@ -164,29 +176,30 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
               <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
                 Telefone
               </label>
-              <input
-                name="telefone"
-                value={form.telefone}
-                onChange={handle}
-                className={inputCls}
-                style={inputStyle}
-              />
+              <input name="telefone" value={form.telefone} onChange={handle} className={inputCls} style={inputStyle} />
             </div>
           )}
 
           {usuario.role === 'terapeuta' && (
-            <div>
-              <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
-                CREFITO
-              </label>
-              <input
-                name="crefito"
-                value={form.crefito}
-                onChange={handle}
-                className={inputCls}
-                style={inputStyle}
-              />
-            </div>
+            <>
+              <div>
+                <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
+                  Tipo profissional
+                </label>
+                <select name="tipo_profissional" value={form.tipo_profissional} onChange={handle} className={inputCls} style={inputStyle}>
+                  {TIPOS_PROFISSIONAIS.map(tipo => (
+                    <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
+                  {tipoConfig.conselho}
+                </label>
+                <input name="conselho_numero" value={form.conselho_numero} onChange={handle} className={inputCls} style={inputStyle} />
+              </div>
+            </>
           )}
 
           {usuario.role === 'pai' && (
@@ -195,15 +208,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
                 <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
                   Telefone principal
                 </label>
-                <input
-                  name="telefone_principal"
-                  value={form.telefone_principal}
-                  onChange={handleTelefone}
-                  placeholder="(34) 99999-9999"
-                  inputMode="numeric"
-                  className={inputCls}
-                  style={inputStyle}
-                />
+                <input name="telefone_principal" value={form.telefone_principal} onChange={handleTelefone} placeholder="(34) 99999-9999" inputMode="numeric" className={inputCls} style={inputStyle} />
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
@@ -222,15 +227,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
                   <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
                     CEP
                   </label>
-                  <input
-                    name="cep"
-                    value={form.cep}
-                    onChange={handleCEP}
-                    placeholder="00000-000"
-                    inputMode="numeric"
-                    className={inputCls}
-                    style={inputStyle}
-                  />
+                  <input name="cep" value={form.cep} onChange={handleCEP} placeholder="00000-000" inputMode="numeric" className={inputCls} style={inputStyle} />
                 </div>
               </div>
               <div>
@@ -238,23 +235,8 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
                   Contato de emergência
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  <input
-                    name="emergencia_nome"
-                    value={form.emergencia_nome}
-                    onChange={handle}
-                    placeholder="Nome"
-                    className={inputCls}
-                    style={inputStyle}
-                  />
-                  <input
-                    name="emergencia_telefone"
-                    value={form.emergencia_telefone}
-                    onChange={handleTelefone}
-                    placeholder="(34) 99999-9999"
-                    inputMode="numeric"
-                    className={inputCls}
-                    style={inputStyle}
-                  />
+                  <input name="emergencia_nome" value={form.emergencia_nome} onChange={handle} placeholder="Nome" className={inputCls} style={inputStyle} />
+                  <input name="emergencia_telefone" value={form.emergencia_telefone} onChange={handleTelefone} placeholder="(34) 99999-9999" inputMode="numeric" className={inputCls} style={inputStyle} />
                 </div>
               </div>
             </>
@@ -268,11 +250,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
         <Button type="submit" disabled={salvando}>
           {salvando ? 'Salvando...' : 'Salvar alterações'}
         </Button>
-        <a
-          href={`/admin/usuarios/${usuario.id}`}
-          className="text-sm transition-opacity hover:opacity-70"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <a href={`/admin/usuarios/${usuario.id}`} className="text-sm transition-opacity hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
           Cancelar
         </a>
       </div>

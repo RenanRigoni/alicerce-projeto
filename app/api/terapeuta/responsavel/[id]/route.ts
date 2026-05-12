@@ -13,7 +13,7 @@ export async function PATCH(
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'terapeuta') {
-    return NextResponse.json({ error: 'Apenas terapeutas podem usar esta rota' }, { status: 403 })
+    return NextResponse.json({ error: 'Apenas profissionais podem usar esta rota' }, { status: 403 })
   }
 
   // Verifica se o responsável tem ao menos um paciente do terapeuta

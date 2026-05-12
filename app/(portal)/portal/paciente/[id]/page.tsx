@@ -216,7 +216,7 @@ export default async function PacientePortalPage({
 
             {terapeutasNomes.length > 0 && (
               <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--color-border-soft)' }}>
-                <div className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--color-ink-faint)' }}>Terapeutas</div>
+                <div className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--color-ink-faint)' }}>Profissionais</div>
                 <div className="flex flex-wrap gap-2">
                   {terapeutasNomes.map((nome: string) => (
                     <span
@@ -279,7 +279,7 @@ export default async function PacientePortalPage({
               className="rounded-xl px-4 py-3 text-sm"
               style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E' }}
             >
-              Sua solicitação de alta foi enviada e aguarda confirmação da terapeuta.
+              Sua solicitação de alta foi enviada e aguarda confirmação da profissional.
             </div>
           )}
         </div>

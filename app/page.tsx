@@ -43,7 +43,7 @@ export default function IntroPage() {
       }}
     >
       <Image
-        src="/intro_app.jpg"
+        src="/intro_app.png"
         alt="Alicerce"
         fill
         style={{ objectFit: 'cover', objectPosition: 'center' }}

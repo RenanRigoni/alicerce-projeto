@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-cream)' }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--color-cream)' }}>
       <Navbar role={profile.role as 'admin' | 'recepcao'} nome={profile.nome} />
       <main className="max-w-5xl mx-auto px-4 py-8 animate-fade-up">
         {children}

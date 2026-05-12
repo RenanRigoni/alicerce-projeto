@@ -28,7 +28,7 @@ export default async function PortalLayout({ children }: { children: React.React
     profile.consentimento_policy_versao !== POLICY_VERSION
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-peach-light)' }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--color-peach-light)' }}>
       <Navbar role="pai" nome={profile.nome} />
       {precisaConsentimento && <ConsentimentoModal />}
       <main className="max-w-5xl mx-auto px-4 py-8 animate-fade-up">

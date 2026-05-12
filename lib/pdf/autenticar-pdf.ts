@@ -4,29 +4,52 @@ const FOOTER_FONT_SIZE = 6
 const FOOTER_MARGIN_X = 36
 const FOOTER_MARGIN_Y = 14
 
-async function inserirRodapeHash(pdfDoc: PDFDocument, page: PDFPage, hash: string) {
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const texto = `Autenticacao Alicerce SHA-256: ${hash}`
-  const { width } = page.getSize()
+export interface InfoAutenticacao {
+  hash: string
+  terapeuta?: string
+  conselho?: string
+  autenticacaoEm?: string
+}
 
-  page.drawText(texto, {
+async function inserirRodapeHash(pdfDoc: PDFDocument, page: PDFPage, info: InfoAutenticacao) {
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const { width } = page.getSize()
+  const maxW = width - FOOTER_MARGIN_X * 2
+
+  page.drawText(`Autenticacao Alicerce SHA-256: ${info.hash}`, {
     x: FOOTER_MARGIN_X,
     y: FOOTER_MARGIN_Y,
     size: FOOTER_FONT_SIZE,
     font,
     color: rgb(0.48, 0.48, 0.48),
     opacity: 0.78,
-    maxWidth: width - FOOTER_MARGIN_X * 2,
+    maxWidth: maxW,
   })
+
+  if (info.terapeuta || info.autenticacaoEm) {
+    const partes: string[] = []
+    if (info.terapeuta) partes.push(info.terapeuta)
+    if (info.conselho) partes.push(info.conselho)
+    if (info.autenticacaoEm) partes.push(`Autenticado em: ${info.autenticacaoEm}`)
+    page.drawText(partes.join(' | '), {
+      x: FOOTER_MARGIN_X,
+      y: FOOTER_MARGIN_Y + 8,
+      size: FOOTER_FONT_SIZE,
+      font,
+      color: rgb(0.48, 0.48, 0.48),
+      opacity: 0.78,
+      maxWidth: maxW,
+    })
+  }
 }
 
 export async function inserirHashNoRodapePdf(
   pdfBytes: Uint8Array,
-  hash: string
+  info: InfoAutenticacao
 ): Promise<Buffer> {
   const pdfDoc = await PDFDocument.load(pdfBytes)
   for (const page of pdfDoc.getPages()) {
-    await inserirRodapeHash(pdfDoc, page, hash)
+    await inserirRodapeHash(pdfDoc, page, info)
   }
 
   const stampedBytes = await pdfDoc.save()
@@ -36,7 +59,7 @@ export async function inserirHashNoRodapePdf(
 export async function criarPdfAutenticadoDeImagem(
   imageBytes: Uint8Array,
   fileName: string,
-  hash: string
+  info: InfoAutenticacao
 ): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create()
   const page = pdfDoc.addPage([595.28, 841.89])
@@ -60,7 +83,7 @@ export async function criarPdfAutenticadoDeImagem(
     height: scaled.height,
   })
 
-  await inserirRodapeHash(pdfDoc, page, hash)
+  await inserirRodapeHash(pdfDoc, page, info)
 
   const stampedBytes = await pdfDoc.save()
   return Buffer.from(stampedBytes)

@@ -17,7 +17,7 @@ export default async function TerapiaLayout({ children }: { children: React.Reac
   if (!profile || profile.role !== 'terapeuta') redirect('/login')
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-sage-light)' }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--color-sage-light)' }}>
       <Navbar role="terapeuta" nome={profile.nome} />
       <main className="max-w-5xl mx-auto px-4 py-8 animate-fade-up">
         {children}

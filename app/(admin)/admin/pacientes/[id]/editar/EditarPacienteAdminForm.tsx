@@ -34,7 +34,6 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
     data_nascimento:         paciente.data_nascimento ?? '',
     sexo:                    paciente.sexo ?? '',
     cpf:                     paciente.cpf ?? '',
-    frequencia_atendimento:  paciente.frequencia_atendimento ?? '',
     turno_preferencia:       paciente.turno_preferencia ?? '',
     convenio_ou_particular:  paciente.convenio_ou_particular ?? '',
   })
@@ -93,7 +92,7 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
         data_nascimento:        form.data_nascimento || null,
         sexo:                   form.sexo || null,
         cpf_cifrado:            cpfCifrado,
-        frequencia_atendimento: form.frequencia_atendimento.trim() || null,
+        frequencia_atendimento: horariosValidos.length > 0 ? `${horariosValidos.length}x por semana` : null,
         turno_preferencia:      form.turno_preferencia || null,
         convenio_ou_particular: form.convenio_ou_particular || null,
         horarios_atendimento:   horariosValidos,
@@ -159,12 +158,6 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>CPF ou documento</label>
             <input name="cpf" value={form.cpf} onChange={handle} placeholder="000.000.000-00" className="input-base" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Frequência de atendimento</label>
-            <input name="frequencia_atendimento" value={form.frequencia_atendimento} onChange={handle}
-              placeholder="Ex: 2x por semana" className="input-base" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

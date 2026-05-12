@@ -43,9 +43,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Sessão já ocorreu.' }, { status: 400 })
   }
 
-  const expiraEm = new Date(dataHoraDate.getTime() - 24 * 60 * 60 * 1000)
+  const expiraEm = new Date(dataHoraDate.getTime() - 12 * 60 * 60 * 1000)
   if (expiraEm <= agora) {
-    return NextResponse.json({ error: 'Sessão acontece em menos de 24h. Prazo encerrado.' }, { status: 400 })
+    return NextResponse.json({ error: 'Sessão acontece em menos de 12h. Prazo encerrado.' }, { status: 400 })
   }
 
   const adminClient = createAdminClient()
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     timeZone: 'America/Sao_Paulo',
   })
 
-  // Prazo = 24h antes da sessão, formatado como "10h00 do dia 10 de maio"
+  // Prazo = 12h antes da sessão, formatado como "10h00 do dia 10 de maio"
   const horaLimite = expiraEm.toLocaleTimeString('pt-BR', {
     hour: '2-digit', minute: '2-digit',
     timeZone: 'America/Sao_Paulo',

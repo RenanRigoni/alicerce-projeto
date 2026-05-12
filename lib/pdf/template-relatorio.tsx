@@ -126,6 +126,7 @@ interface TemplateRelatorioProps {
     assinatura_digital?: string | null
     publicado_em?: string | null
     hash_integridade?: string | null
+    autenticacao_em?: string | null
   }
   terapeuta: {
     nome: string
@@ -210,11 +211,19 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta }: TemplateRe
           <Text style={styles.rodapeTexto}>
             Alicerce Espaço Terapêutico Infantil — Documento gerado eletronicamente
           </Text>
-          {relatorio.hash_integridade && (
-            <Text style={styles.rodapeTexto}>
-              Autenticacao Alicerce SHA-256: {relatorio.hash_integridade}
-            </Text>
-          )}
+          {relatorio.hash_integridade && (() => {
+            const partes: string[] = [terapeuta.nome]
+            if (conselhoProfissional) partes.push(conselhoProfissional)
+            if (relatorio.autenticacao_em) partes.push(`Autenticado em: ${relatorio.autenticacao_em}`)
+            return (
+              <>
+                <Text style={styles.rodapeTexto}>{partes.join(' | ')}</Text>
+                <Text style={styles.rodapeTexto}>
+                  Autenticacao Alicerce SHA-256: {relatorio.hash_integridade}
+                </Text>
+              </>
+            )
+          })()}
         </View>
 
       </Page>

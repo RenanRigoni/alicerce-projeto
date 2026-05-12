@@ -9,7 +9,9 @@ import {
   inserirHashNoRodapePdf,
   isImagePath,
   isPdfPath,
+  type InfoAutenticacao,
 } from '@/lib/pdf/autenticar-pdf'
+import { formatarConselhoProfissional } from '@/lib/profissionais'
 
 export async function POST(
   request: NextRequest,
@@ -75,6 +77,41 @@ export async function POST(
 
   const adminClient = createAdminClient()
 
+  // Busca última sessão confirmada do paciente para calcular timestamp de autenticação
+  const { data: ultimaSessao } = await adminClient
+    .from('sessao_confirmacoes')
+    .select('data_hora')
+    .eq('paciente_id', relatorio.paciente_id)
+    .in('status', ['confirmada', 'expirada'])
+    .order('data_hora', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  let autenticacaoEm: string | null = null
+  if (ultimaSessao?.data_hora) {
+    const tsAuth = new Date(new Date(ultimaSessao.data_hora).getTime() + 50 * 60 * 1000)
+    autenticacaoEm = tsAuth.toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    })
+  }
+
+  const terapeutaProfile = relatorio.profiles as any
+  const conselhoStr = formatarConselhoProfissional({
+    tipoProfissional: terapeutaProfile?.tipo_profissional,
+    conselhoTipo: terapeutaProfile?.conselho_tipo,
+    conselhoNumero: terapeutaProfile?.conselho_numero,
+    crefitoLegado: terapeutaProfile?.crefito,
+  })
+
+  const authInfo: InfoAutenticacao = {
+    hash: hashIntegridade,
+    terapeuta: terapeutaProfile?.nome,
+    conselho: conselhoStr ?? undefined,
+    autenticacaoEm: autenticacaoEm ?? undefined,
+  }
+
   const path = `${relatorio.paciente_id}/${id}.pdf`
   const sourcePath = typeof body.sourcePath === 'string' ? body.sourcePath : null
   let pdfBuffer: Buffer
@@ -92,8 +129,8 @@ export async function POST(
     try {
       const originalBytes = new Uint8Array(await originalFile.arrayBuffer())
       pdfBuffer = isPdfPath(sourcePath)
-        ? await inserirHashNoRodapePdf(originalBytes, hashIntegridade)
-        : await criarPdfAutenticadoDeImagem(originalBytes, sourcePath, hashIntegridade)
+        ? await inserirHashNoRodapePdf(originalBytes, authInfo)
+        : await criarPdfAutenticadoDeImagem(originalBytes, sourcePath, authInfo)
     } catch {
       return NextResponse.json({ error: 'Não foi possível inserir o hash no anexo.' }, { status: 500 })
     }
@@ -102,8 +139,8 @@ export async function POST(
     pdfBuffer = await renderToBuffer(
       createElement(TemplateRelatorio, {
         paciente,
-        relatorio,
-        terapeuta: relatorio.profiles as any,
+        relatorio: { ...relatorio, autenticacao_em: autenticacaoEm },
+        terapeuta: terapeutaProfile,
       }) as any
     )
   }

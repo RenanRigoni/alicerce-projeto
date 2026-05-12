@@ -65,9 +65,7 @@ export default async function TerapiaDashboard() {
     supabase
       .from('feriados')
       .select('data, descricao, anual')
-      .gte('data', agora.toISOString().slice(0, 10))
-      .order('data')
-      .limit(3),
+      .order('data'),
     supabase
       .from('comunicados')
       .select('id, titulo, conteudo, criado_em')
@@ -179,14 +177,28 @@ export default async function TerapiaDashboard() {
   agendaHoje.sort((a, b) => a.hora.localeCompare(b.hora))
 
   // Esta semana
-  const realizadasSemana = (confirmacoesSemana ?? []).filter((c: any) => c.status === 'confirmada' || c.status === 'expirada').length
+  const confirmadasSemana = (confirmacoesSemana ?? []).filter((c: any) => c.status === 'confirmada' || c.status === 'expirada').length
   const canceladasSemana = (confirmacoesSemana ?? []).filter((c: any) => c.status === 'cancelada').length
 
   // Taxa do mês
-  const realizadasMes = (confirmacoesMes ?? []).filter((c: any) => c.status === 'confirmada' || c.status === 'expirada').length
+  const confirmadasMes = (confirmacoesMes ?? []).filter((c: any) => c.status === 'confirmada' || c.status === 'expirada').length
   const canceladasMes = (confirmacoesMes ?? []).filter((c: any) => c.status === 'cancelada').length
-  const totalMesPres  = realizadasMes + canceladasMes
-  const taxaMes       = totalMesPres > 0 ? Math.round((realizadasMes / totalMesPres) * 100) : 0
+  const totalMesPres  = confirmadasMes + canceladasMes
+  const taxaMes       = totalMesPres > 0 ? Math.round((confirmadasMes / totalMesPres) * 100) : 0
+
+  // Feriado do mês atual (apenas 1)
+  const mesAtualStr = dd(mesAtualBRT)
+  const feriadosDoMes = (feriados ?? [])
+    .flatMap((f: any) => {
+      const [, fMes, fDia] = (f.data as string).split('-')
+      if (fMes !== mesAtualStr) return []
+      const dataAnoAtual = `${anoAtualBRT}-${fMes}-${fDia}`
+      const dt = new Date(`${dataAnoAtual}T12:00:00`)
+      if (String(dt.getMonth() + 1).padStart(2, '0') !== fMes) return []
+      if (dataAnoAtual < todayBRT) return []
+      return [{ data: dataAnoAtual, descricao: f.descricao as string }]
+    })
+    .sort((a: { data: string }, b: { data: string }) => a.data.localeCompare(b.data))
 
   return (
     <div className="space-y-6">
@@ -199,7 +211,7 @@ export default async function TerapiaDashboard() {
         >
           Hoje &amp; esta semana
         </h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
           {/* Agenda de hoje */}
           <Card>
@@ -251,8 +263,8 @@ export default async function TerapiaDashboard() {
                 className="rounded-xl p-2.5 text-center"
                 style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
               >
-                <div className="text-2xl font-bold" style={{ color: '#16A34A' }}>{realizadasSemana}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Realizadas</div>
+                <div className="text-2xl font-bold" style={{ color: '#16A34A' }}>{confirmadasSemana}</div>
+                <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Confirmadas</div>
               </div>
               <div
                 className="rounded-xl p-2.5 text-center"
@@ -273,7 +285,7 @@ export default async function TerapiaDashboard() {
               />
             </div>
             <div className="text-xs mt-2" style={{ color: '#9CA3AF' }}>
-              {realizadasMes} realizadas · {canceladasMes} canceladas no mês
+              {confirmadasMes} confirmadas · {canceladasMes} canceladas no mês
             </div>
           </Card>
 
@@ -393,36 +405,33 @@ export default async function TerapiaDashboard() {
         )}
       </div>
 
-      {/* Próximos feriados */}
-      {(feriados ?? []).length > 0 && (
-        <div>
-          <h2
-            className="text-xs font-semibold uppercase tracking-wider mb-3"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
-            Próximos feriados
-          </h2>
-          <Card>
-            <div className="space-y-2.5">
-              {(feriados ?? []).map((f: any) => (
-                <div key={f.data} className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-rose-soft)' }} />
-                  <div>
-                    <span className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
-                      {f.descricao}
-                    </span>
-                    <span className="text-xs ml-2" style={{ color: 'var(--color-ink-soft)' }}>
-                      {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', {
-                        weekday: 'long', day: '2-digit', month: 'long',
-                      })}
-                    </span>
-                  </div>
+      {/* Próximo feriado do mês atual (apenas 1) */}
+      {feriadosDoMes.length > 0 && (() => {
+        const f = feriadosDoMes[0]
+        return (
+          <div>
+            <h2
+              className="text-xs font-semibold uppercase tracking-wider mb-3"
+              style={{ color: 'var(--color-ink-soft)' }}
+            >
+              Próximo feriado
+            </h2>
+            <Card>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-rose-soft)' }} />
+                <div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>{f.descricao}</span>
+                  <span className="text-xs ml-2" style={{ color: 'var(--color-ink-soft)' }}>
+                    {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', {
+                      weekday: 'long', day: '2-digit', month: 'long',
+                    })}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      )}
+              </div>
+            </Card>
+          </div>
+        )
+      })()}
 
       {/* Comunicados */}
       {(comunicados ?? []).length > 0 && (

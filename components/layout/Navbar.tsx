@@ -119,7 +119,7 @@ export function Navbar({ role, nome }: NavbarProps) {
           </Link>
 
           {/* Links desktop */}
-          <div className="hidden sm:flex items-center gap-0.5 flex-1 ml-4">
+          <div className="hidden lg:flex items-center gap-0.5 flex-1 ml-4">
             {links.map(link => (
               <Link
                 key={link.href}
@@ -143,12 +143,12 @@ export function Navbar({ role, nome }: NavbarProps) {
 
           {/* Direita: sino + avatar + user menu */}
           <div className="flex items-center gap-2">
-            <div className="hidden sm:block">
+            <div className="hidden lg:block">
               <NotificacoesBell />
             </div>
 
             {/* Avatar button */}
-            <div className="relative hidden sm:block">
+            <div className="relative hidden lg:block">
               <button
                 onClick={() => setUserMenuAberto(v => !v)}
                 className="flex items-center gap-2 px-2 py-1 rounded-xl transition-all duration-200 hover:bg-[var(--color-border-soft)]"
@@ -227,7 +227,7 @@ export function Navbar({ role, nome }: NavbarProps) {
             {/* Hamburger mobile */}
             <button
               onClick={() => setMenuAberto(v => !v)}
-              className="sm:hidden flex flex-col gap-1.5 p-2 rounded-lg hover:bg-[var(--color-border-soft)] transition-colors"
+              className="lg:hidden flex flex-col gap-1.5 p-2 rounded-lg hover:bg-[var(--color-border-soft)] transition-colors"
               aria-label="Menu"
             >
               <span
@@ -268,7 +268,7 @@ export function Navbar({ role, nome }: NavbarProps) {
       {/* Menu mobile full-screen */}
       {menuAberto && (
         <div
-          className="fixed inset-0 z-50 flex flex-col sm:hidden"
+          className="fixed inset-0 z-50 flex flex-col lg:hidden"
           style={{ background: 'var(--color-warm-white)' }}
         >
           {/* Cabeçalho do overlay */}

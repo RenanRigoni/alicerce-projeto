@@ -208,23 +208,38 @@ export default async function PortalDashboard() {
               </div>
             ))}
 
-            {(feriados ?? []).filter((f: any) => f.data >= new Date().toISOString().slice(0, 10)).slice(0, 3).map((f: any) => (
-              <div
-                key={f.data}
-                className="flex items-center gap-3 rounded-xl px-4 py-3"
-                style={{ background: '#FEF9F0', border: '1px solid #FDEBD0' }}
-              >
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#F0A030' }} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium" style={{ color: '#92400E' }}>{f.descricao}</div>
-                  <div className="text-xs" style={{ color: '#B45309' }}>
-                    {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', {
-                      weekday: 'long', day: '2-digit', month: 'long',
-                    })} · Feriado
+            {(() => {
+              const now = new Date()
+              const todayStr = now.toISOString().slice(0, 10)
+              const mesAtual = String(now.getMonth() + 1).padStart(2, '0')
+              const anoAtual = now.getFullYear()
+              const proxFeriado = (feriados ?? [])
+                .flatMap((f: any) => {
+                  const [, fMes, fDia] = (f.data as string).split('-')
+                  if (fMes !== mesAtual) return []
+                  const dataAnoAtual = `${anoAtual}-${fMes}-${fDia}`
+                  if (dataAnoAtual < todayStr) return []
+                  return [{ data: dataAnoAtual, descricao: f.descricao as string }]
+                })
+                .sort((a: { data: string }, b: { data: string }) => a.data.localeCompare(b.data))[0]
+              if (!proxFeriado) return null
+              return (
+                <div
+                  className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  style={{ background: '#FEF9F0', border: '1px solid #FDEBD0' }}
+                >
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#F0A030' }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium" style={{ color: '#92400E' }}>{proxFeriado.descricao}</div>
+                    <div className="text-xs" style={{ color: '#B45309' }}>
+                      {new Date(proxFeriado.data + 'T12:00:00').toLocaleDateString('pt-BR', {
+                        weekday: 'long', day: '2-digit', month: 'long',
+                      })} · Feriado
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })()}
           </div>
         </div>
       )}

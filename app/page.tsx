@@ -8,16 +8,17 @@ export default function IntroPage() {
   const router = useRouter()
   const [visible, setVisible] = useState(false)
   const [fading, setFading]   = useState(false)
+  const [imgSrc, setImgSrc]   = useState('/mobile.png')
 
   useEffect(() => {
-    // Mostra apenas uma vez por sessão — reoabrir o app (nova aba/sessão) sempre exibe
+    setImgSrc(window.innerWidth >= 768 ? '/tablet.png' : '/mobile.png')
+
     const shown = sessionStorage.getItem('introShown')
     if (shown) {
       router.replace('/login')
       return
     }
 
-    // Pequeno delay para garantir que a imagem carregue antes do fade-in
     const t0 = setTimeout(() => setVisible(true), 80)
     const t1 = setTimeout(() => setFading(true), 2200)
     const t2 = setTimeout(() => {
@@ -43,7 +44,7 @@ export default function IntroPage() {
       }}
     >
       <Image
-        src="/intro_app.png"
+        src={imgSrc}
         alt="Alicerce"
         fill
         style={{ objectFit: 'cover', objectPosition: 'center' }}

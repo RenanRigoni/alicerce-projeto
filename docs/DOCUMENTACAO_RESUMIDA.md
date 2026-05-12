@@ -2,7 +2,7 @@
 
 ## Visão geral
 
-Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastro, agenda, prontuário, relatórios, documentos e comunicação com famílias. Acesso separado por perfil; dados clínicos protegidos por RLS, hash de integridade SHA-256, audit log automático e CPF cifrado.
+Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastro, agenda, prontuário, relatórios, documentos e comunicação com famílias. Acesso separado por perfil; dados clínicos protegidos por RLS, hash de integridade SHA-256, audit log automático e CPF cifrado. O cadastro clínico aceita profissionais de múltiplas especialidades.
 
 **Stack:** Next.js 16 (App Router) + Supabase (Postgres + Auth + Storage) + Vercel.
 
@@ -13,8 +13,10 @@ Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastr
 ### Administração e recepção (`/admin/*`)
 - Painel geral, cadastros, vínculos, agenda, feriados, comunicados, alta, usuários, auditoria.
 
-### Terapeutas (`/terapia/*`)
-- Apenas pacientes vinculados em `paciente_terapeutas`. Prontuário (dados clínicos, relatórios, documentos, orientações), agenda própria, registro/confirmação de alta. CREFITO obrigatório (Res. 426/2015).
+### Profissionais clínicos (`/terapia/*`, role interno `terapeuta`)
+- Apenas pacientes vinculados em `paciente_terapeutas`. Prontuário (dados clínicos, relatórios, documentos, orientações), agenda própria, registro/confirmação de alta. O cadastro exige tipo profissional e conselho correspondente.
+- Tipos aceitos: Terapeuta Ocupacional, Fisioterapeuta, Fonoaudióloga, Psicóloga, Neuropsicóloga, Neuropsicopedagoga e Nutricionista.
+- Conselhos exibidos conforme o tipo: CREFITO, CRFa, CRP, CBO ou CRN.
 
 ### Família / responsáveis (`/portal/*`)
 - Apenas pacientes vinculados em `paciente_responsaveis`. Calendário, relatórios publicados, orientações, upload de documentos, solicitação de alta, edição de meus dados, exportação JSON dos dados pessoais.
@@ -31,7 +33,7 @@ Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastr
 ### `/admin` (role admin/recepção)
 | Rota | Função |
 |---|---|
-| `/admin/dashboard` | Métricas (pacientes ativos, famílias, terapeutas, relatórios recentes, feriados, comunicados) |
+| `/admin/dashboard` | Métricas (pacientes ativos, famílias, profissionais, relatórios recentes, feriados, comunicados) |
 | `/admin/pacientes` | Lista de pacientes |
 | `/admin/pacientes/novo` | Novo paciente |
 | `/admin/pacientes/[id]` | Perfil do paciente |
@@ -39,11 +41,11 @@ Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastr
 | `/admin/pacientes/[id]/desativar` | Desativar |
 | `/admin/pacientes/[id]/reativar` | Reativar |
 | `/admin/responsaveis` | Lista de responsáveis |
-| `/admin/terapeutas` | Lista de terapeutas |
+| `/admin/terapeutas` | Lista de profissionais clínicos |
 | `/admin/usuarios` | Gestão de usuários |
-| `/admin/usuarios/novo` | Cria usuário (CREFITO obrigatório se terapeuta) |
+| `/admin/usuarios/novo` | Cria usuário; para profissional, Perfil vem primeiro e carrega tipo/conselho dinâmicos |
 | `/admin/usuarios/[id]` | Detalhes + permissões granulares |
-| `/admin/usuarios/[id]/editar` | Edição (valida CREFITO) |
+| `/admin/usuarios/[id]/editar` | Edição; para profissional, altera e-mail, CPF/CNPJ, tipo e conselho |
 | `/admin/agendamentos` | Agenda geral |
 | `/admin/agendamentos/novo` | Novo agendamento |
 | `/admin/feriados` | Feriados |
@@ -51,7 +53,7 @@ Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastr
 | `/admin/alta` | Visão geral de altas |
 | `/admin/auditoria` | Log de auditoria (somente leitura) |
 
-### `/terapia` (role terapeuta)
+### `/terapia` (role interno `terapeuta`)
 | Rota | Função |
 |---|---|
 | `/terapia/dashboard` | Próximos compromissos + pacientes vinculados |
@@ -59,7 +61,7 @@ Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastr
 | `/terapia/pacientes` | Pacientes vinculados |
 | `/terapia/paciente/[id]` | Prontuário (dados clínicos, relatórios, documentos, orientações, alta) |
 | `/terapia/paciente/[id]/editar` | Edita dados básicos |
-| `/terapia/paciente/[id]/novo-relatorio` | Cria relatório (assinatura inclui CREFITO) |
+| `/terapia/paciente/[id]/novo-relatorio` | Cria relatório (assinatura inclui conselho profissional dinâmico) |
 | `/terapia/paciente/[id]/novo-documento` | Upload de documento |
 | `/terapia/relatorio/[id]/editar` | Edita rascunho |
 | `/terapia/alta/[id]` | Detalhe de alta |
@@ -81,8 +83,8 @@ Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastr
 
 | Rota | Método | Quem pode |
 |---|---|---|
-| `/api/admin/criar-usuario` | POST | admin (cria via service role; valida CREFITO) |
-| `/api/usuario/[id]` | DELETE | admin (não permite auto-deleção) |
+| `/api/admin/criar-usuario` | POST | admin/recepção (cria via service role; valida tipo profissional e conselho) |
+| `/api/usuario/[id]` | PATCH/DELETE | PATCH: admin/recepção edita dados de perfil/Auth; DELETE: admin (não permite auto-deleção) |
 | `/api/usuario/[id]/ativo` | PATCH | admin |
 | `/api/paciente` | POST | admin/recepção (cifra CPF na criação) |
 | `/api/paciente/[id]/deletar` | DELETE | admin/recepção (bloqueia se houver QUALQUER registro clínico — COFFITO) |
@@ -90,21 +92,21 @@ Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastr
 | `/api/vincular/paciente-responsavel` | POST | admin/recepção |
 | `/api/feriado` | POST/DELETE | admin/recepção |
 | `/api/comunicado/[id]` | DELETE | admin |
-| `/api/relatorio/[id]` | PATCH/DELETE | terapeuta dono (até publicação) |
-| `/api/relatorio/[id]/publicado` | PATCH | terapeuta dono |
-| `/api/relatorio/[id]/pdf` | POST/GET | terapeuta dono / admin / pai vinculado (signed URL 1h) |
-| `/api/orientacao` | POST | terapeuta vinculado |
-| `/api/orientacao/[id]` | PATCH | terapeuta dono (DELETE bloqueado — imutabilidade COFFITO) |
-| `/api/documento/upload` | POST | terapeuta/admin |
-| `/api/upload/midia` | POST | terapeuta (mídia de orientação) |
-| `/api/alta/registrar` | POST | terapeuta vinculado |
+| `/api/relatorio/[id]` | PATCH/DELETE | profissional dono (até publicação) |
+| `/api/relatorio/[id]/publicado` | PATCH | profissional dono |
+| `/api/relatorio/[id]/pdf` | POST/GET | profissional dono / admin / pai vinculado (signed URL 1h) |
+| `/api/orientacao` | POST | profissional vinculado |
+| `/api/orientacao/[id]` | PATCH | profissional dono (DELETE bloqueado — imutabilidade COFFITO) |
+| `/api/documento/upload` | POST | profissional/admin |
+| `/api/upload/midia` | POST | profissional (mídia de orientação) |
+| `/api/alta/registrar` | POST | profissional vinculado |
 | `/api/alta/solicitar` | POST | pai vinculado |
-| `/api/alta/[id]/confirmar` | PATCH | terapeuta vinculado |
+| `/api/alta/[id]/confirmar` | PATCH | profissional vinculado |
 | `/api/consentimento` | POST | pai (registra `consentimento_aceito_em` + `consentimento_policy_versao`) |
 | `/api/portal/exportar-dados` | GET | pai (LGPD Art. 18, VI) |
 | `/api/portal/meus-dados` | PATCH | pai |
-| `/api/terapeuta/paciente/[id]` | GET | terapeuta vinculado |
-| `/api/terapeuta/responsavel/[id]` | GET | terapeuta vinculado |
+| `/api/terapeuta/paciente/[id]` | GET | profissional vinculado (rota legada) |
+| `/api/terapeuta/responsavel/[id]` | GET | profissional vinculado (rota legada) |
 
 ---
 
@@ -112,15 +114,15 @@ Sistema web da **Alicerce Espaço Terapêutico Infantil** que centraliza cadastr
 
 | Tabela | Conteúdo |
 |---|---|
-| `profiles` | espelho de `auth.users` com `nome, role, telefone, crefito, consentimento_aceito_em, consentimento_policy_versao, permissoes (jsonb), ativo` |
+| `profiles` | espelho de `auth.users` com `nome, role, telefone, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, crefito (legado), consentimento_aceito_em, consentimento_policy_versao, permissoes (jsonb), ativo` |
 | `pacientes` | dados cadastrais (`cpf` em transição, `cpf_cifrado` via pgcrypto, `status`, `frequencia_atendimento`, etc.) |
 | `pacientes_dados_clinicos` | diagnóstico, hipótese diagnóstica, plano terapêutico, observações, `hash_integridade` |
 | `paciente_responsaveis` | vínculo família ↔ paciente (`tipo`: principal/secundário) |
-| `paciente_terapeutas` | vínculo terapeuta ↔ paciente |
+| `paciente_terapeutas` | vínculo profissional clínico ↔ paciente; nome legado preservado por compatibilidade |
 | `responsaveis_detalhes` | endereço, cidade, CEP, contato emergência |
-| `relatorios` | `paciente_id, terapeuta_id, conteudo, status (rascunho/publicado), assinatura, pdf_url, hash_integridade` |
+| `relatorios` | `paciente_id, terapeuta_id` (nome legado), conteúdo, status (rascunho/publicado), assinatura, pdf_url, hash_integridade |
 | `documentos` | uploads (paciente_id, url pública, mime, hash) |
-| `orientacoes` | mensagens da terapeuta para a família (texto/PDF/vídeo/imagem); `hash_integridade`; **DELETE bloqueado** |
+| `orientacoes` | mensagens da profissional para a família (texto/PDF/vídeo/imagem); `hash_integridade`; **DELETE bloqueado** |
 | `agendamentos` | sessões e compromissos especiais (recorrentes geradas a partir de `horarios_atendimento`) |
 | `feriados` | dias sem geração automática de sessão |
 | `comunicados` | avisos gerais |
@@ -167,20 +169,20 @@ Quando admin marca `permissoes.bloquear_acesso_portal = true` no `profiles` de u
 
 ## Fluxo de alta (real, conforme migration 014 + rotas atuais)
 
-Tabela: `solicitacoes_alta` com `tipo ∈ {terapeuta, responsavel}` e `status ∈ {registrada, pendente_confirmacao, confirmada, recusada}`.
+Tabela: `solicitacoes_alta` com `tipo ∈ {terapeuta, responsavel}` (valor legado) e `status ∈ {registrada, pendente_confirmacao, confirmada, recusada}`.
 
-### A) Alta direta pelo terapeuta
-1. Terapeuta vinculado chama `POST /api/alta/registrar` com `paciente_id, motivo`.
+### A) Alta direta pelo profissional
+1. Profissional vinculado chama `POST /api/alta/registrar` com `paciente_id, motivo`.
 2. Sistema valida vínculo, paciente ativo, gera `hash_integridade`, insere com `status='registrada'`.
 3. Atualiza `pacientes.status='alta'`.
 4. Apaga agendamentos futuros do paciente.
 5. Notifica responsáveis.
 
-### B) Solicitação pela família + confirmação pela terapeuta
+### B) Solicitação pela família + confirmação pela profissional
 1. Pai vinculado chama `POST /api/alta/solicitar` com `paciente_id, motivo, documento_url?`.
 2. Insere com `status='pendente_confirmacao'` (bloqueia se já existir uma pendente para o mesmo paciente).
-3. Notifica terapeutas vinculados.
-4. Terapeuta vinculado chama `PATCH /api/alta/[id]/confirmar`.
+3. Notifica profissionais vinculados.
+4. Profissional vinculado chama `PATCH /api/alta/[id]/confirmar`.
 5. Status passa a `confirmada`, paciente vira `alta`, agendamentos futuros são apagados.
 6. Notifica responsáveis.
 
@@ -205,12 +207,12 @@ Path padrão dos PDFs: `${paciente_id}/${relatorio_id}.pdf`.
 - **RLS:** ativo em todas as tabelas com dados pessoais ou clínicos.
 - **Hash de integridade:** SHA-256 nas entidades clínicas (`relatorios`, `orientacoes`, `documentos`, `pacientes_dados_clinicos`, `solicitacoes_alta`).
 - **Audit log:** triggers automáticas em INSERT/UPDATE nas 5 tabelas clínicas (migration 020), populando `audit_logs` com `auth.uid()`, `TG_TABLE_NAME`, `TG_OP`.
-- **CPF cifrado:** `cpf_cifrado bytea` via `pgcrypto.pgp_sym_encrypt`; chave em `_app_config.cpf_key`; leitura via `get_paciente_cpf(uuid)` SECURITY DEFINER (apenas admin/recepção/terapeuta vinculado).
+- **CPF cifrado:** `cpf_cifrado bytea` via `pgcrypto.pgp_sym_encrypt`; chave em `_app_config.cpf_key`; leitura via `get_paciente_cpf(uuid)` SECURITY DEFINER (apenas admin/recepção/profissional vinculado).
 - **Consentimento:** `ConsentimentoModal` no primeiro acesso da família; grava `consentimento_aceito_em` + `consentimento_policy_versao` (atual: `v1-2026-04-26`).
 - **Portabilidade:** `GET /api/portal/exportar-dados` devolve JSON com perfil + detalhes + vínculos (LGPD Art. 18, VI).
 - **Correção:** `PATCH /api/portal/meus-dados` permite ao responsável editar nome, telefone, endereço, contato emergência (LGPD Art. 18, III).
 - **Imutabilidade:** orientações não podem ser deletadas (HTTP 409 com mensagem citando COFFITO Res. 424/2013); pacientes com prontuário não podem ser excluídos.
-- **CREFITO:** obrigatório no profile do terapeuta (CHECK constraint, migration 018) e impresso no PDF e na assinatura digital do relatório (Res. 426/2015).
+- **Conselho profissional:** migration 033 adiciona `tipo_profissional`, `conselho_tipo` e `conselho_numero`; o PDF e a assinatura digital usam o conselho correto (CREFITO, CRFa, CRP, CBO ou CRN). `crefito` fica como legado para cadastros antigos.
 
 Documentos formais: `docs/lgpd/ROPA.md`, `docs/lgpd/RIPD.md`.
 
@@ -218,7 +220,7 @@ Documentos formais: `docs/lgpd/ROPA.md`, `docs/lgpd/RIPD.md`.
 
 ## Status atual
 
-Base funcional completa. Todas as rotinas administrativas, terapêuticas e familiares implementadas com camadas de segurança, LGPD e COFFITO. CPF cifrado em produção (Fase 2 — `cpf` plaintext mantido em transição; Fase 3 prevista: drop da coluna após validação).
+Base funcional completa. Todas as rotinas administrativas, profissionais e familiares implementadas com camadas de segurança, LGPD e normas dos conselhos aplicáveis. CPF cifrado em produção; cadastro profissional multiespecialidade ativo.
 
 ---
 
@@ -229,7 +231,7 @@ Base funcional completa. Todas as rotinas administrativas, terapêuticas e famil
 | **Fase 3 CPF** | ⚠️ Pendente | `cpf` plaintext ainda existe. `cpf_cifrado` ativo. DROP da coluna plaintext não executado. |
 | **Renovação de consentimento** | ✅ Corrigido | Bug: layout verificava apenas `consentimento_aceito_em`, nunca `consentimento_policy_versao`. Corrigido: `POLICY_VERSION` em `lib/consentimento.ts`; layout agora exige re-aceite ao mudar versão. |
 | **Rotação da chave CPF** | ❌ Sem mecanismo | `cpf_key` em `_app_config`. Sem endpoint ou função para rotação. Exige SQL manual no Supabase. Risco se chave vazar. |
-| **Fluxo de recusa de alta** | ✅ Corrigido | Rota `PATCH /api/alta/[id]/recusar` implementada. Apenas terapeuta vinculado, somente `pendente_confirmacao`. Aceita `argumentacao_recusa`, gera hash, notifica responsáveis. Paciente permanece ativo. |
+| **Fluxo de recusa de alta** | ✅ Corrigido | Rota `PATCH /api/alta/[id]/recusar` implementada. Apenas profissional vinculado, somente `pendente_confirmacao`. Aceita `argumentacao_recusa`, gera hash, notifica responsáveis. Paciente permanece ativo. |
 | **Tabela `comentarios`** | ✅ Corrigido | `GET /api/comentario?ref_tipo=&ref_id=` e `POST /api/comentario` implementados. `ref_tipo ∈ {relatorio, documento}`. RLS: leitura qualquer autenticado, inserção pelo autor. UI pendente. |
 | **Teste de recuperação de backup** | ❓ Não verificável | Responsabilidade de infra/Supabase. Não há código no repositório. Documentar procedimento manualmente. |
 | **Atendimento a solicitações LGPD** | ⚠️ Parcial | Portabilidade (`exportar-dados`) e correção (`meus-dados`) implementadas. Não há fluxo documentado para exclusão de dados de responsável fora do prazo COFFITO. |

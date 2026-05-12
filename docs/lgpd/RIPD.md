@@ -3,6 +3,7 @@
 CNPJ: 49.273.342/0001-74
 Encarregada (DPO): Isabella Alvarenga de Oliveira — (34) 9 9290-0583
 Data de elaboração: 2026-04-25
+Última atualização: 2026-05-12
 Revisão prevista: 2027-04-25
 
 > Base legal: LGPD Art. 38 — a autoridade nacional pode determinar ao controlador que elabore relatório de impacto à proteção de dados pessoais, especialmente quando o tratamento tiver como fundamento o legítimo interesse.
@@ -11,7 +12,7 @@ Revisão prevista: 2027-04-25
 
 ## 1. Descrição do Tratamento
 
-**Sistema avaliado:** Portal Alicerce — sistema de gestão clínica e comunicação com famílias para clínica de terapia ocupacional infantil.
+**Sistema avaliado:** Portal Alicerce — sistema de gestão clínica e comunicação com famílias para clínica infantil multiprofissional.
 
 **Operações de tratamento:**
 - Coleta e armazenamento de dados cadastrais de crianças e responsáveis
@@ -28,7 +29,7 @@ Revisão prevista: 2027-04-25
 
 | Critério | Avaliação |
 |---|---|
-| **Adequação** | Os dados tratados são adequados à finalidade clínica e ao cumprimento das obrigações do COFFITO |
+| **Adequação** | Os dados tratados são adequados à finalidade clínica e ao cumprimento das obrigações profissionais aplicáveis |
 | **Necessidade** | Apenas os dados estritamente necessários são coletados. CPF do paciente é obrigatório para identificação; dados clínicos são obrigatórios por lei |
 | **Proporcionalidade** | Volume de dados justificado pela obrigação de guarda de 20 anos do prontuário. Sem coleta além do necessário |
 
@@ -49,10 +50,10 @@ Revisão prevista: 2027-04-25
 
 | Item | Detalhe |
 |---|---|
-| **Probabilidade** | Baixa — equipe pequena, cada terapeuta acessa somente seus pacientes |
+| **Probabilidade** | Baixa — equipe pequena, cada profissional clínico acessa somente seus pacientes |
 | **Impacto** | Alto |
 | **Risco residual** | Baixo |
-| **Mitigação** | RLS por vínculo (`paciente_terapeutas`), log de auditoria de todas as visualizações, sistema de permissões granulares por usuário |
+| **Mitigação** | RLS por vínculo (`paciente_terapeutas`, nome legado), log de auditoria de todas as visualizações, sistema de permissões granulares por usuário |
 
 ### 3.3 Vazamento por injeção SQL / vulnerabilidade na aplicação
 

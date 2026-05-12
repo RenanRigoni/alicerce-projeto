@@ -2,7 +2,7 @@
 **Alicerce Espaço Terapêutico Infantil**
 CNPJ: 49.273.342/0001-74
 Encarregada (DPO): Isabella Alvarenga de Oliveira — (34) 9 9290-0583
-Última atualização: 2026-04-25
+Última atualização: 2026-05-12
 
 > Base legal: LGPD Art. 37 — controladores e operadores devem manter registro das operações de tratamento de dados pessoais.
 
@@ -17,7 +17,7 @@ Encarregada (DPO): Isabella Alvarenga de Oliveira — (34) 9 9290-0583
 | **Dados tratados** | Nome completo, data de nascimento, CPF, sexo, foto, endereço, histórico clínico |
 | **Categoria** | Dados sensíveis de saúde (Art. 5, II) |
 | **Titulares** | Crianças e adolescentes em tratamento (LGPD Art. 14) |
-| **Destinatários** | Equipe clínica interna (terapeutas vinculados), responsáveis legais |
+| **Destinatários** | Equipe clínica interna (profissionais vinculados), responsáveis legais |
 | **Transferência internacional** | Não há |
 | **Prazo de retenção** | 20 anos após encerramento do tratamento (COFFITO Res. 424/2013) |
 | **Medidas de segurança** | RLS por role no Supabase, criptografia de disco AES-256, hash de integridade SHA-256, audit log |
@@ -33,7 +33,7 @@ Encarregada (DPO): Isabella Alvarenga de Oliveira — (34) 9 9290-0583
 | **Dados tratados** | Nome, e-mail, telefone, endereço, CPF, contato de emergência |
 | **Categoria** | Dados pessoais comuns |
 | **Titulares** | Responsáveis legais (pais/tutores) |
-| **Destinatários** | Equipe administrativa, terapeuta responsável |
+| **Destinatários** | Equipe administrativa, profissional responsável |
 | **Transferência internacional** | Não há |
 | **Prazo de retenção** | Enquanto durar o vínculo contratual + 5 anos para fins fiscais |
 | **Medidas de segurança** | Autenticação por e-mail/senha, RLS, consentimento registrado com timestamp |
@@ -44,12 +44,12 @@ Encarregada (DPO): Isabella Alvarenga de Oliveira — (34) 9 9290-0583
 
 | Campo | Detalhe |
 |---|---|
-| **Finalidade** | Registro do histórico terapêutico, continuidade do cuidado, obrigação legal COFFITO |
-| **Base legal** | Art. 11, II, a (tutela da saúde) + Art. 7, II (cumprimento de obrigação legal — COFFITO) |
+| **Finalidade** | Registro do histórico clínico, continuidade do cuidado, obrigação legal/regulatória profissional |
+| **Base legal** | Art. 11, II, a (tutela da saúde) + Art. 7, II (cumprimento de obrigação legal/regulatória profissional) |
 | **Dados tratados** | Diagnóstico, hipótese diagnóstica, evolução clínica, plano terapêutico, observações, assinatura digital |
 | **Categoria** | Dados sensíveis de saúde |
 | **Titulares** | Pacientes (crianças/adolescentes) |
-| **Destinatários** | Terapeuta responsável, responsável legal (relatórios publicados), equipe clínica autorizada |
+| **Destinatários** | Profissional responsável, responsável legal (relatórios publicados), equipe clínica autorizada |
 | **Transferência internacional** | Não há |
 | **Prazo de retenção** | 20 anos (COFFITO). **Não pode ser excluído a pedido do titular** (Art. 16, I) |
 | **Medidas de segurança** | Hash SHA-256 por registro, assinatura digital com nome + timestamp, bloqueio de edição pós-alta (RLS), audit log de visualizações |
@@ -62,7 +62,7 @@ Encarregada (DPO): Isabella Alvarenga de Oliveira — (34) 9 9290-0583
 |---|---|
 | **Finalidade** | Gestão da agenda clínica, comunicação com família |
 | **Base legal** | Art. 7, II (contrato de prestação de serviços) |
-| **Dados tratados** | Data, horário, tipo de atendimento, paciente, terapeuta |
+| **Dados tratados** | Data, horário, tipo de atendimento, paciente, profissional |
 | **Categoria** | Dados pessoais comuns |
 | **Titulares** | Pacientes |
 | **Prazo de retenção** | 2 anos após a data do atendimento |

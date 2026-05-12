@@ -1,6 +1,6 @@
 # Portal Alicerce
 
-Sistema web da **Alicerce Espaço Terapêutico Infantil** para gestão clínica (pacientes, prontuário, agenda, relatórios, documentos, orientações) e portal da família. Conformidade LGPD + COFFITO Res. 424/2013 + CREFITO Res. 426/2015.
+Sistema web da **Alicerce Espaço Terapêutico Infantil** para gestão clínica multiprofissional (pacientes, prontuário, agenda, relatórios, documentos, orientações) e portal da família. Conformidade LGPD + normas dos conselhos profissionais aplicáveis.
 
 ---
 
@@ -43,7 +43,7 @@ SUPABASE_SERVICE_ROLE_KEY=<service role key>   # nunca expor no cliente
 
 ### Aplicar migrations
 
-Migrations versionadas em `supabase/migrations/` (001 → 022). Aplicar em ordem via Supabase SQL Editor ou CLI:
+Migrations versionadas em `supabase/migrations/` (001 → 033). Aplicar em ordem via Supabase MCP ou CLI:
 
 ```bash
 # CLI (opcional)
@@ -64,11 +64,40 @@ Resumo das migrations principais:
 | 015 | Permissões granulares (`profiles.permissoes` JSONB) |
 | 016 | Prontuário somente leitura pós-alta (RLS RESTRICTIVE) |
 | 017 | CPF — coluna `cpf_cifrado` + funções `encrypt_cpf` / `decrypt_cpf` (pgcrypto) |
-| 018 | CREFITO obrigatório para `role = 'terapeuta'` |
+| 018 | Regra legada de CREFITO para `role = 'terapeuta'` |
 | 019 | Versão da política de consentimento (`consentimento_policy_versao`) |
 | 020 | Triggers de audit log (orientações, documentos, dados clínicos, alta, relatórios) |
 | 021 | CPF Fase 2 — função `get_paciente_cpf` SECURITY DEFINER |
 | 022 | Tabela `_app_config` para chave de cifragem do CPF |
+| 023 | CPF Fase 3 — remoção da coluna plaintext de CPF dos pacientes |
+| 024–032 | Ajustes de cache/schema, feriados anuais, comunicados, confirmações de sessão e campos de responsáveis |
+| 033 | Profissionais clínicos multiespecialidade: `tipo_profissional`, `conselho_tipo`, `conselho_numero`; mantém `crefito` legado |
+
+### Profissionais clínicos
+
+O role interno continua sendo `terapeuta` para preservar RLS, rotas e vínculos existentes (`paciente_terapeutas`). Na interface, esse perfil é tratado como **Profissional clínico**.
+
+Tipos disponíveis no cadastro/edição:
+
+| Tipo profissional | Conselho exibido |
+|---|---|
+| Terapeuta Ocupacional | CREFITO |
+| Fisioterapeuta | CREFITO |
+| Fonoaudióloga | CRFa |
+| Psicóloga | CRP |
+| Neuropsicóloga | CRP |
+| Neuropsicopedagoga | CBO |
+| Nutricionista | CRN |
+
+Campos persistidos em `profiles`:
+
+- `tipo_profissional`
+- `conselho_tipo`
+- `conselho_numero`
+- `cpf_cnpj`
+- `crefito` permanece como campo legado para compatibilidade.
+
+O e-mail de acesso fica no Supabase Auth e é editado por rota server-side (`PATCH /api/usuario/[id]`) usando service role.
 
 ### Configurar a chave de cifragem do CPF (após migration 022)
 
@@ -96,7 +125,7 @@ Criar dois buckets no Supabase Storage:
 Todas as tabelas com dados clínicos ou pessoais têm RLS habilitado. Política geral:
 
 - **admin / recepção:** acesso amplo conforme matriz de permissões
-- **terapeuta:** somente pacientes vinculados em `paciente_terapeutas`
+- **profissional clínico:** role interno `terapeuta`; somente pacientes vinculados em `paciente_terapeutas`
 - **pai (família):** somente pacientes vinculados em `paciente_responsaveis`
 - **prontuário pós-alta:** RLS RESTRICTIVE bloqueia INSERT/UPDATE/DELETE; SELECT preservado pelos 20 anos legais
 
@@ -111,7 +140,7 @@ app/
   (auth)/recuperar-senha    recuperação
   (auth)/privacidade        política pública
   (portal)/portal/...       layout + portal família
-  (terapia)/terapia/...     layout + área do terapeuta
+  (terapia)/terapia/...     layout + área profissional
   api/...                   route handlers (server)
 components/                 UI compartilhada
 lib/

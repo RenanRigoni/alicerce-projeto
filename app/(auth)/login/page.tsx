@@ -132,13 +132,12 @@ export default function LoginPage() {
         }
 
         .logo-wrap {
-          backdrop-filter: blur(20px) saturate(120%);
-          -webkit-backdrop-filter: blur(20px) saturate(120%);
-          background: rgba(255,255,255,0.80);
-          border: 1.5px solid rgba(255,255,255,0.90);
+          overflow: hidden;
           box-shadow:
-            0 8px 24px rgba(44,32,24,0.10),
-            inset 0 1px 0 rgba(255,255,255,0.95);
+            0 20px 48px rgba(44,32,24,0.18),
+            0 6px 16px rgba(44,32,24,0.10),
+            0 0 0 1.5px rgba(255,255,255,0.70),
+            inset 0 1.5px 0 rgba(255,255,255,0.95);
         }
 
         .btn-entrar {
@@ -176,14 +175,14 @@ export default function LoginPage() {
         <div className="glass-card w-full max-w-sm rounded-3xl px-8 py-10 flex flex-col items-center">
 
           {/* Logo ícone */}
-          <div className="logo-wrap rounded-2xl mb-6 flex items-center justify-center" style={{ width: 147, height: 147 }}>
+          <div className="logo-wrap rounded-3xl mb-6" style={{ width: 130, height: 130 }}>
             <Image
               src="/logo_ico.png"
               alt="Alicerce"
-              width={124}
-              height={124}
+              width={130}
+              height={130}
               priority
-              style={{ objectFit: 'contain', width: 124, height: 124 }}
+              style={{ objectFit: 'cover', width: 130, height: 130, display: 'block' }}
             />
           </div>
 

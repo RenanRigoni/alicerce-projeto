@@ -2,6 +2,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { notificarTodos } from '@/lib/notificacoes/inserir'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
@@ -10,11 +11,11 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, permissoes')
     .eq('id', user.id)
     .single()
 
-  if (!['admin', 'recepcao'].includes(profile?.role ?? '')) {
+  if (!profile || !temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'gerenciar_feriados')) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 

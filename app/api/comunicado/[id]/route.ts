@@ -1,5 +1,6 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export async function PUT(
   request: NextRequest,
@@ -10,8 +11,8 @@ export async function PUT(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!['admin', 'recepcao'].includes(profile?.role ?? '')) {
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
+  if (!profile || !temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'criar_comunicados')) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
@@ -38,8 +39,8 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!['admin', 'recepcao'].includes(profile?.role ?? '')) {
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
+  if (!profile || !temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'criar_comunicados')) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 

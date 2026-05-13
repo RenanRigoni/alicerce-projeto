@@ -1,11 +1,21 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { ResponsaveisListaTerapeuta } from './ResponsaveisListaTerapeuta'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export default async function TerapiaResponsaveisPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, permissoes')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'terapeuta') notFound()
+  if (!temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'gerenciar_responsaveis')) notFound()
 
   const { data: vinculos } = await supabase
     .from('paciente_terapeutas')

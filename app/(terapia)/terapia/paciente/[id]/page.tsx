@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { PerfilPacienteTabs } from '@/components/paciente/PerfilPacienteTabs'
 import { RegistrarAltaButton } from '@/components/terapia/RegistrarAltaButton'
 import { ConfirmarAltaButton } from '@/components/terapia/ConfirmarAltaButton'
+import { todasPermissoes, temPermissao } from '@/lib/permissoes/definicoes'
 
 export default async function PacienteTerapeutaPage({
   params,
@@ -15,6 +17,33 @@ export default async function PacienteTerapeutaPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, permissoes')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'terapeuta') notFound()
+
+  const permissoesEfetivas = todasPermissoes(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>)
+  const podeVerTodosPacientes = temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'ver_todos_pacientes')
+  const podeVerRelatoriosTodos = temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'ver_relatorios_todos')
+
+  const { data: meuVinculo } = await supabase
+    .from('paciente_terapeutas')
+    .select('terapeuta_id')
+    .eq('paciente_id', id)
+    .eq('terapeuta_id', user.id)
+    .maybeSingle()
+
+  const ehTerapeutaVinculado = !!meuVinculo
+  if (!ehTerapeutaVinculado && !podeVerTodosPacientes) notFound()
+
+  const adminClient = createAdminClient()
+  const dbPaciente = ehTerapeutaVinculado ? supabase : adminClient
+  const podeLerClinico = ehTerapeutaVinculado || podeVerRelatoriosTodos
+  const dbClinico = podeLerClinico ? dbPaciente : null
+
   const [
     { data: paciente },
     { data: terapeutasVinculo },
@@ -25,70 +54,61 @@ export default async function PacienteTerapeutaPage({
     { data: documentos },
     { data: orientacoes },
     { data: altas },
-    { data: meuVinculo },
     { data: altaAtual },
   ] = await Promise.all([
-    supabase.from('pacientes').select('*').eq('id', id).single(),
-    supabase
+    dbPaciente.from('pacientes').select('*').eq('id', id).single(),
+    dbPaciente
       .from('paciente_terapeutas')
       .select('profiles(id, nome)')
       .eq('paciente_id', id),
-    supabase
+    dbPaciente
       .from('paciente_responsaveis')
       .select('tipo, profiles(id, nome, responsaveis_detalhes(endereco, cidade, cep, telefone_principal))')
       .eq('paciente_id', id),
-    supabase
+    dbClinico ? dbClinico
       .from('pacientes_dados_clinicos')
       .select('*')
       .eq('paciente_id', id)
-      .maybeSingle(),
-    supabase
+      .maybeSingle() : Promise.resolve({ data: null }),
+    dbClinico ? dbClinico
       .from('relatorios')
       .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
-    supabase
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    dbClinico ? dbClinico
       .from('evolucoes')
       .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
-    supabase
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    dbClinico ? dbClinico
       .from('documentos')
       .select('id, tipo, descricao, visivel_pais, criado_em, arquivo_url')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
-    supabase
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    dbClinico ? dbClinico
       .from('orientacoes')
       .select('id, titulo, tipo, url_midia, conteudo, criado_em')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
-    supabase
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    dbClinico ? dbClinico
       .from('solicitacoes_alta')
       .select('id, status, tipo, motivo, documento_url, argumentacao_recusa, criado_em, profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
-    supabase
-      .from('paciente_terapeutas')
-      .select('terapeuta_id')
-      .eq('paciente_id', id)
-      .eq('terapeuta_id', user.id)
-      .maybeSingle(),
-    supabase
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    ehTerapeutaVinculado ? supabase
       .from('solicitacoes_alta')
       .select('id, status, tipo, motivo, documento_url')
       .eq('paciente_id', id)
       .eq('status', 'pendente_confirmacao')
       .order('criado_em', { ascending: false })
       .limit(1)
-      .maybeSingle(),
+      .maybeSingle() : Promise.resolve({ data: null }),
   ])
 
   if (!paciente) notFound()
 
   // CPF Phase 2: tenta decifrar; cai no plaintext se chave não configurada
-  const { data: cpfDecifrado } = await supabase.rpc('get_paciente_cpf', { p_patient_id: id })
-
-  const ehTerapeutaVinculado = !!meuVinculo
+  const { data: cpfDecifrado } = await dbPaciente.rpc('get_paciente_cpf', { p_patient_id: id })
 
   const terapeutas = (terapeutasVinculo ?? []).map((t: any) => ({
     id: t.profiles.id,
@@ -147,6 +167,7 @@ export default async function PacienteTerapeutaPage({
         altas={altasMapped}
         role="terapeuta"
         ehTerapeutaVinculado={ehTerapeutaVinculado}
+        permissoes={permissoesEfetivas}
       />
 
       {ehTerapeutaVinculado && altaAtual && (
@@ -160,7 +181,7 @@ export default async function PacienteTerapeutaPage({
         </div>
       )}
 
-      {ehTerapeutaVinculado && paciente.status === 'ativo' && !altaAtual && (
+      {ehTerapeutaVinculado && permissoesEfetivas.registrar_alta && paciente.status === 'ativo' && !altaAtual && (
         <div className="pt-2">
           <RegistrarAltaButton pacienteId={id} pacienteNome={paciente.nome} />
         </div>

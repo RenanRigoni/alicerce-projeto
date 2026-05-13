@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/Navbar'
+import { todasPermissoes } from '@/lib/permissoes/definicoes'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -10,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, role')
+    .select('nome, role, permissoes')
     .eq('id', user.id)
     .single()
 
@@ -20,7 +21,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--color-cream)' }}>
-      <Navbar role={profile.role as 'admin' | 'recepcao'} nome={profile.nome} />
+      <Navbar
+        role={profile.role as 'admin' | 'recepcao'}
+        nome={profile.nome}
+        permissoes={todasPermissoes(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>)}
+      />
       <main className="max-w-5xl mx-auto px-4 py-8 animate-fade-up">
         {children}
       </main>

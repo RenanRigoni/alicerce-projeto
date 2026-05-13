@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 
@@ -16,7 +17,15 @@ interface Paciente {
   frequencia_atendimento: string | null
 }
 
-export function PacientesListaTerapeuta({ todos }: { todos: Paciente[] }) {
+export function PacientesListaTerapeuta({
+  todos,
+  podeCadastrarPacientes,
+  mostrandoTodosPacientes = false,
+}: {
+  todos: Paciente[]
+  podeCadastrarPacientes: boolean
+  mostrandoTodosPacientes?: boolean
+}) {
   const [filtros, setFiltros] = useState<Set<StatusPaciente>>(new Set(['ativo']))
 
   function toggleFiltro(status: StatusPaciente) {
@@ -35,7 +44,7 @@ export function PacientesListaTerapeuta({ todos }: { todos: Paciente[] }) {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
-            Meus pacientes
+            {mostrandoTodosPacientes ? 'Pacientes' : 'Meus pacientes'}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
             {lista.length} paciente{lista.length !== 1 ? 's' : ''} encontrado{lista.length !== 1 ? 's' : ''}
@@ -58,6 +67,15 @@ export function PacientesListaTerapeuta({ todos }: { todos: Paciente[] }) {
               {statusLabel[s]}
             </button>
           ))}
+          {podeCadastrarPacientes && (
+            <Link
+              href="/terapia/pacientes/novo"
+              className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
+              style={{ background: 'var(--color-sage-main)' }}
+            >
+              + Cadastrar paciente
+            </Link>
+          )}
         </div>
       </div>
 

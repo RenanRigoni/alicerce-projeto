@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export async function PATCH(
   request: NextRequest,
@@ -11,9 +12,12 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
   if (profile?.role !== 'terapeuta') {
     return NextResponse.json({ error: 'Apenas profissionais podem usar esta rota' }, { status: 403 })
+  }
+  if (!temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'gerenciar_responsaveis')) {
+    return NextResponse.json({ error: 'Sem permissão para gerenciar responsáveis' }, { status: 403 })
   }
 
   // Verifica se o responsável tem ao menos um paciente do terapeuta

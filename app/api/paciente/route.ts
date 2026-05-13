@@ -1,6 +1,7 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
@@ -9,11 +10,11 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, permissoes')
     .eq('id', user.id)
     .single()
 
-  if (!['admin', 'recepcao'].includes(profile?.role ?? '')) {
+  if (!profile || !temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'cadastrar_pacientes')) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
@@ -24,9 +25,17 @@ export async function POST(request: NextRequest) {
     convenio_ou_particular, horarios_atendimento,
     terapeutas, responsavel_id,
   } = body
+  const isTerapeuta = profile.role === 'terapeuta'
+  const permissoes = (profile.permissoes ?? {}) as Record<string, boolean>
+  const podeGerenciarResponsaveis = temPermissao(profile.role, permissoes, 'gerenciar_responsaveis')
+  const podeVincularTerapeutas = temPermissao(profile.role, permissoes, 'vincular_terapeutas')
 
   if (!nome?.trim()) {
     return NextResponse.json({ error: 'Nome é obrigatório.' }, { status: 400 })
+  }
+
+  if (responsavel_id && !podeGerenciarResponsaveis) {
+    return NextResponse.json({ error: 'Sem permissão para vincular responsável.' }, { status: 403 })
   }
 
   const adminClient = createAdminClient()
@@ -69,10 +78,17 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // Vincula terapeutas se informados
-  if (Array.isArray(terapeutas) && terapeutas.length > 0) {
+  const terapeutasParaVincular = isTerapeuta
+    ? Array.from(new Set([
+        user.id,
+        ...(podeVincularTerapeutas && Array.isArray(terapeutas) ? terapeutas : []),
+      ]))
+    : (Array.isArray(terapeutas) ? terapeutas : [])
+
+  // Vincula terapeutas se informados. Profissional sem permissão de vínculo sempre vincula a si mesmo.
+  if (terapeutasParaVincular.length > 0) {
     await adminClient.from('paciente_terapeutas').insert(
-      terapeutas.map((tid: string) => ({ paciente_id: pacienteId, terapeuta_id: tid }))
+      terapeutasParaVincular.map((tid: string) => ({ paciente_id: pacienteId, terapeuta_id: tid }))
     )
   }
 

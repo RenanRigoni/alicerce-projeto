@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { EditarResponsavelTerapeutaForm } from './EditarResponsavelTerapeutaForm'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export default async function EditarResponsavelTerapeutaPage({
   params,
@@ -13,8 +14,9 @@ export default async function EditarResponsavelTerapeutaPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
   if (profile?.role !== 'terapeuta') notFound()
+  if (!temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'gerenciar_responsaveis')) notFound()
 
   // Verifica que pelo menos um paciente do responsável é do terapeuta
   const { data: meusPacientes } = await supabase

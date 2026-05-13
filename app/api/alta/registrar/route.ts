@@ -3,15 +3,19 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarHash } from '@/lib/hash/gerar-hash'
 import { notificarResponsaveisDoPaciente } from '@/lib/notificacoes/inserir'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
   if (profile?.role !== 'terapeuta') {
     return NextResponse.json({ error: 'Apenas profissionais podem registrar alta' }, { status: 403 })
+  }
+  if (!temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'registrar_alta')) {
+    return NextResponse.json({ error: 'Sem permissão para registrar alta' }, { status: 403 })
   }
 
   const body = await request.json().catch(() => null)

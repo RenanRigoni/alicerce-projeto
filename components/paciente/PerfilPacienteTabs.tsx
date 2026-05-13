@@ -112,6 +112,7 @@ interface Props {
   altas: SolicitacaoAlta[]
   role: 'admin' | 'recepcao' | 'terapeuta'
   ehTerapeutaVinculado: boolean
+  permissoes?: Record<string, boolean>
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -158,7 +159,7 @@ type Aba = typeof ABAS[number]
 export function PerfilPacienteTabs({
   paciente, terapeutas, responsaveis, dadosClinicos,
   relatorios, evolucoes, documentos, orientacoes, altas,
-  role, ehTerapeutaVinculado,
+  role, ehTerapeutaVinculado, permissoes = {},
 }: Props) {
   const router = useRouter()
   const [abaAtiva, setAbaAtiva] = useState<Aba>('Dados Gerais')
@@ -302,7 +303,37 @@ export function PerfilPacienteTabs({
   }
 
   const isAdminOuRecepcao = role === 'admin' || role === 'recepcao'
+  const terapeutaPodeAtuarNoPaciente = role === 'terapeuta' && (ehTerapeutaVinculado || permissoes.ver_todos_pacientes === true)
+  const podeEditarPaciente = isAdminOuRecepcao || (terapeutaPodeAtuarNoPaciente && permissoes.editar_pacientes === true)
+  const podeAlterarStatusPaciente = isAdminOuRecepcao || (terapeutaPodeAtuarNoPaciente && permissoes.desativar_reativar_paciente === true)
+  const podeGerenciarResponsaveis = isAdminOuRecepcao || (terapeutaPodeAtuarNoPaciente && permissoes.gerenciar_responsaveis === true)
   const podeEditarClinicos = role === 'terapeuta' && ehTerapeutaVinculado
+  const [alterandoStatus, setAlterandoStatus] = useState(false)
+  const [erroStatus, setErroStatus] = useState('')
+
+  async function alterarStatusPaciente(status: 'ativo' | 'desativado') {
+    const confirmar = status === 'desativado'
+      ? window.confirm('Confirmar desativação deste paciente?')
+      : window.confirm('Confirmar reativação deste paciente?')
+    if (!confirmar) return
+
+    setErroStatus('')
+    setAlterandoStatus(true)
+    const res = await fetch(`/api/paciente/${paciente.id}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    const json = await res.json().catch(() => ({}))
+    setAlterandoStatus(false)
+
+    if (!res.ok) {
+      setErroStatus(json.error ?? 'Erro ao alterar status do paciente.')
+      return
+    }
+
+    router.refresh()
+  }
 
   return (
     <>
@@ -446,7 +477,7 @@ export function PerfilPacienteTabs({
 
           {/* Ações */}
           <div className="flex flex-wrap gap-2.5">
-            {isAdminOuRecepcao && paciente.status === 'ativo' && (
+            {isAdminOuRecepcao && podeEditarPaciente && paciente.status === 'ativo' && (
               <a
                 href={`/admin/pacientes/${paciente.id}/editar`}
                 className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
@@ -455,7 +486,7 @@ export function PerfilPacienteTabs({
                 Editar dados
               </a>
             )}
-            {role === 'terapeuta' && ehTerapeutaVinculado && paciente.status === 'ativo' && (
+            {role === 'terapeuta' && podeEditarPaciente && paciente.status === 'ativo' && (
               <a
                 href={`/terapia/paciente/${paciente.id}/editar`}
                 className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
@@ -464,7 +495,7 @@ export function PerfilPacienteTabs({
                 Editar dados básicos
               </a>
             )}
-            {isAdminOuRecepcao && paciente.status === 'ativo' && (
+            {isAdminOuRecepcao && podeAlterarStatusPaciente && paciente.status === 'ativo' && (
               <a
                 href={`/admin/pacientes/${paciente.id}/desativar`}
                 className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
@@ -473,7 +504,7 @@ export function PerfilPacienteTabs({
                 Desativar paciente
               </a>
             )}
-            {isAdminOuRecepcao && paciente.status !== 'ativo' && (
+            {isAdminOuRecepcao && podeAlterarStatusPaciente && paciente.status !== 'ativo' && (
               <a
                 href={`/admin/pacientes/${paciente.id}/reativar`}
                 className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
@@ -488,14 +519,39 @@ export function PerfilPacienteTabs({
                 pacienteNome={paciente.nome}
               />
             )}
+            {role === 'terapeuta' && podeAlterarStatusPaciente && paciente.status === 'ativo' && (
+              <button
+                type="button"
+                onClick={() => alterarStatusPaciente('desativado')}
+                disabled={alterandoStatus}
+                className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 disabled:opacity-60"
+                style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
+              >
+                {alterandoStatus ? 'Processando...' : 'Desativar paciente'}
+              </button>
+            )}
+            {role === 'terapeuta' && podeAlterarStatusPaciente && paciente.status !== 'ativo' && (
+              <button
+                type="button"
+                onClick={() => alterarStatusPaciente('ativo')}
+                disabled={alterandoStatus}
+                className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 disabled:opacity-60"
+                style={{ border: '1px solid var(--color-sage-soft)', background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }}
+              >
+                {alterandoStatus ? 'Processando...' : 'Reativar paciente'}
+              </button>
+            )}
           </div>
+          {erroStatus && (
+            <p className="text-sm" style={{ color: '#B91C1C' }}>{erroStatus}</p>
+          )}
         </div>
       )}
 
       {/* ── Aba 2: Responsáveis ─────────────────────────────── */}
       {abaAtiva === 'Responsáveis' && (
         <div className="space-y-3">
-          {(role === 'admin' || role === 'recepcao') && (
+          {podeGerenciarResponsaveis && (
             <div className="flex items-center justify-between">
               <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
                 {responsaveis.length} responsável{responsaveis.length !== 1 ? 'is' : ''} vinculado{responsaveis.length !== 1 ? 's' : ''}
@@ -508,13 +564,15 @@ export function PerfilPacienteTabs({
                 >
                   + Adicionar responsável
                 </button>
-                <a
-                  href={`/admin/usuarios/novo`}
-                  className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
-                  style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-mid)' }}
-                >
-                  Cadastrar novo
-                </a>
+                {isAdminOuRecepcao && (
+                  <a
+                    href={`/admin/usuarios/novo`}
+                    className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
+                    style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-mid)' }}
+                  >
+                    Cadastrar novo
+                  </a>
+                )}
               </div>
             </div>
           )}
@@ -1463,8 +1521,13 @@ export function PerfilPacienteTabs({
               <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>Responsável</label>
               {responsaveisDisp.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                  Nenhum responsável disponível.{' '}
-                  <Link href="/admin/usuarios/novo" style={{ color: 'var(--color-rose-main)' }}>Cadastrar novo →</Link>
+                  Nenhum responsável disponível.
+                  {isAdminOuRecepcao && (
+                    <>
+                      {' '}
+                      <Link href="/admin/usuarios/novo" style={{ color: 'var(--color-rose-main)' }}>Cadastrar novo →</Link>
+                    </>
+                  )}
                 </p>
               ) : (
                 <select

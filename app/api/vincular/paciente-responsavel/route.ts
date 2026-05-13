@@ -1,14 +1,16 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!['admin', 'recepcao'].includes(profile?.role ?? '')) {
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
+  const permissoes = (profile?.permissoes ?? {}) as Record<string, boolean>
+  if (!profile || !temPermissao(profile.role, permissoes, 'gerenciar_responsaveis')) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
@@ -20,6 +22,19 @@ export async function POST(request: NextRequest) {
   const TIPOS_VALIDOS = ['principal', 'secundario']
   if (!TIPOS_VALIDOS.includes(tipo)) {
     return NextResponse.json({ error: 'tipo inválido' }, { status: 400 })
+  }
+
+  if (profile.role === 'terapeuta' && !temPermissao(profile.role, permissoes, 'ver_todos_pacientes')) {
+    const { data: vinculo } = await supabase
+      .from('paciente_terapeutas')
+      .select('paciente_id')
+      .eq('paciente_id', paciente_id)
+      .eq('terapeuta_id', user.id)
+      .maybeSingle()
+
+    if (!vinculo) {
+      return NextResponse.json({ error: 'Sem permissão para gerenciar responsáveis deste paciente' }, { status: 403 })
+    }
   }
 
   const adminClient = createAdminClient()

@@ -1,6 +1,7 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { notificarTodos } from '@/lib/notificacoes/inserir'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export const runtime = 'nodejs'
 
@@ -9,8 +10,8 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!['admin', 'recepcao'].includes(profile?.role ?? '')) {
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
+  if (!profile || !temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'criar_comunicados')) {
     return NextResponse.json({ error: 'Sem permissao' }, { status: 403 })
   }
 

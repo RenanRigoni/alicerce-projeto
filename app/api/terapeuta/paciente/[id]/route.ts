@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 
@@ -16,9 +17,11 @@ export async function PATCH(
   if (profile?.role !== 'terapeuta') {
     return NextResponse.json({ error: 'Apenas profissionais podem usar esta rota' }, { status: 403 })
   }
-  if (!temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'editar_pacientes')) {
+  const permissoes = (profile.permissoes ?? {}) as Record<string, boolean>
+  if (!temPermissao(profile.role, permissoes, 'editar_pacientes')) {
     return NextResponse.json({ error: 'Sem permissão para editar dados de pacientes' }, { status: 403 })
   }
+  const podeVerTodosPacientes = temPermissao(profile.role, permissoes, 'ver_todos_pacientes')
 
   const { data: vinculo } = await supabase
     .from('paciente_terapeutas')
@@ -27,7 +30,7 @@ export async function PATCH(
     .eq('terapeuta_id', user.id)
     .maybeSingle()
 
-  if (!vinculo) {
+  if (!vinculo && !podeVerTodosPacientes) {
     return NextResponse.json({ error: 'Sem permissão para editar este paciente' }, { status: 403 })
   }
 
@@ -46,7 +49,8 @@ export async function PATCH(
     return NextResponse.json({ error: 'Nenhum campo para atualizar' }, { status: 400 })
   }
 
-  const { error } = await supabase.from('pacientes').update(updates).eq('id', pacienteId)
+  const dbPaciente = vinculo ? supabase : createAdminClient()
+  const { error } = await dbPaciente.from('pacientes').update(updates).eq('id', pacienteId)
   if (error) return NextResponse.json({ error: 'Erro ao atualizar paciente' }, { status: 500 })
   return NextResponse.json({ success: true })
 }

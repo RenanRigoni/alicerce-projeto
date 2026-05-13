@@ -11,6 +11,7 @@ import { PushNotificationSettings } from '@/components/ui/PushNotificationSettin
 interface NavbarProps {
   role: 'admin' | 'recepcao' | 'terapeuta' | 'pai'
   nome: string
+  permissoes?: Record<string, boolean>
 }
 
 const dashboardByRole = {
@@ -66,10 +67,28 @@ const avatarColors = {
   pai:       'bg-[var(--color-peach-light)] text-[var(--color-peach-main)]',
 }
 
-export function Navbar({ role, nome }: NavbarProps) {
+export function Navbar({ role, nome, permissoes = {} }: NavbarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const links = navLinks[role] ?? []
+  const links = (navLinks[role] ?? []).filter(link => {
+    if ((role === 'admin' || role === 'recepcao') && link.href !== '/admin/dashboard') {
+      const requiredByHref: Record<string, string> = {
+        '/admin/pacientes': 'ver_todos_pacientes',
+        '/admin/responsaveis': 'gerenciar_responsaveis',
+        '/admin/terapeutas': 'gerenciar_usuarios',
+        '/admin/agendamentos': 'criar_agendamentos',
+        '/admin/feriados': 'gerenciar_feriados',
+        '/admin/comunicados': 'criar_comunicados',
+        '/admin/usuarios': 'gerenciar_usuarios',
+      }
+      const required = requiredByHref[link.href]
+      return required ? permissoes[required] === true : true
+    }
+    if (role === 'terapeuta' && link.href === '/terapia/responsaveis') {
+      return permissoes.gerenciar_responsaveis === true
+    }
+    return true
+  })
   const [menuAberto, setMenuAberto] = useState(false)
   const [userMenuAberto, setUserMenuAberto] = useState(false)
   const [scrolled, setScrolled] = useState(false)

@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async headers() {
+    const noStore = [{ key: 'Cache-Control', value: 'no-store' }]
+
     return [
       {
         source: '/manifest.json',
@@ -17,11 +19,23 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/(admin|portal|terapia)/:path*',
-        headers: [{ key: 'Cache-Control', value: 'no-store' }],
+        headers: noStore,
       },
       {
         source: '/api/:path*',
-        headers: [{ key: 'Cache-Control', value: 'no-store' }],
+        headers: noStore,
+      },
+      {
+        source: '/login',
+        headers: noStore,
+      },
+      {
+        source: '/recuperar-senha',
+        headers: noStore,
+      },
+      {
+        source: '/atualizar-senha',
+        headers: noStore,
       },
     ]
   },

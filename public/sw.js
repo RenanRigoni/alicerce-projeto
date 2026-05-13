@@ -2,10 +2,8 @@
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
-// Sem cache: todas as requisicoes vao direto a rede.
-self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request))
-})
+// Sem handler de fetch: login, rotas protegidas, APIs e Supabase seguem direto pela rede.
+// Este service worker existe apenas para push notifications.
 
 self.addEventListener('push', (event) => {
   if (!event.data) return

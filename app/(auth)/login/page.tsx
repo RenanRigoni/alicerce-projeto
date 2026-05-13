@@ -11,7 +11,7 @@ function isCPF(valor: string): boolean {
 }
 
 async function resolverEmail(identificador: string): Promise<string | null> {
-  if (!isCPF(identificador)) return identificador
+  if (!isCPF(identificador)) return identificador.toLowerCase()
 
   const res = await fetch('/api/auth/email-from-cpf', {
     method: 'POST',
@@ -19,9 +19,17 @@ async function resolverEmail(identificador: string): Promise<string | null> {
     body: JSON.stringify({ cpf: identificador }),
   })
 
-  if (!res.ok) return null
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}))
+    console.warn('[login] cpf lookup failed', {
+      status: res.status,
+      message: typeof json.error === 'string' ? json.error : 'unknown',
+    })
+    return null
+  }
+
   const { email } = await res.json()
-  return email ?? null
+  return typeof email === 'string' ? email.toLowerCase() : null
 }
 
 export default function LoginPage() {
@@ -47,15 +55,57 @@ export default function LoginPage() {
 
     const supabase = createClient()
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha })
-    if (error) { setErro('E-mail, CPF ou senha incorretos.'); setCarregando(false); return }
+    if (error) {
+      const authError = error as { code?: string; status?: number; message?: string }
+      console.warn('[login] signInWithPassword failed', {
+        code: authError.code ?? null,
+        status: authError.status ?? null,
+        message: authError.message ?? error.message,
+      })
+      setErro('E-mail, CPF ou senha incorretos.')
+      setCarregando(false)
+      return
+    }
 
-    const { data: profile } = await supabase
+    console.info('[login] signInWithPassword ok', {
+      hasUser: Boolean(data.user),
+      hasSession: Boolean(data.session),
+    })
+
+    const { data: profile, error: profileError, status: profileStatus } = await supabase
       .from('profiles')
       .select('role, ativo')
       .eq('id', data.user.id)
       .single()
 
-    if (!profile?.ativo) {
+    if (profileError) {
+      console.warn('[login] profile lookup failed', {
+        table: 'profiles',
+        operation: 'select role, ativo by authenticated user id',
+        code: profileError.code ?? null,
+        status: profileStatus ?? null,
+        message: profileError.message,
+      })
+      await supabase.auth.signOut()
+      setErro('Login autenticado, mas não foi possível carregar seu perfil. Tente novamente.')
+      setCarregando(false)
+      return
+    }
+
+    console.info('[login] profile lookup ok', {
+      hasProfile: Boolean(profile),
+      role: profile?.role ?? null,
+      ativo: profile?.ativo ?? null,
+    })
+
+    if (!profile) {
+      await supabase.auth.signOut()
+      setErro('Perfil de acesso não encontrado. Entre em contato.')
+      setCarregando(false)
+      return
+    }
+
+    if (!profile.ativo) {
       await supabase.auth.signOut()
       setErro('Usuário desativado. Entre em contato.')
       setCarregando(false)
@@ -66,7 +116,11 @@ export default function LoginPage() {
     if (role === 'pai')                               router.push('/portal/dashboard')
     else if (role === 'terapeuta')                    router.push('/terapia/dashboard')
     else if (role === 'admin' || role === 'recepcao') router.push('/admin/dashboard')
-    else router.push('/login')
+    else {
+      await supabase.auth.signOut()
+      setErro('Perfil sem permissão de acesso. Entre em contato.')
+      setCarregando(false)
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

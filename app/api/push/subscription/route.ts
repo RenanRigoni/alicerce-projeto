@@ -20,7 +20,7 @@ async function getUserId() {
 
 export async function GET() {
   const userId = await getUserId()
-  if (!userId) return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+  if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const { data, error } = await createAdminClient()
     .from('push_subscriptions')
@@ -34,7 +34,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const userId = await getUserId()
-  if (!userId) return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+  if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const body = await request.json().catch(() => null) as { subscription?: PushSubscriptionBody } | null
   const subscription = body?.subscription
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   const auth = subscription?.keys?.auth?.trim()
 
   if (!endpoint || !p256dh || !auth) {
-    return NextResponse.json({ error: 'Subscription push invalida.' }, { status: 400 })
+    return NextResponse.json({ error: 'Subscription push inválida.' }, { status: 400 })
   }
 
   const { error } = await createAdminClient()
@@ -57,17 +57,17 @@ export async function POST(request: NextRequest) {
       ultimo_uso_em: new Date().toISOString(),
     }, { onConflict: 'endpoint' })
 
-  if (error) return NextResponse.json({ error: 'Erro ao salvar inscricao push.' }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Erro ao salvar inscrição push.' }, { status: 500 })
   return NextResponse.json({ success: true })
 }
 
 export async function DELETE(request: NextRequest) {
   const userId = await getUserId()
-  if (!userId) return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+  if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const body = await request.json().catch(() => null) as { endpoint?: string } | null
   const endpoint = body?.endpoint?.trim()
-  if (!endpoint) return NextResponse.json({ error: 'Endpoint obrigatorio.' }, { status: 400 })
+  if (!endpoint) return NextResponse.json({ error: 'Endpoint obrigatório.' }, { status: 400 })
 
   const { error } = await createAdminClient()
     .from('push_subscriptions')
@@ -75,6 +75,6 @@ export async function DELETE(request: NextRequest) {
     .eq('user_id', userId)
     .eq('endpoint', endpoint)
 
-  if (error) return NextResponse.json({ error: 'Erro ao remover inscricao push.' }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Erro ao remover inscrição push.' }, { status: 500 })
   return NextResponse.json({ success: true })
 }

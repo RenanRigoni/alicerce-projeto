@@ -92,7 +92,7 @@ export function PushNotificationSettings() {
       const keyResponse = await fetch('/api/push/vapid-public-key')
       const keyJson = await keyResponse.json()
       if (!keyResponse.ok || !keyJson.publicKey) {
-        throw new Error(keyJson.error ?? 'Chave publica de notificacao indisponivel.')
+        throw new Error(keyJson.error ?? 'Chave pública de notificação indisponível.')
       }
 
       const registration = await navigator.serviceWorker.ready
@@ -108,12 +108,12 @@ export function PushNotificationSettings() {
         body: JSON.stringify({ subscription }),
       })
       const json = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(json.error ?? 'Nao foi possivel salvar este dispositivo.')
+      if (!response.ok) throw new Error(json.error ?? 'Não foi possível salvar este dispositivo.')
 
       setStatus('active')
     } catch (error) {
       setStatus('inactive')
-      setErro(error instanceof Error ? error.message : 'Erro ao ativar notificacoes.')
+      setErro(error instanceof Error ? error.message : 'Erro ao ativar notificações.')
     }
   }
 
@@ -135,27 +135,27 @@ export function PushNotificationSettings() {
       setStatus('inactive')
     } catch (error) {
       setStatus('active')
-      setErro(error instanceof Error ? error.message : 'Erro ao desativar notificacoes.')
+      setErro(error instanceof Error ? error.message : 'Erro ao desativar notificações.')
     }
   }
 
   if (status === 'checking') {
-    return <p className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>Verificando notificacoes...</p>
+    return <p className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>Verificando notificações...</p>
   }
 
   if (status === 'unsupported') {
-    return <p className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>Este dispositivo nao e compativel com notificacoes push.</p>
+    return <p className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>Este dispositivo não é compatível com notificações push.</p>
   }
 
   if (status === 'denied') {
-    return <p className="text-xs" style={{ color: '#B91C1C' }}>Notificacoes bloqueadas no navegador.</p>
+    return <p className="text-xs" style={{ color: '#B91C1C' }}>Notificações bloqueadas no navegador.</p>
   }
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs" style={{ color: status === 'active' ? 'var(--color-sage-deep)' : 'var(--color-ink-faint)' }}>
-          {status === 'active' ? 'Notificacoes ativadas' : 'Notificacoes desativadas'}
+          {status === 'active' ? 'Notificações ativadas' : 'Notificações desativadas'}
         </span>
         {status === 'active' ? (
           <Button type="button" variant="ghost" size="sm" onClick={desativar}>
@@ -163,7 +163,7 @@ export function PushNotificationSettings() {
           </Button>
         ) : (
           <Button type="button" variant="secondary" size="sm" onClick={ativar} disabled={status === 'saving'}>
-            Ativar notificacoes
+            Ativar notificações
           </Button>
         )}
       </div>

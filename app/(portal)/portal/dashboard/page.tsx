@@ -22,7 +22,7 @@ export default async function PortalDashboard() {
 
   const pacienteIds = (vinculos ?? []).map((v: any) => v.paciente_id as string)
 
-  const [{ data: comunicados }, { data: agendamentos }, { data: feriados }, { data: orientacoes }, { data: relatoriosRecentes }] = await Promise.all([
+  const [{ data: comunicados }, { data: agendamentos }, { data: feriados }, { data: orientacoes }, { data: relatoriosRecentes }, { data: evolucoesRecentes }] = await Promise.all([
     supabase
       .from('comunicados')
       .select('id, titulo, conteudo, criado_em')
@@ -53,6 +53,15 @@ export default async function PortalDashboard() {
     pacienteIds.length > 0
       ? supabase
           .from('relatorios')
+          .select('id, paciente_id, identificacao, conclusao, publicado_em, pdf_url, pacientes(nome)')
+          .in('paciente_id', pacienteIds)
+          .eq('status', 'publicado')
+          .order('publicado_em', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] }),
+    pacienteIds.length > 0
+      ? supabase
+          .from('evolucoes')
           .select('id, paciente_id, identificacao, conclusao, publicado_em, pdf_url, pacientes(nome)')
           .in('paciente_id', pacienteIds)
           .eq('status', 'publicado')
@@ -279,6 +288,56 @@ export default async function PortalDashboard() {
                   {r.pdf_url && (
                     <a
                       href={r.pdf_url.startsWith('http') ? r.pdf_url : `/api/relatorio/${r.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium px-2.5 py-1.5 rounded-lg flex-shrink-0"
+                      style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                    >
+                      PDF
+                    </a>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Evolucoes recentes */}
+      {evolucoesRecentes && evolucoesRecentes.length > 0 && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-ink-soft)' }}>
+            Evoluções recentes
+          </h2>
+          <div className="space-y-2">
+            {(evolucoesRecentes as any[]).map((e: any) => (
+              <Card key={e.id} className="hover:shadow-md transition-all">
+                <div className="flex items-start justify-between gap-3">
+                  <a
+                    href={`/portal/paciente/${e.paciente_id}/evolucao/${e.id}`}
+                    className="flex-1 min-w-0"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <div className="font-medium" style={{ color: 'var(--color-ink)' }}>
+                      {e.identificacao ?? 'Evolução clínica'}
+                      {pacienteIds.length > 1 && e.pacientes?.nome && (
+                        <span className="ml-1.5 text-sm font-normal" style={{ color: 'var(--color-ink-soft)' }}>
+                          — {e.pacientes.nome}
+                        </span>
+                      )}
+                    </div>
+                    {e.conclusao && (
+                      <p className="text-sm mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-mid)' }}>
+                        {e.conclusao}
+                      </p>
+                    )}
+                    <div className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
+                      {e.publicado_em ? new Date(e.publicado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}
+                    </div>
+                  </a>
+                  {e.pdf_url && (
+                    <a
+                      href={e.pdf_url.startsWith('http') ? e.pdf_url : `/api/evolucao/${e.id}/pdf`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs font-medium px-2.5 py-1.5 rounded-lg flex-shrink-0"

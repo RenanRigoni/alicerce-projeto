@@ -14,32 +14,32 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
 
-  const { data: relatorio } = await supabase
-    .from('relatorios')
+  const { data: evolucao } = await supabase
+    .from('evolucoes')
     .select('identificacao, paciente_id, status, terapeuta_id')
     .eq('id', id)
     .single()
 
-  if (!relatorio) return NextResponse.json({ error: 'Nao encontrado' }, { status: 404 })
-  if (relatorio.terapeuta_id !== user.id) return NextResponse.json({ error: 'Sem permissao' }, { status: 403 })
-  if (relatorio.status === 'publicado') return NextResponse.json({ error: 'Relatorio ja publicado' }, { status: 409 })
+  if (!evolucao) return NextResponse.json({ error: 'Nao encontrada' }, { status: 404 })
+  if (evolucao.terapeuta_id !== user.id) return NextResponse.json({ error: 'Sem permissao' }, { status: 403 })
+  if (evolucao.status === 'publicado') return NextResponse.json({ error: 'Evolucao ja publicada' }, { status: 409 })
 
   const { error: updateError } = await supabase
-    .from('relatorios')
+    .from('evolucoes')
     .update({ status: 'publicado' })
     .eq('id', id)
 
-  if (updateError) return NextResponse.json({ error: 'Erro ao publicar relatorio' }, { status: 500 })
+  if (updateError) return NextResponse.json({ error: 'Erro ao publicar evolucao' }, { status: 500 })
 
   await notificarResponsaveisDoPaciente(
-    relatorio.paciente_id,
-    'relatorio_publicado',
-    'Novo relatorio disponivel',
+    evolucao.paciente_id,
+    'evolucao_publicada',
+    'Nova evolucao disponivel',
     'Acesse o portal para visualizar o conteudo apos login.',
-    `/portal/paciente/${relatorio.paciente_id}?aba=relatorios`,
+    `/portal/paciente/${evolucao.paciente_id}?aba=evolucoes`,
     {
-      related_patient_id: relatorio.paciente_id,
-      related_entity_type: 'relatorio',
+      related_patient_id: evolucao.paciente_id,
+      related_entity_type: 'evolucao',
       related_entity_id: id,
     }
   )

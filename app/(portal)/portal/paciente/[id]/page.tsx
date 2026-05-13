@@ -32,6 +32,7 @@ export default async function PacientePortalPage({
 
   const [
     { data: relatorios },
+    { data: evolucoes },
     { data: documentos },
     { data: orientacoes },
     { data: agendamentos },
@@ -42,6 +43,12 @@ export default async function PacientePortalPage({
   ] = await Promise.all([
     supabase
       .from('relatorios')
+      .select('id, identificacao, status, publicado_em, conclusao, pdf_url')
+      .eq('paciente_id', id)
+      .eq('status', 'publicado')
+      .order('publicado_em', { ascending: false }),
+    supabase
+      .from('evolucoes')
       .select('id, identificacao, status, publicado_em, conclusao, pdf_url')
       .eq('paciente_id', id)
       .eq('status', 'publicado')
@@ -88,6 +95,7 @@ export default async function PacientePortalPage({
   const abas = [
     { key: 'geral',       label: 'Geral',       count: null },
     { key: 'relatorios',  label: 'Relatórios',  count: relatorios?.length ?? 0 },
+    { key: 'evolucoes',   label: 'Evolução',    count: evolucoes?.length ?? 0 },
     { key: 'orientacoes', label: 'Orientações',  count: orientacoes?.length ?? 0 },
     { key: 'documentos',  label: 'Documentos',  count: documentos?.length ?? 0 },
     { key: 'agenda',      label: 'Agenda',      count: agendamentos?.length ?? 0 },
@@ -99,6 +107,11 @@ export default async function PacientePortalPage({
       tipo: 'relatorio' as const, id: r.id,
       titulo: r.identificacao ?? 'Relatório', data: r.publicado_em ?? '',
       href: `/portal/paciente/${id}/relatorio/${r.id}`,
+    })),
+    ...(evolucoes ?? []).map(e => ({
+      tipo: 'evolucao' as const, id: e.id,
+      titulo: e.identificacao ?? 'Evolução', data: e.publicado_em ?? '',
+      href: `/portal/paciente/${id}/evolucao/${e.id}`,
     })),
     ...(documentos ?? []).map(d => ({
       tipo: 'documento' as const, id: d.id,
@@ -338,6 +351,59 @@ export default async function PacientePortalPage({
         </div>
       )}
 
+      {/* ── Evolução ── */}
+      {aba === 'evolucoes' && (
+        <div className="space-y-3">
+          {evolucoes && evolucoes.length > 0 ? evolucoes.map(e => (
+            <Card key={e.id}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="font-medium" style={{ color: 'var(--color-ink)' }}>
+                    {e.identificacao ?? 'Evolução clínica'}
+                  </div>
+                  {e.conclusao && (
+                    <p className="text-sm mt-1 line-clamp-2" style={{ color: 'var(--color-ink-mid)' }}>
+                      {e.conclusao}
+                    </p>
+                  )}
+                  <div className="text-xs mt-2" style={{ color: 'var(--color-ink-faint)' }}>
+                    {e.publicado_em
+                      ? new Date(e.publicado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+                      : ''}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <a
+                    href={`/portal/paciente/${id}/evolucao/${e.id}`}
+                    className="text-sm font-medium transition-opacity hover:opacity-70"
+                    style={{ color: 'var(--color-rose-main)' }}
+                  >
+                    Ver
+                  </a>
+                  {e.pdf_url && (
+                    <a
+                      href={e.pdf_url.startsWith('http') ? e.pdf_url : `/api/evolucao/${e.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                      style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                    >
+                      PDF
+                    </a>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )) : (
+            <Card>
+              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
+                Nenhuma evolução disponível ainda.
+              </p>
+            </Card>
+          )}
+        </div>
+      )}
+
       {/* ── Orientações ── */}
       {aba === 'orientacoes' && (
         <div className="space-y-3">
@@ -461,6 +527,8 @@ export default async function PacientePortalPage({
                 style={{
                   background: item.tipo === 'relatorio'
                     ? 'var(--color-rose-soft)'
+                    : item.tipo === 'evolucao'
+                    ? 'var(--color-sage-main)'
                     : item.tipo === 'documento'
                     ? 'var(--color-lavender-main)'
                     : 'var(--color-sage-main)',
@@ -470,6 +538,7 @@ export default async function PacientePortalPage({
                 <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>{item.titulo}</div>
                 <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-faint)' }}>
                   {item.tipo === 'relatorio' ? 'Relatório' :
+                   item.tipo === 'evolucao' ? 'Evolução' :
                    item.tipo === 'documento' ? 'Documento' : 'Orientação'}
                   {' · '}
                   {item.data ? new Date(item.data).toLocaleDateString('pt-BR') : ''}

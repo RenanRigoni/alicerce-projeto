@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     assinado_em: agora,
   })
 
-  const { error } = await supabase.from('orientacoes').insert({
+  const { data: orientacao, error } = await supabase.from('orientacoes').insert({
     paciente_id,
     terapeuta_id: user.id,
     titulo: titulo.trim(),
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     conteudo: conteudo?.trim() || null,
     hash_integridade: hash,
     assinado_em: agora,
-  })
+  }).select('id').single()
 
   if (error) {
     return NextResponse.json({ error: 'Erro ao salvar orientação.' }, { status: 500 })
@@ -75,9 +75,14 @@ export async function POST(request: NextRequest) {
   await notificarResponsaveisDoPaciente(
     paciente_id,
     'orientacao_nova',
-    `Nova orientação: ${titulo.trim()}`,
-    conteudo?.trim().slice(0, 120) || undefined,
-    `/portal/paciente/${paciente_id}?aba=orientacoes`
+    'Nova orientacao disponivel',
+    'Acesse o portal para visualizar o conteudo apos login.',
+    `/portal/paciente/${paciente_id}?aba=orientacoes`,
+    {
+      related_patient_id: paciente_id,
+      related_entity_type: 'orientacao',
+      related_entity_id: orientacao?.id,
+    }
   )
 
   return NextResponse.json({ success: true })

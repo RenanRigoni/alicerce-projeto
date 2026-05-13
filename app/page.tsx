@@ -11,13 +11,15 @@ export default function IntroPage() {
   const [imgSrc, setImgSrc]   = useState('/mobile.png')
 
   useEffect(() => {
-    setImgSrc(window.innerWidth >= 768 ? '/tablet.png' : '/mobile.png')
-
     const shown = sessionStorage.getItem('introShown')
     if (shown) {
       router.replace('/login')
       return
     }
+
+    const raf = requestAnimationFrame(() => {
+      setImgSrc(window.innerWidth >= 768 ? '/tablet.png' : '/mobile.png')
+    })
 
     const t0 = setTimeout(() => setVisible(true), 80)
     const t1 = setTimeout(() => setFading(true), 2200)
@@ -26,7 +28,7 @@ export default function IntroPage() {
       router.replace('/login')
     }, 2800)
 
-    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2) }
+    return () => { cancelAnimationFrame(raf); clearTimeout(t0); clearTimeout(t1); clearTimeout(t2) }
   }, [router])
 
   return (

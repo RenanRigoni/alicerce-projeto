@@ -69,6 +69,8 @@ export interface Relatorio {
   pdf_url: string | null
 }
 
+export type Evolucao = Relatorio
+
 export interface Documento {
   id: string
   tipo: string
@@ -104,6 +106,7 @@ interface Props {
   responsaveis: Responsavel[]
   dadosClinicos: DadosClinicos | null
   relatorios: Relatorio[]
+  evolucoes: Evolucao[]
   documentos: Documento[]
   orientacoes: Orientacao[]
   altas: SolicitacaoAlta[]
@@ -142,6 +145,7 @@ const ABAS = [
   'Responsáveis',
   'Dados Clínicos',
   'Relatórios',
+  'Evolução',
   'Orientações',
   'Alta',
   'Histórico',
@@ -153,7 +157,7 @@ type Aba = typeof ABAS[number]
 
 export function PerfilPacienteTabs({
   paciente, terapeutas, responsaveis, dadosClinicos,
-  relatorios, documentos, orientacoes, altas,
+  relatorios, evolucoes, documentos, orientacoes, altas,
   role, ehTerapeutaVinculado,
 }: Props) {
   const router = useRouter()
@@ -191,16 +195,18 @@ export function PerfilPacienteTabs({
 
   // Modal ver relatório
   const [modalRel, setModalRel] = useState<Relatorio | null>(null)
+  const [modalRelTipo, setModalRelTipo] = useState<'relatorio' | 'evolucao'>('relatorio')
   const [detalheRel, setDetalheRel] = useState<any>(null)
   const [carregandoRel, setCarregandoRel] = useState(false)
 
-  async function abrirRelatorio(r: Relatorio) {
+  async function abrirRelatorio(r: Relatorio, tipo: 'relatorio' | 'evolucao' = 'relatorio') {
     setModalRel(r)
+    setModalRelTipo(tipo)
     setDetalheRel(null)
     setCarregandoRel(true)
     const { createClient } = await import('@/lib/supabase/client')
     const { data } = await createClient()
-      .from('relatorios')
+      .from(tipo === 'evolucao' ? 'evolucoes' : 'relatorios')
       .select('id, identificacao, obs_clinicas, testes, resultado_discussao, conclusao, assinatura_digital, assinado_em, status, criado_em, pdf_url')
       .eq('id', r.id)
       .single()
@@ -703,6 +709,87 @@ export function PerfilPacienteTabs({
         </div>
       )}
 
+      {/* ── Aba 5: Evolução ─────────────────────────────────── */}
+      {abaAtiva === 'Evolução' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+              {evolucoes.length} evolução{evolucoes.length !== 1 ? 'ões' : ''}
+            </span>
+            {role === 'terapeuta' && paciente.status === 'ativo' && (
+              <a
+                href={`/terapia/paciente/${paciente.id}/nova-evolucao`}
+                className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
+                style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+              >
+                + Nova evolução
+              </a>
+            )}
+          </div>
+          {evolucoes.length > 0 ? (
+            <div className="space-y-2">
+              {evolucoes.map(e => (
+                <Card key={e.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+                        {e.identificacao ?? 'Sem título'}
+                      </div>
+                      {e.conclusao && (
+                        <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-soft)' }}>
+                          {e.conclusao}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+                          {new Date(e.criado_em).toLocaleDateString('pt-BR')}
+                        </span>
+                        <Badge color={e.status === 'publicado' ? 'green' : 'yellow'}>{e.status}</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => abrirRelatorio(e, 'evolucao')}
+                        className="text-sm font-medium transition-opacity hover:opacity-70"
+                        style={{ color: 'var(--color-rose-main)' }}
+                      >
+                        Ver
+                      </button>
+                      {role === 'terapeuta' && e.status === 'rascunho' && (
+                        <a
+                          href={`/terapia/evolucao/${e.id}/editar`}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg transition-colors"
+                          style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
+                        >
+                          Editar
+                        </a>
+                      )}
+                      {e.pdf_url && (
+                        <a
+                          href={e.pdf_url.startsWith('http') ? e.pdf_url : `/api/evolucao/${e.id}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg transition-colors"
+                          style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                        >
+                          PDF
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
+                Nenhuma evolução ainda.
+              </p>
+            </Card>
+          )}
+        </div>
+      )}
+
       {/* ── Aba 5: Orientações ──────────────────────────────── */}
       {abaAtiva === 'Orientações' && (
         <div className="space-y-3">
@@ -1004,6 +1091,7 @@ export function PerfilPacienteTabs({
         const itens = [
           ...altas.map(a => ({ tipo: 'alta' as const, criado_em: a.criado_em, data: a as any })),
           ...relatorios.map(r => ({ tipo: 'relatorio' as const, criado_em: r.criado_em, data: r as any })),
+          ...evolucoes.map(e => ({ tipo: 'evolucao' as const, criado_em: e.criado_em, data: e as any })),
           ...documentos.map(d => ({ tipo: 'documento' as const, criado_em: d.criado_em, data: d as any })),
           ...orientacoes.map(o => ({ tipo: 'orientacao' as const, criado_em: o.criado_em, data: o as any })),
         ].sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
@@ -1061,6 +1149,26 @@ export function PerfilPacienteTabs({
                           {r.status === 'publicado' ? 'Relatório publicado' : 'Rascunho'}
                         </span>
                         {r.identificacao && ` — ${r.identificacao}`}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>{dataFormatada}</div>
+                    </div>
+                    <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" style={{ color: 'var(--color-rose-main)' }}>Ver →</span>
+                  </button>
+                )
+              }
+
+              if (item.tipo === 'evolucao') {
+                const e = item.data as Evolucao
+                return (
+                  <button key={`evo-${e.id}`} onClick={() => abrirRelatorio(e, 'evolucao')} className="w-full flex gap-3 items-start text-left group">
+                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                      style={{ background: e.status === 'publicado' ? 'var(--color-sage-main)' : 'var(--color-rose-soft)' }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
+                        <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
+                          {e.status === 'publicado' ? 'Evolução publicada' : 'Rascunho de evolução'}
+                        </span>
+                        {e.identificacao && ` — ${e.identificacao}`}
                       </div>
                       <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>{dataFormatada}</div>
                     </div>
@@ -1264,12 +1372,12 @@ export function PerfilPacienteTabs({
             style={{ background: 'var(--color-warm-white)', borderColor: 'var(--color-border-soft)' }}
           >
             <h3 className="font-semibold" style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-lora)' }}>
-              {modalRel.identificacao ?? 'Relatório'}
+              {modalRel.identificacao ?? (modalRelTipo === 'evolucao' ? 'Evolução' : 'Relatório')}
             </h3>
             <div className="flex items-center gap-2">
               {modalRel.pdf_url && (
                 <a
-                  href={modalRel.pdf_url.startsWith('http') ? modalRel.pdf_url : `/api/relatorio/${modalRel.id}/pdf`}
+                  href={modalRel.pdf_url.startsWith('http') ? modalRel.pdf_url : `/api/${modalRelTipo}/${modalRel.id}/pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-medium px-3 py-1.5 rounded-lg"

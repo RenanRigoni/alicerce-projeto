@@ -59,16 +59,10 @@ export async function PATCH(
     hash_integridade: hash,
   }).eq('id', id)
 
-  const { data: paciente } = await admin
-    .from('pacientes')
-    .select('nome')
-    .eq('id', solicitacao.paciente_id)
-    .single()
-
   await notificarResponsaveisDoPaciente(
     solicitacao.paciente_id,
     'alta_recusada',
-    `Solicitação de alta recusada — ${paciente?.nome ?? 'Paciente'}`,
+    'Solicitação de alta recusada',
     argumentacao
       ? `A profissional recusou a solicitação de alta. Justificativa: ${argumentacao}`
       : 'A profissional recusou a solicitação de alta.',

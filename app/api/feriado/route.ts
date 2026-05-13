@@ -1,6 +1,7 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { notificarTodos } from '@/lib/notificacoes/inserir'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
@@ -29,12 +30,12 @@ export async function POST(request: NextRequest) {
 
   const adminClient = createAdminClient()
 
-  const { error } = await adminClient.from('feriados').insert({
+  const { data: feriado, error } = await adminClient.from('feriados').insert({
     data: dataFeriado.trim(),
     descricao: descricao.trim(),
     anual,
     criado_por: user.id,
-  })
+  }).select('id').single()
 
   if (error) {
     if (error.code === '23505') {
@@ -42,6 +43,18 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: 'Erro ao salvar feriado.' }, { status: 500 })
   }
+
+  await notificarTodos(
+    'feriado_publicado',
+    'Feriado cadastrado',
+    'Acesse o sistema para visualizar o aviso institucional.',
+    '/',
+    {
+      notification_type: 'global',
+      related_entity_type: 'feriado',
+      related_entity_id: feriado.id,
+    }
+  )
 
   return NextResponse.json({ success: true })
 }

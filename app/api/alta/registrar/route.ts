@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
   await notificarResponsaveisDoPaciente(
     paciente_id,
     'alta_registrada',
-    `Alta registrada — ${paciente.nome}`,
+    'Alta registrada',
     motivo.trim().slice(0, 120),
     `/portal/paciente/${paciente_id}`
   )

@@ -25,6 +25,7 @@ export default async function AdminPacienteDetalhePage({
     { data: responsaveisVinculo },
     { data: dadosClinicos },
     { data: relatorios },
+    { data: evolucoes },
     { data: documentos },
     { data: orientacoes },
     { data: altas },
@@ -45,6 +46,11 @@ export default async function AdminPacienteDetalhePage({
       .maybeSingle(),
     supabase
       .from('relatorios')
+      .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
+      .eq('paciente_id', id)
+      .order('criado_em', { ascending: false }),
+    supabase
+      .from('evolucoes')
       .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }),
@@ -118,6 +124,7 @@ export default async function AdminPacienteDetalhePage({
       responsaveis={responsaveis}
       dadosClinicos={dadosClinicos ?? null}
       relatorios={relatorios ?? []}
+      evolucoes={evolucoes ?? []}
       documentos={documentos ?? []}
       orientacoes={orientacoes ?? []}
       altas={altasMapped}

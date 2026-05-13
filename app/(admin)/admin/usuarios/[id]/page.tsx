@@ -104,8 +104,8 @@ export default async function UsuarioDetalhePage({
   // Pacientes do terapeuta (apenas ativos, para agenda)
   let pacientesTerapeuta: Array<{ id: string; nome: string; horarios_atendimento: Array<{ dia: string; hora: string }> }> = []
   let feriadosDatas: string[] = []
-  let canceladasKeys: string[] = []
-  let confirmacoesIniciais: Record<string, { token: string; status: string }> = {}
+  const canceladasKeys: string[] = []
+  const confirmacoesIniciais: Record<string, { token: string; status: string }> = {}
 
   if (usuario.role === 'terapeuta') {
     const [{ data: vinculos }, { data: feriados }] = await Promise.all([

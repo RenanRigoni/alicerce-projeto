@@ -69,7 +69,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {children}
         <Script id="sw-register" strategy="afterInteractive">
-          {`if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js') }`}
+          {`if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }) }`}
         </Script>
       </body>
     </html>

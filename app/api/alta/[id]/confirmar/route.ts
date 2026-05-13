@@ -79,17 +79,11 @@ export async function PATCH(
     .eq('paciente_id', solicitacao.paciente_id)
     .gt('data_hora', agora)
 
-  const { data: paciente } = await admin
-    .from('pacientes')
-    .select('nome')
-    .eq('id', solicitacao.paciente_id)
-    .single()
-
   // Notifica responsáveis
   await notificarResponsaveisDoPaciente(
     solicitacao.paciente_id,
     'alta_confirmada',
-    `Alta confirmada — ${paciente?.nome ?? 'Paciente'}`,
+    'Alta confirmada',
     'A solicitação de alta foi confirmada pela profissional.',
     `/portal/paciente/${solicitacao.paciente_id}`
   )

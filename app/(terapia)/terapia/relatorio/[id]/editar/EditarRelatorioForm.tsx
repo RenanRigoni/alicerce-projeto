@@ -15,9 +15,16 @@ interface Relatorio {
   status: string
 }
 
-export function EditarRelatorioForm({ relatorio }: { relatorio: Relatorio }) {
+export function EditarRelatorioForm({
+  relatorio,
+  tipo = 'relatorio',
+}: {
+  relatorio: Relatorio
+  tipo?: 'relatorio' | 'evolucao'
+}) {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
+  const apiSegment = tipo === 'evolucao' ? 'evolucao' : 'relatorio'
 
   const [titulo, setTitulo] = useState(relatorio.identificacao ?? '')
   const [previa, setPrevia] = useState(relatorio.conclusao ?? '')
@@ -56,7 +63,7 @@ export function EditarRelatorioForm({ relatorio }: { relatorio: Relatorio }) {
     }
     if (pdfUrl !== undefined) body.pdf_url = pdfUrl
 
-    const res = await fetch(`/api/relatorio/${relatorio.id}`, {
+    const res = await fetch(`/api/${apiSegment}/${relatorio.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -89,7 +96,7 @@ export function EditarRelatorioForm({ relatorio }: { relatorio: Relatorio }) {
             <input
               value={titulo}
               onChange={e => setTitulo(e.target.value)}
-              placeholder="Ex: Relatório de avaliação — 1º semestre 2025"
+              placeholder={tipo === 'evolucao' ? 'Ex: Evolucao de acompanhamento' : 'Ex: Relatório de avaliação - 1º semestre 2025'}
               className="input-base"
             />
           </div>
@@ -119,7 +126,7 @@ export function EditarRelatorioForm({ relatorio }: { relatorio: Relatorio }) {
               value={previa}
               onChange={e => setPrevia(e.target.value)}
               rows={3}
-              placeholder="Resumo breve do relatório..."
+              placeholder={tipo === 'evolucao' ? 'Resumo breve da evolucao...' : 'Resumo breve do relatório...'}
               className="input-base resize-y"
             />
           </div>

@@ -28,12 +28,14 @@ export async function DELETE(
   // Bloqueia exclusão física se existir QUALQUER dado clínico do paciente.
   const [
     { count: totalRelatorios },
+    { count: totalEvolucoes },
     { count: totalDocumentos },
     { count: totalOrientacoes },
     { count: totalDadosClinicos },
     { count: totalAltas },
   ] = await Promise.all([
     adminClient.from('relatorios').select('id', { count: 'exact', head: true }).eq('paciente_id', id),
+    adminClient.from('evolucoes').select('id', { count: 'exact', head: true }).eq('paciente_id', id),
     adminClient.from('documentos').select('id', { count: 'exact', head: true }).eq('paciente_id', id),
     adminClient.from('orientacoes').select('id', { count: 'exact', head: true }).eq('paciente_id', id),
     adminClient.from('pacientes_dados_clinicos').select('paciente_id', { count: 'exact', head: true }).eq('paciente_id', id),
@@ -42,6 +44,7 @@ export async function DELETE(
 
   const temProntuario =
     (totalRelatorios ?? 0) > 0 ||
+    (totalEvolucoes ?? 0) > 0 ||
     (totalDocumentos ?? 0) > 0 ||
     (totalOrientacoes ?? 0) > 0 ||
     (totalDadosClinicos ?? 0) > 0 ||

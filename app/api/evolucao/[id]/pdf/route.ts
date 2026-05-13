@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
 import {
+  evolucaoPdfConfig,
   handleDocumentoClinicoPdfGet,
   handleDocumentoClinicoPdfPost,
-  relatorioPdfConfig,
 } from '@/lib/pdf/documento-clinico-pdf'
 
 export const runtime = 'nodejs'
@@ -12,7 +12,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  return handleDocumentoClinicoPdfPost(request, id, relatorioPdfConfig)
+  return handleDocumentoClinicoPdfPost(request, id, evolucaoPdfConfig)
 }
 
 export async function GET(
@@ -20,5 +20,5 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  return handleDocumentoClinicoPdfGet(request, id, relatorioPdfConfig)
+  return handleDocumentoClinicoPdfGet(request, id, evolucaoPdfConfig)
 }

@@ -135,9 +135,10 @@ interface TemplateRelatorioProps {
     conselho_tipo?: string | null
     conselho_numero?: string | null
   }
+  documentoTitulo?: string
 }
 
-export function TemplateRelatorio({ paciente, relatorio, terapeuta }: TemplateRelatorioProps) {
+export function TemplateRelatorio({ paciente, relatorio, terapeuta, documentoTitulo = 'Relatório clínico' }: TemplateRelatorioProps) {
   const dataPublicacao = relatorio.publicado_em
     ? new Date(relatorio.publicado_em).toLocaleDateString('pt-BR', {
         day: '2-digit', month: 'long', year: 'numeric',
@@ -169,7 +170,7 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta }: TemplateRe
           <Text style={styles.clinicaSub}>Espaço Terapêutico Infantil</Text>
         </View>
 
-        <Text style={styles.titulo}>Relatório clínico</Text>
+        <Text style={styles.titulo}>{documentoTitulo}</Text>
 
         {/* Dados do paciente */}
         <View style={styles.pacienteBox}>

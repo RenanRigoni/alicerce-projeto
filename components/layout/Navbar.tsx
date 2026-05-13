@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { NotificacoesBell } from '@/components/ui/NotificacoesBell'
+import { PushNotificationSettings } from '@/components/ui/PushNotificationSettings'
 
 interface NavbarProps {
   role: 'admin' | 'recepcao' | 'terapeuta' | 'pai'
@@ -213,6 +214,9 @@ export function Navbar({ role, nome }: NavbarProps) {
                       </div>
                     </>
                   )}
+                  <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--color-border-soft)' }}>
+                    <PushNotificationSettings />
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-[var(--color-border-soft)]"
@@ -327,6 +331,12 @@ export function Navbar({ role, nome }: NavbarProps) {
                 </div>
               </div>
               <NotificacoesBell />
+            </div>
+            <div
+              className="rounded-xl px-3 py-3"
+              style={{ border: '1px solid var(--color-border-soft)', background: 'var(--color-warm-white)' }}
+            >
+              <PushNotificationSettings />
             </div>
             {role === 'pai' && (
               <>

@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
   await notificarTerapeutasDoPaciente(
     paciente_id,
     'alta_solicitada_responsavel',
-    `Solicitação de alta — ${paciente.nome}`,
+    'Solicitação de alta recebida',
     motivo.trim().slice(0, 120),
     `/terapia/paciente/${paciente_id}`
   )

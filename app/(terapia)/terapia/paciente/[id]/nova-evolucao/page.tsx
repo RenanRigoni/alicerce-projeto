@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { gerarHash } from '@/lib/hash/gerar-hash'
 import { getTipoProfissionalConfig } from '@/lib/profissionais'
 
-export default function NovoRelatorioPage() {
+export default function NovaEvolucaoPage() {
   const router = useRouter()
   const params = useParams()
   const pacienteId = params.id as string
@@ -26,14 +26,14 @@ export default function NovoRelatorioPage() {
   const [modalAberto, setModalAberto] = useState(false)
   const [creditoUsuario, setCreditoUsuario] = useState('')
   const [conselhoTipoUsuario, setConselhoTipoUsuario] = useState('')
+  const [nomeConfirmacao, setNomeConfirmacao] = useState('')
+  const [nomeUsuario, setNomeUsuario] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
     supabase.from('pacientes').select('status').eq('id', pacienteId).single()
       .then(({ data }) => setPacienteAtivo(data?.status === 'ativo'))
   }, [pacienteId])
-  const [nomeConfirmacao, setNomeConfirmacao] = useState('')
-  const [nomeUsuario, setNomeUsuario] = useState('')
 
   async function uploadArquivos(): Promise<{ path: string } | null> {
     if (arquivos.length === 0) return null
@@ -56,7 +56,7 @@ export default function NovoRelatorioPage() {
   }
 
   async function handleSalvarRascunho() {
-    if (!titulo.trim()) { setErro('Título é obrigatório.'); return }
+    if (!titulo.trim()) { setErro('Titulo e obrigatorio.'); return }
     setErro('')
     setSalvando(true)
 
@@ -66,7 +66,7 @@ export default function NovoRelatorioPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { error } = await supabase.from('relatorios').insert({
+    const { error } = await supabase.from('evolucoes').insert({
       paciente_id: pacienteId,
       terapeuta_id: user!.id,
       identificacao: titulo.trim(),
@@ -82,7 +82,7 @@ export default function NovoRelatorioPage() {
   }
 
   async function abrirModalPublicacao() {
-    if (!titulo.trim()) { setErro('Título é obrigatório antes de publicar.'); return }
+    if (!titulo.trim()) { setErro('Titulo e obrigatorio antes de publicar.'); return }
     setErro('')
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -100,7 +100,7 @@ export default function NovoRelatorioPage() {
 
   async function handlePublicar() {
     if (nomeConfirmacao.trim().toLowerCase() !== nomeUsuario.trim().toLowerCase()) {
-      setErro('O nome digitado não corresponde ao seu nome cadastrado.')
+      setErro('O nome digitado nao corresponde ao seu nome cadastrado.')
       return
     }
 
@@ -113,21 +113,20 @@ export default function NovoRelatorioPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const agora = new Date().toISOString()
-    const relatorioId = crypto.randomUUID()
-    const finalPdfPath = `${pacienteId}/${relatorioId}.pdf`
+    const evolucaoId = crypto.randomUUID()
+    const finalPdfPath = `${pacienteId}/evolucoes/${evolucaoId}.pdf`
 
     const assinaturaProfissional = creditoUsuario.trim()
-      ? `${nomeUsuario} — ${conselhoTipoUsuario} ${creditoUsuario.trim()} — ${new Date().toLocaleString('pt-BR')}`
-      : `${nomeUsuario} — ${new Date().toLocaleString('pt-BR')}`
+      ? `${nomeUsuario} - ${conselhoTipoUsuario} ${creditoUsuario.trim()} - ${new Date().toLocaleString('pt-BR')}`
+      : `${nomeUsuario} - ${new Date().toLocaleString('pt-BR')}`
 
     const sourcePdfPath = upload?.path ?? null
 
     const hash = await gerarHash({
-      relatorio_id: relatorioId,
+      evolucao_id: evolucaoId,
       paciente_id: pacienteId,
       terapeuta_id: user!.id,
       nome_terapeuta: nomeUsuario,
-      crefito_terapeuta: creditoUsuario.trim() || null,
       conselho_tipo_terapeuta: conselhoTipoUsuario || null,
       conselho_numero_terapeuta: creditoUsuario.trim() || null,
       identificacao: titulo.trim(),
@@ -138,8 +137,8 @@ export default function NovoRelatorioPage() {
       publicado_em: agora,
     })
 
-    const { error } = await supabase.from('relatorios').insert({
-      id: relatorioId,
+    const { error } = await supabase.from('evolucoes').insert({
+      id: evolucaoId,
       paciente_id: pacienteId,
       terapeuta_id: user!.id,
       identificacao: titulo.trim(),
@@ -155,11 +154,11 @@ export default function NovoRelatorioPage() {
 
     if (error) {
       setPublicando(false)
-      setErro(`Erro ao publicar relatório: ${error.message}`)
+      setErro(`Erro ao publicar evolucao: ${error.message}`)
       return
     }
 
-    const pdfRes = await fetch(`/api/relatorio/${relatorioId}/pdf`, {
+    const pdfRes = await fetch(`/api/evolucao/${evolucaoId}/pdf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sourcePath: sourcePdfPath }),
@@ -167,17 +166,17 @@ export default function NovoRelatorioPage() {
     const pdfJson = await pdfRes.json().catch(() => ({}))
     if (!pdfRes.ok) {
       setPublicando(false)
-      setErro(pdfJson.error ?? 'Relatório salvo como rascunho, mas não foi possível autenticar o PDF.')
+      setErro(pdfJson.error ?? 'Evolucao salva como rascunho, mas nao foi possivel autenticar o PDF.')
       return
     }
 
-    const publishRes = await fetch(`/api/relatorio/${relatorioId}/publicado`, { method: 'POST' })
+    const publishRes = await fetch(`/api/evolucao/${evolucaoId}/publicado`, { method: 'POST' })
     const publishJson = await publishRes.json().catch(() => ({}))
 
     setPublicando(false)
 
     if (!publishRes.ok) {
-      setErro(publishJson.error ?? 'PDF autenticado, mas nao foi possivel publicar o relatorio.')
+      setErro(publishJson.error ?? 'PDF autenticado, mas nao foi possivel publicar a evolucao.')
       return
     }
 
@@ -190,11 +189,11 @@ export default function NovoRelatorioPage() {
     return (
       <div className="max-w-2xl space-y-4">
         <a href={`/terapia/paciente/${pacienteId}`} className="text-sm transition-colors hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
-          ← Voltar
+          Voltar
         </a>
         <Card>
           <p className="text-sm font-medium" style={{ color: '#B91C1C' }}>
-            Prontuário encerrado — não é possível criar novos relatórios para paciente inativo.
+            Prontuario encerrado. Nao e possivel criar novas evolucoes para paciente inativo.
           </p>
         </Card>
       </div>
@@ -205,30 +204,27 @@ export default function NovoRelatorioPage() {
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
         <a href={`/terapia/paciente/${pacienteId}`} className="text-sm transition-colors hover:opacity-70" style={{ color: 'var(--color-ink-soft)' }}>
-          ← Voltar
+          Voltar
         </a>
         <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
-          Novo relatório
+          Nova evolucao
         </h1>
       </div>
 
       <Card>
         <div className="space-y-5">
-
-          {/* Título */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
-              Título do relatório <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+              Titulo da evolucao <span style={{ color: 'var(--color-rose-main)' }}>*</span>
             </label>
             <input
               value={titulo}
               onChange={e => setTitulo(e.target.value)}
-              placeholder="Ex: Relatório de avaliação — 1º semestre 2025"
+              placeholder="Ex: Evolucao de acompanhamento - maio"
               className="input-base"
             />
           </div>
 
-          {/* PDF */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
               Anexo (PDF ou imagem)
@@ -246,36 +242,31 @@ export default function NovoRelatorioPage() {
             >
               {arquivos.length > 0
                 ? arquivos.map(f => f.name).join(', ')
-                : 'Clique para anexar o relatório em PDF'}
+                : 'Clique para anexar a evolucao em PDF'}
             </button>
             <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
-              PDF ou imagem — máx. 15 MB por arquivo. Primeiro arquivo será usado como anexo principal.
+              PDF ou imagem - max. 15 MB por arquivo. Primeiro arquivo sera usado como anexo principal.
             </p>
           </div>
 
-          {/* Prévia */}
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Prévia</label>
+            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Previa</label>
             <textarea
               value={previa}
               onChange={e => setPrevia(e.target.value)}
               rows={3}
-              placeholder="Resumo breve do relatório — aparece nas listagens..."
+              placeholder="Resumo breve da evolucao - aparece nas listagens..."
               className="input-base resize-y"
             />
-            <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
-              Texto curto que aparece antes do responsável abrir o relatório.
-            </p>
           </div>
 
-          {/* Adicionais */}
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Observações adicionais</label>
+            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Observacoes adicionais</label>
             <textarea
               value={adicionais}
               onChange={e => setAdicionais(e.target.value)}
               rows={2}
-              placeholder="Anotações complementares (opcional)"
+              placeholder="Anotacoes complementares (opcional)"
               className="input-base resize-y"
             />
           </div>
@@ -288,9 +279,7 @@ export default function NovoRelatorioPage() {
               className="mt-0.5 h-4 w-4 flex-shrink-0 rounded accent-[var(--color-rose-main)]"
             />
             <span className="text-sm leading-snug" style={{ color: 'var(--color-ink-mid)' }}>
-              Declaro responsabilidade ética pelo conteúdo deste relatório, conforme{' '}
-              <strong>as normas do conselho profissional aplicável</strong>, e confirmo que as informações são
-              verídicas e correspondem à evolução clínica do paciente.
+              Declaro responsabilidade etica pelo conteudo desta evolucao e confirmo que as informacoes correspondem ao acompanhamento clinico do paciente.
             </span>
           </label>
 
@@ -298,7 +287,7 @@ export default function NovoRelatorioPage() {
 
           <div className="flex gap-3 pt-2">
             <Button type="button" onClick={abrirModalPublicacao} disabled={salvando || publicando || !declaracaoCoffito}>
-              Publicar para a família
+              Publicar para a familia
             </Button>
             <Button variant="secondary" type="button" onClick={handleSalvarRascunho} disabled={salvando || publicando}>
               {salvando ? 'Salvando...' : 'Salvar rascunho'}
@@ -310,15 +299,14 @@ export default function NovoRelatorioPage() {
         </div>
       </Card>
 
-      {/* Modal de assinatura */}
       {modalAberto && (
         <div className="fixed inset-0 flex items-center justify-center z-50 px-4" style={{ background: 'rgba(44,32,24,0.4)' }}>
           <div className="rounded-2xl p-6 w-full max-w-sm space-y-4" style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}>
             <h2 className="text-base font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
-              Assinar e publicar relatório
+              Assinar e publicar evolucao
             </h2>
             <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-              Ao publicar, o relatório ficará visível para a família imediatamente.<br />
+              Ao publicar, a evolucao ficara visivel para a familia imediatamente.
               Digite seu nome completo para confirmar a assinatura:
             </p>
             <div className="rounded-xl px-3 py-2 text-sm font-medium" style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}>

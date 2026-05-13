@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 
@@ -22,17 +21,18 @@ export function NovoComunicadoForm() {
     setErro('')
     setSalvando(true)
 
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    const { error } = await supabase.from('comunicados').insert({
-      titulo: titulo.trim(),
-      conteudo: conteudo.trim(),
-      criado_por: user!.id,
+    const res = await fetch('/api/comunicado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titulo: titulo.trim(),
+        conteudo: conteudo.trim(),
+      }),
     })
+    const json = await res.json().catch(() => ({}))
 
     setSalvando(false)
-    if (error) { setErro('Erro ao publicar. Tente novamente.'); return }
+    if (!res.ok) { setErro(json.error ?? 'Erro ao publicar. Tente novamente.'); return }
 
     setTitulo('')
     setConteudo('')

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 
@@ -20,11 +19,12 @@ interface Props {
   paciente: any
   todosTerapeutas: Array<{ id: string; nome: string }>
   terapeutasIniciais: string[]
+  podeVincularTerapeutas: boolean
 }
 
 const labelStyle = { color: 'var(--color-ink-mid)' }
 
-export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasIniciais }: Props) {
+export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasIniciais, podeVincularTerapeutas }: Props) {
   const router = useRouter()
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
@@ -75,41 +75,28 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
     }
 
     setSalvando(true)
-    const supabase = createClient()
-
-    // CPF Phase 2: cifra antes de salvar (LGPD Art. 46)
-    let cpfCifrado: string | null = null
-    const cpfPlain = form.cpf.trim() || null
-    if (cpfPlain) {
-      const { data: enc } = await supabase.rpc('encrypt_cpf', { cpf_plain: cpfPlain })
-      cpfCifrado = (enc as string | null) ?? null
-    }
-
-    const { error: erroPaciente } = await supabase
-      .from('pacientes')
-      .update({
+    const res = await fetch(`/api/paciente/${paciente.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         nome:                   form.nome,
         data_nascimento:        form.data_nascimento || null,
         sexo:                   form.sexo || null,
-        cpf_cifrado:            cpfCifrado,
+        cpf:                    form.cpf,
         frequencia_atendimento: horariosValidos.length > 0 ? `${horariosValidos.length}x por semana` : null,
         turno_preferencia:      form.turno_preferencia || null,
         convenio_ou_particular: form.convenio_ou_particular || null,
         horarios_atendimento:   horariosValidos,
-        atualizado_em:          new Date().toISOString(),
-      })
-      .eq('id', paciente.id)
-
-    if (erroPaciente) { setErro('Erro ao salvar.'); setSalvando(false); return }
-
-    await supabase.from('paciente_terapeutas').delete().eq('paciente_id', paciente.id)
-    if (terapeutasSel.length > 0) {
-      await supabase.from('paciente_terapeutas').insert(
-        terapeutasSel.map(tid => ({ paciente_id: paciente.id, terapeuta_id: tid }))
-      )
-    }
+        ...(podeVincularTerapeutas ? { terapeutas: terapeutasSel } : {}),
+      }),
+    })
 
     setSalvando(false)
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      setErro(json.error ?? 'Erro ao salvar.')
+      return
+    }
     router.push(`/admin/pacientes/${paciente.id}`)
   }
 
@@ -180,23 +167,25 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2" style={labelStyle}>Profissionais</label>
-            <div className="space-y-2">
-              {todosTerapeutas.map(t => (
-                <label key={t.id} className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={terapeutasSel.includes(t.id)}
-                    onChange={() => toggleTerapeuta(t.id)}
-                    className="w-4 h-4"
-                    style={{ accentColor: 'var(--color-rose-main)' }}
-                  />
-                  <span className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>{t.nome}</span>
-                </label>
-              ))}
+          {podeVincularTerapeutas && (
+            <div>
+              <label className="block text-sm font-medium mb-2" style={labelStyle}>Profissionais</label>
+              <div className="space-y-2">
+                {todosTerapeutas.map(t => (
+                  <label key={t.id} className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={terapeutasSel.includes(t.id)}
+                      onChange={() => toggleTerapeuta(t.id)}
+                      className="w-4 h-4"
+                      style={{ accentColor: 'var(--color-rose-main)' }}
+                    />
+                    <span className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>{t.nome}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-2">

@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
 import { CAMPANHAS } from '@/lib/campanhas-saude'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 
 const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
 const tipoLabel: Record<string, string> = { devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro' }
@@ -12,14 +13,19 @@ function dd(n: number) { return String(n).padStart(2, '0') }
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: meProfile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user!.id)
-    .single()
+  const perfilAtual = await getPerfilPermissoesAtual()
+  const permissoes = perfilAtual?.efetivas
 
-  const isRecepcao = meProfile?.role === 'recepcao'
+  const isRecepcao = perfilAtual?.role === 'recepcao'
+  const podeVerPacientes = permissoes?.ver_todos_pacientes === true
+  const podeGerenciarResponsaveis = permissoes?.gerenciar_responsaveis === true
+  const podeGerenciarUsuarios = permissoes?.gerenciar_usuarios === true
+  const podeCriarAgendamentos = permissoes?.criar_agendamentos === true
+  const podeVerRelatorios = permissoes?.ver_relatorios_todos === true
+  const podeGerenciarFeriados = permissoes?.gerenciar_feriados === true
+  const podeCriarComunicados = permissoes?.criar_comunicados === true
+  const podeCadastrarPacientes = permissoes?.cadastrar_pacientes === true
+  const podeRegistrarAlta = permissoes?.registrar_alta === true
 
   // Datas em BRT (UTC-3) para filtros de hoje/semana/mês
   const agora = new Date()
@@ -60,24 +66,34 @@ export default async function AdminDashboard() {
     { data: confirmacoesSemana },
     { data: confirmacoesMes },
   ] = await Promise.all([
-    supabase.from('pacientes').select('*', { count: 'exact', head: true }).eq('status', 'ativo'),
-    supabase
-      .from('paciente_responsaveis')
-      .select('responsavel_id, pacientes!inner(status)')
-      .eq('pacientes.status', 'ativo'),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'terapeuta').eq('ativo', true),
-    supabase
-      .from('solicitacoes_alta')
-      .select('id, criado_em, motivo, pacientes(nome), profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
-      .eq('status', 'pendente')
-      .order('criado_em', { ascending: true }),
-    supabase
-      .from('solicitacoes_alta')
-      .select('criado_em, pacientes(id, nome), profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
-      .in('status', ['confirmada', 'registrada', 'aprovada'])
-      .order('criado_em', { ascending: false })
-      .limit(5),
-    !isRecepcao
+    podeVerPacientes
+      ? supabase.from('pacientes').select('*', { count: 'exact', head: true }).eq('status', 'ativo')
+      : Promise.resolve({ count: 0 }),
+    podeGerenciarResponsaveis
+      ? supabase
+          .from('paciente_responsaveis')
+          .select('responsavel_id, pacientes!inner(status)')
+          .eq('pacientes.status', 'ativo')
+      : Promise.resolve({ data: [] }),
+    podeGerenciarUsuarios
+      ? supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'terapeuta').eq('ativo', true)
+      : Promise.resolve({ count: 0 }),
+    podeRegistrarAlta
+      ? supabase
+          .from('solicitacoes_alta')
+          .select('id, criado_em, motivo, pacientes(nome), profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
+          .eq('status', 'pendente')
+          .order('criado_em', { ascending: true })
+      : Promise.resolve({ data: [] }),
+    podeRegistrarAlta
+      ? supabase
+          .from('solicitacoes_alta')
+          .select('criado_em, pacientes(id, nome), profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
+          .in('status', ['confirmada', 'registrada', 'aprovada'])
+          .order('criado_em', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] }),
+    podeVerRelatorios
       ? supabase
           .from('relatorios')
           .select('id, paciente_id, identificacao, status, conclusao, criado_em, pacientes!inner(nome)')
@@ -85,40 +101,52 @@ export default async function AdminDashboard() {
           .order('criado_em', { ascending: false })
           .limit(5)
       : Promise.resolve({ data: [] }),
-    supabase
-      .from('feriados')
-      .select('data, descricao, anual')
-      .order('data'),
+    (podeGerenciarFeriados || podeCriarAgendamentos)
+      ? supabase
+          .from('feriados')
+          .select('data, descricao, anual')
+          .order('data')
+      : Promise.resolve({ data: [] }),
     supabase
       .from('comunicados')
       .select('id, titulo, conteudo, criado_em, profiles(nome)')
       .order('criado_em', { ascending: false })
       .limit(3),
-    supabase
-      .from('pacientes')
-      .select('id, nome, horarios_atendimento')
-      .eq('status', 'ativo'),
-    supabase
-      .from('agendamentos')
-      .select('id, tipo, titulo, data_hora, pacientes(nome)')
-      .gte('data_hora', hojeInicio.toISOString())
-      .lte('data_hora', hojeFim.toISOString())
-      .order('data_hora'),
-    supabase
-      .from('sessao_confirmacoes')
-      .select('paciente_id, data_hora, status')
-      .gte('data_hora', hojeInicio.toISOString())
-      .lte('data_hora', hojeFim.toISOString()),
-    supabase
-      .from('sessao_confirmacoes')
-      .select('status')
-      .gte('data_hora', semanaInicio.toISOString())
-      .lte('data_hora', semanaFim.toISOString()),
-    supabase
-      .from('sessao_confirmacoes')
-      .select('status')
-      .gte('data_hora', mesInicio.toISOString())
-      .lte('data_hora', mesFim.toISOString()),
+    podeCriarAgendamentos
+      ? supabase
+          .from('pacientes')
+          .select('id, nome, horarios_atendimento')
+          .eq('status', 'ativo')
+      : Promise.resolve({ data: [] }),
+    podeCriarAgendamentos
+      ? supabase
+          .from('agendamentos')
+          .select('id, tipo, titulo, data_hora, pacientes(nome)')
+          .gte('data_hora', hojeInicio.toISOString())
+          .lte('data_hora', hojeFim.toISOString())
+          .order('data_hora')
+      : Promise.resolve({ data: [] }),
+    podeCriarAgendamentos
+      ? supabase
+          .from('sessao_confirmacoes')
+          .select('paciente_id, data_hora, status')
+          .gte('data_hora', hojeInicio.toISOString())
+          .lte('data_hora', hojeFim.toISOString())
+      : Promise.resolve({ data: [] }),
+    podeCriarAgendamentos
+      ? supabase
+          .from('sessao_confirmacoes')
+          .select('status')
+          .gte('data_hora', semanaInicio.toISOString())
+          .lte('data_hora', semanaFim.toISOString())
+      : Promise.resolve({ data: [] }),
+    podeCriarAgendamentos
+      ? supabase
+          .from('sessao_confirmacoes')
+          .select('status')
+          .gte('data_hora', mesInicio.toISOString())
+          .lte('data_hora', mesFim.toISOString())
+      : Promise.resolve({ data: [] }),
   ])
 
   const totalFamilias = new Set((familiasDados ?? []).map((f: any) => f.responsavel_id)).size
@@ -245,6 +273,7 @@ export default async function AdminDashboard() {
 
       {/* Cards de totais */}
       <div className="grid grid-cols-3 gap-4">
+        {podeVerPacientes && (
         <Link href="/admin/pacientes">
           <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
             <div
@@ -256,6 +285,8 @@ export default async function AdminDashboard() {
             <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Pacientes ativos</div>
           </Card>
         </Link>
+        )}
+        {podeGerenciarResponsaveis && (
         <Link href="/admin/responsaveis">
           <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
             <div
@@ -267,6 +298,8 @@ export default async function AdminDashboard() {
             <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Famílias ativas</div>
           </Card>
         </Link>
+        )}
+        {podeGerenciarUsuarios && (
         <Link href="/admin/terapeutas">
           <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
             <div
@@ -278,9 +311,11 @@ export default async function AdminDashboard() {
             <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Profissionais</div>
           </Card>
         </Link>
+        )}
       </div>
 
       {/* Agenda de Hoje + Esta Semana */}
+      {podeCriarAgendamentos && (
       <div>
         <h2
           className="text-xs font-semibold uppercase tracking-wider mb-3"
@@ -368,6 +403,7 @@ export default async function AdminDashboard() {
 
         </div>
       </div>
+      )}
 
       {/* Altas recentes */}
       {altasRecentes && altasRecentes.length > 0 && (
@@ -401,7 +437,7 @@ export default async function AdminDashboard() {
       )}
 
       {/* Relatórios recentes */}
-      {!isRecepcao && (
+      {podeVerRelatorios && (
         <div>
           <h2
             className="text-xs font-semibold uppercase tracking-wider mb-3"
@@ -543,6 +579,7 @@ export default async function AdminDashboard() {
         </h2>
         <Card>
           <div className="flex flex-wrap gap-2.5">
+            {podeCadastrarPacientes && (
             <Link
               href="/admin/pacientes/novo"
               className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
@@ -550,6 +587,8 @@ export default async function AdminDashboard() {
             >
               + Novo paciente
             </Link>
+            )}
+            {(podeGerenciarUsuarios || podeGerenciarResponsaveis) && (
             <Link
               href="/admin/usuarios/novo"
               className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
@@ -557,6 +596,8 @@ export default async function AdminDashboard() {
             >
               + Novo usuário
             </Link>
+            )}
+            {podeCriarAgendamentos && (
             <Link
               href="/admin/agendamentos/novo"
               className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
@@ -564,6 +605,8 @@ export default async function AdminDashboard() {
             >
               + Agendamento
             </Link>
+            )}
+            {podeCriarComunicados && (
             <Link
               href="/admin/comunicados"
               className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
@@ -571,6 +614,8 @@ export default async function AdminDashboard() {
             >
               Comunicados
             </Link>
+            )}
+            {podeGerenciarFeriados && (
             <Link
               href="/admin/feriados"
               className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.98]"
@@ -578,6 +623,7 @@ export default async function AdminDashboard() {
             >
               Feriados
             </Link>
+            )}
           </div>
         </Card>
       </div>

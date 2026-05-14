@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarHash } from '@/lib/hash/gerar-hash'
 import { notificarResponsaveisDoPaciente } from '@/lib/notificacoes/inserir'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 
 export async function PATCH(
   request: NextRequest,
@@ -13,9 +14,12 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
   if (profile?.role !== 'terapeuta') {
     return NextResponse.json({ error: 'Apenas profissionais podem recusar alta' }, { status: 403 })
+  }
+  if (!temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'registrar_alta')) {
+    return NextResponse.json({ error: 'Sem permissÃ£o para recusar alta' }, { status: 403 })
   }
 
   const body = await request.json().catch(() => ({}))

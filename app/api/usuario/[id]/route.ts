@@ -1,6 +1,7 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getTipoProfissionalConfig, isTipoProfissional } from '@/lib/profissionais'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 import { NextRequest, NextResponse } from 'next/server'
 
 function normalizarCpfCnpj(valor: unknown): string | null {
@@ -18,8 +19,8 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!['admin', 'recepcao'].includes(profile?.role ?? '')) {
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
+  if (!profile || !['admin', 'recepcao'].includes(profile.role)) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
@@ -31,7 +32,15 @@ export async function PATCH(
 
   if (!alvo) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
 
-  if (profile?.role === 'recepcao' && !['terapeuta', 'pai'].includes(alvo.role)) {
+  const permissoes = (profile.permissoes ?? {}) as Record<string, boolean>
+  const podeGerenciarUsuarios = temPermissao(profile.role, permissoes, 'gerenciar_usuarios')
+  const podeGerenciarEsteResponsavel = alvo.role === 'pai' && temPermissao(profile.role, permissoes, 'gerenciar_responsaveis')
+
+  if (!podeGerenciarUsuarios && !podeGerenciarEsteResponsavel) {
+    return NextResponse.json({ error: 'Sem permissão para editar este usuário' }, { status: 403 })
+  }
+
+  if (profile.role === 'recepcao' && podeGerenciarUsuarios && !['terapeuta', 'pai'].includes(alvo.role)) {
     return NextResponse.json({ error: 'Recepção só pode editar profissionais e responsáveis' }, { status: 403 })
   }
 

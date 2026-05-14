@@ -1,20 +1,28 @@
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { formatarConselhoProfissional, getTipoProfissionalConfig } from '@/lib/profissionais'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ProfissionaisPage() {
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.gerenciar_usuarios) notFound()
+  const podeVerPacientes = perfil.efetivas.ver_todos_pacientes
+
   const supabase = await createClient()
 
   const { data: profissionais } = await supabase
     .from('profiles')
-    .select(`
-      id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero,
-      paciente_terapeutas(pacientes(id, nome, codigo_interno, status))
-    `)
+    .select(podeVerPacientes
+      ? `
+        id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero,
+        paciente_terapeutas(pacientes(id, nome, codigo_interno, status))
+      `
+      : 'id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero')
     .eq('role', 'terapeuta')
     .order('nome')
 

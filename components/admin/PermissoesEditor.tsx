@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import {
-  GRUPOS,
   LABELS,
+  gruposPorRole,
   todasPermissoes,
   type Permissao,
 } from '@/lib/permissoes/definicoes'
@@ -81,6 +81,7 @@ export function PermissoesEditor({ usuarioId, role, permissoesAtuais }: Props) {
   }
 
   const padraoRole = todasPermissoes(role, {})
+  const grupos = gruposPorRole(role)
 
   return (
     <div className="space-y-4">
@@ -108,7 +109,7 @@ export function PermissoesEditor({ usuarioId, role, permissoesAtuais }: Props) {
         </Card>
       )}
 
-      {!isAdmin && GRUPOS.map(grupo => (
+      {!isAdmin && grupos.map(grupo => (
         <Card key={grupo.titulo}>
           <h3
             className="text-xs font-semibold uppercase tracking-wider mb-3"

@@ -8,6 +8,7 @@ import { AgendaSemanalTerapeuta } from '@/components/admin/AgendaSemanalTerapeut
 import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
 import { formatarConselhoProfissional, getTipoProfissionalConfig } from '@/lib/profissionais'
 import { PermissoesEditor } from '@/components/admin/PermissoesEditor'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 
 const roleLabel: Record<string, string> = {
   admin: 'Admin', recepcao: 'Recepção', terapeuta: 'Profissional', pai: 'Família',
@@ -46,26 +47,21 @@ export default async function UsuarioDetalhePage({
   const supabase = await createClient()
   const adminClient = createAdminClient()
 
-  const { data: { user: me } } = await supabase.auth.getUser()
-  const { data: meProfile } = await supabase
+  const perfilAtual = await getPerfilPermissoesAtual()
+  if (!perfilAtual) notFound()
+
+  const { data: usuario } = await supabase
     .from('profiles')
-    .select('role')
-    .eq('id', me!.id)
+    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, permissoes')
+    .eq('id', id)
     .single()
-
-  const [
-    { data: usuario },
-    { data: authUser },
-  ] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, permissoes')
-      .eq('id', id)
-      .single(),
-    adminClient.auth.admin.getUserById(id),
-  ])
-
   if (!usuario) notFound()
+
+  const podeGerenciarUsuarios = perfilAtual.efetivas.gerenciar_usuarios === true
+  const podeGerenciarEsteResponsavel = usuario.role === 'pai' && perfilAtual.efetivas.gerenciar_responsaveis === true
+  if (!podeGerenciarUsuarios && !podeGerenciarEsteResponsavel) notFound()
+
+  const { data: authUser } = await adminClient.auth.admin.getUserById(id)
 
   const email = authUser.user?.email ?? null
   const ativo: boolean = usuario.ativo ?? true
@@ -139,10 +135,10 @@ export default async function UsuarioDetalhePage({
     }
   }
 
-  const isAdminOuRecepcao = meProfile?.role === 'admin' || meProfile?.role === 'recepcao'
-  const isAdmin = meProfile?.role === 'admin'
-  const isRecepcao = meProfile?.role === 'recepcao'
-  const isSelf = me!.id === id
+  const isAdminOuRecepcao = podeGerenciarUsuarios || podeGerenciarEsteResponsavel
+  const isAdmin = perfilAtual.role === 'admin'
+  const isRecepcao = perfilAtual.role === 'recepcao'
+  const isSelf = perfilAtual.id === id
 
   return (
     <div className="space-y-6 max-w-xl">
@@ -218,6 +214,7 @@ export default async function UsuarioDetalhePage({
           isRecepcao={isRecepcao}
           targetRole={usuario.role}
           isSelf={isSelf}
+          podeAlterarStatus={podeGerenciarUsuarios}
         />
       )}
 
@@ -266,13 +263,15 @@ export default async function UsuarioDetalhePage({
             <Card className="flex-1">
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhum paciente cadastrado ainda.</p>
             </Card>
-            <a
-              href={`/admin/pacientes/novo?responsavel_id=${id}`}
-              className="ml-3 text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200"
-              style={{ background: 'var(--color-rose-main)' }}
-            >
-              + Cadastrar paciente
-            </a>
+            {perfilAtual.efetivas.cadastrar_pacientes && (
+              <a
+                href={`/admin/pacientes/novo?responsavel_id=${id}`}
+                className="ml-3 text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200"
+                style={{ background: 'var(--color-rose-main)' }}
+              >
+                + Cadastrar paciente
+              </a>
+            )}
           </div>
         </div>
       )}

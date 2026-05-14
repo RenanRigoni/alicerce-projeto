@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
+import { notFound } from 'next/navigation'
 
 const statusLabel: Record<string, string> = {
   registrada:           'Registrada',
@@ -20,6 +22,9 @@ const statusStyle: Record<string, React.CSSProperties> = {
 }
 
 export default async function AltaPage() {
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.registrar_alta) notFound()
+
   const supabase = await createClient()
 
   const { data: altas } = await supabase

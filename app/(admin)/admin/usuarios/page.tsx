@@ -1,7 +1,9 @@
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 
 const roleLabel: Record<string, string> = {
   admin: 'Admin',
@@ -31,6 +33,9 @@ export default async function UsuariosPage({
   searchParams: Promise<{ role?: string }>
 }) {
   const { role: filtroRole } = await searchParams
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.gerenciar_usuarios) notFound()
+
   const supabase = await createClient()
 
   let query = supabase

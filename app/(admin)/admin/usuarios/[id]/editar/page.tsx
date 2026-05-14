@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect } from 'next/navigation'
 import { EditarUsuarioForm } from './EditarUsuarioForm'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 
 export default async function EditarUsuarioPage({
   params,
@@ -12,24 +13,26 @@ export default async function EditarUsuarioPage({
   const supabase = await createClient()
   const adminClient = createAdminClient()
 
-  const { data: { user: me } } = await supabase.auth.getUser()
-  const { data: meProfile } = await supabase.from('profiles').select('role').eq('id', me!.id).single()
+  const perfilAtual = await getPerfilPermissoesAtual()
+  if (!perfilAtual) redirect('/login')
 
-  if (meProfile?.role !== 'admin' && meProfile?.role !== 'recepcao') redirect('/admin/usuarios')
-
-  const [
-    { data: usuario },
-    { data: authUser },
-  ] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('id, nome, role, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero')
-      .eq('id', id)
-      .single(),
-    adminClient.auth.admin.getUserById(id),
-  ])
+  const { data: usuario } = await supabase
+    .from('profiles')
+    .select('id, nome, role, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero')
+    .eq('id', id)
+    .single()
 
   if (!usuario) notFound()
+
+  const podeGerenciarUsuarios = perfilAtual.efetivas.gerenciar_usuarios === true
+  const podeGerenciarEsteResponsavel = usuario.role === 'pai' && perfilAtual.efetivas.gerenciar_responsaveis === true
+  if (!podeGerenciarUsuarios && !podeGerenciarEsteResponsavel) notFound()
+
+  if (perfilAtual.role === 'recepcao' && podeGerenciarUsuarios && !['terapeuta', 'pai'].includes(usuario.role)) {
+    notFound()
+  }
+
+  const { data: authUser } = await adminClient.auth.admin.getUserById(id)
 
   let detalhes: { endereco: string | null; cidade: string | null; cep: string | null; telefone_principal: string | null; contato_emergencia: string | null } | null = null
 

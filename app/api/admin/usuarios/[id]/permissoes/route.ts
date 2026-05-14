@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { PERMISSOES, calcularOverrides, todasPermissoes, type Permissao } from '@/lib/permissoes/definicoes'
+import {
+  PERMISSOES,
+  calcularOverrides,
+  permissaoAplicavel,
+  todasPermissoes,
+  type Permissao,
+} from '@/lib/permissoes/definicoes'
 
 export async function PATCH(
   request: NextRequest,
@@ -38,6 +44,19 @@ export async function PATCH(
     .single()
 
   if (!alvo) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
+
+  const padraoRole = todasPermissoes(alvo.role, {})
+  const chavesNaoAplicaveis = Object.keys(estadoRecebido)
+    .filter(k => PERMISSOES.includes(k as Permissao))
+    .filter(k => estadoRecebido[k as Permissao] !== padraoRole[k as Permissao])
+    .filter(k => !permissaoAplicavel(alvo.role, k as Permissao))
+
+  if (chavesNaoAplicaveis.length > 0) {
+    return NextResponse.json(
+      { error: `Permissões não aplicáveis para este perfil: ${chavesNaoAplicaveis.join(', ')}` },
+      { status: 400 }
+    )
+  }
 
   // Não permite alterar permissões do próprio admin
   if (id === user.id && alvo.role === 'admin') {

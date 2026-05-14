@@ -30,6 +30,7 @@ const navLinks = {
     { href: '/admin/agendamentos',    label: 'Agenda' },
     { href: '/admin/feriados',        label: 'Feriados' },
     { href: '/admin/comunicados',     label: 'Comunicados' },
+    { href: '/admin/auditoria',       label: 'Auditoria' },
     { href: '/admin/usuarios',        label: 'Usuários' },
   ],
   recepcao: [
@@ -40,6 +41,7 @@ const navLinks = {
     { href: '/admin/agendamentos',    label: 'Agenda' },
     { href: '/admin/feriados',        label: 'Feriados' },
     { href: '/admin/comunicados',     label: 'Comunicados' },
+    { href: '/admin/auditoria',       label: 'Auditoria' },
     { href: '/admin/usuarios',        label: 'Usuários' },
   ],
   terapeuta: [
@@ -79,6 +81,7 @@ export function Navbar({ role, nome, permissoes = {} }: NavbarProps) {
         '/admin/agendamentos': 'criar_agendamentos',
         '/admin/feriados': 'gerenciar_feriados',
         '/admin/comunicados': 'criar_comunicados',
+        '/admin/auditoria': 'ver_auditoria',
         '/admin/usuarios': 'gerenciar_usuarios',
       }
       const required = requiredByHref[link.href]

@@ -11,11 +11,12 @@ interface Props {
   isRecepcao: boolean
   targetRole: string
   isSelf: boolean
+  podeAlterarStatus: boolean
 }
 
-export function AcoesUsuario({ usuarioId, ativo, isAdmin, isRecepcao, targetRole, isSelf }: Props) {
+export function AcoesUsuario({ usuarioId, ativo, isAdmin, isRecepcao, targetRole, isSelf, podeAlterarStatus }: Props) {
   // Recepção só pode toggle responsáveis (pais). Admin pode tudo.
-  const podeToggleAtivo = isAdmin || (isRecepcao && targetRole === 'pai')
+  const podeToggleAtivo = podeAlterarStatus && (isAdmin || (isRecepcao && targetRole === 'pai'))
   const router = useRouter()
   const [carregando, setCarregando] = useState(false)
   const [confirmandoDelete, setConfirmandoDelete] = useState(false)

@@ -1,12 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 import { Card } from '@/components/ui/Card'
+import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
-
-const ACOES_RELEVANTES = new Set([
-  'enviou', 'alterou', 'assinou', 'baixou', 'criou', 'publicou',
-  'desativou', 'reativou', 'bloqueou', 'solicitou', 'confirmou', 'recusou',
-])
 
 const acaoLabel: Record<string, string> = {
   visualizou: 'Visualizou',
@@ -52,7 +49,10 @@ const recursoLabel: Record<string, string> = {
 }
 
 export default async function AuditoriaPage() {
-  const supabase = await createClient()
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.ver_auditoria) notFound()
+
+  const supabase = createAdminClient()
 
   const { data: logs } = await supabase
     .from('audit_logs')

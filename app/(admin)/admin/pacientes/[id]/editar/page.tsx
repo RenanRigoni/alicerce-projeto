@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { EditarPacienteAdminForm } from './EditarPacienteAdminForm'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 
 export default async function EditarPacienteAdminPage({
   params,
@@ -8,6 +9,9 @@ export default async function EditarPacienteAdminPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.editar_pacientes) notFound()
+
   const supabase = await createClient()
 
   const [{ data: paciente }, { data: todosTerapeutas }, { data: vinculados }] = await Promise.all([
@@ -28,6 +32,7 @@ export default async function EditarPacienteAdminPage({
       paciente={{ ...paciente, cpf: cpfDecifrado as string | null }}
       todosTerapeutas={todosTerapeutas ?? []}
       terapeutasIniciais={terapeutasVinculados}
+      podeVincularTerapeutas={perfil.efetivas.vincular_terapeutas}
     />
   )
 }

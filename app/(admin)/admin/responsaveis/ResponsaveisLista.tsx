@@ -18,7 +18,7 @@ interface Responsavel {
   pacientes: Array<{ id: string; nome: string; codigo_interno: string | null; status: StatusPaciente }>
 }
 
-export function ResponsaveisLista({ todos }: { todos: Responsavel[] }) {
+export function ResponsaveisLista({ todos, podeVerPacientes }: { todos: Responsavel[]; podeVerPacientes: boolean }) {
   const [filtros, setFiltros] = useState<Set<StatusPaciente>>(new Set(['ativo']))
 
   function toggleFiltro(status: StatusPaciente) {
@@ -100,20 +100,35 @@ export function ResponsaveisLista({ todos }: { todos: Responsavel[] }) {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5 items-end">
-                  {r.pacientes.map(p => (
-                    <Link
-                      key={p.id}
-                      href={`/admin/pacientes/${p.id}`}
-                      className="flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70"
-                      style={{ color: 'var(--color-ink-mid)', textDecoration: 'none' }}
-                    >
-                      {p.codigo_interno && (
-                        <span className="text-xs font-mono" style={{ color: 'var(--color-ink-faint)' }}>#{p.codigo_interno}</span>
-                      )}
-                      <span>{p.nome}</span>
-                      <Badge color={statusColor[p.status]}>{statusLabel[p.status]}</Badge>
-                    </Link>
-                  ))}
+                  {r.pacientes.map(p => {
+                    const conteudo = (
+                      <>
+                        {p.codigo_interno && (
+                          <span className="text-xs font-mono" style={{ color: 'var(--color-ink-faint)' }}>#{p.codigo_interno}</span>
+                        )}
+                        <span>{p.nome}</span>
+                        <Badge color={statusColor[p.status]}>{statusLabel[p.status]}</Badge>
+                      </>
+                    )
+                    return podeVerPacientes ? (
+                      <Link
+                        key={p.id}
+                        href={`/admin/pacientes/${p.id}`}
+                        className="flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70"
+                        style={{ color: 'var(--color-ink-mid)', textDecoration: 'none' }}
+                      >
+                        {conteudo}
+                      </Link>
+                    ) : (
+                      <span
+                        key={p.id}
+                        className="flex items-center gap-1.5 text-sm"
+                        style={{ color: 'var(--color-ink-mid)' }}
+                      >
+                        {conteudo}
+                      </span>
+                    )
+                  })}
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t flex justify-end" style={{ borderColor: 'var(--color-border-soft)' }}>

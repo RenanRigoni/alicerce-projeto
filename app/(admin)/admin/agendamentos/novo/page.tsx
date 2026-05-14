@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { todasPermissoes } from '@/lib/permissoes/definicoes'
 
 interface Perfil { id: string; nome: string }
 interface Paciente { id: string; nome: string; codigo_interno: string | null }
@@ -41,16 +42,35 @@ export default function NovoAgendamentoPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    Promise.all([
-      supabase.from('profiles').select('id, nome').eq('role', 'terapeuta').order('nome'),
-      supabase.from('pacientes').select('id, nome, codigo_interno').eq('status', 'ativo').order('nome'),
-      supabase.from('feriados').select('data, descricao').order('data'),
-    ]).then(([{ data: ts }, { data: ps }, { data: fs }]) => {
-      setTerapeutas(ts ?? [])
-      setPacientes(ps ?? [])
-      setFeriados(fs ?? [])
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        router.push('/login')
+        return
+      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, permissoes')
+        .eq('id', user.id)
+        .single()
+      const efetivas = profile
+        ? todasPermissoes(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>)
+        : null
+      if (!efetivas?.criar_agendamentos) {
+        router.push('/admin/dashboard')
+        return
+      }
+
+      Promise.all([
+        supabase.from('profiles').select('id, nome').eq('role', 'terapeuta').order('nome'),
+        supabase.from('pacientes').select('id, nome, codigo_interno').eq('status', 'ativo').order('nome'),
+        supabase.from('feriados').select('data, descricao').order('data'),
+      ]).then(([{ data: ts }, { data: ps }, { data: fs }]) => {
+        setTerapeutas(ts ?? [])
+        setPacientes(ps ?? [])
+        setFeriados(fs ?? [])
+      })
     })
-  }, [])
+  }, [router])
 
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value, type } = e.target
@@ -78,21 +98,26 @@ export default function NovoAgendamentoPage() {
 
     const data_hora = new Date(`${form.data}T${form.hora}:00`).toISOString()
     setCarregando(true)
-    const supabase = createClient()
-    const { data: user } = await supabase.auth.getUser()
-    const { error } = await supabase.from('agendamentos').insert({
-      terapeuta_id: form.terapeuta_id,
-      paciente_id: form.paciente_id || null,
-      tipo: form.tipo,
-      titulo: form.titulo.trim(),
-      motivo: form.motivo.trim() || null,
-      data_hora,
-      duracao_minutos: parseInt(form.duracao_minutos) || 50,
-      visivel_responsavel: form.visivel_responsavel,
-      criado_por: user.user!.id,
+    const res = await fetch('/api/agendamento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        terapeuta_id: form.terapeuta_id,
+        paciente_id: form.paciente_id || null,
+        tipo: form.tipo,
+        titulo: form.titulo.trim(),
+        motivo: form.motivo.trim() || null,
+        data_hora,
+        duracao_minutos: parseInt(form.duracao_minutos) || 50,
+        visivel_responsavel: form.visivel_responsavel,
+      }),
     })
     setCarregando(false)
-    if (error) { setErro('Erro ao salvar agendamento.'); return }
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      setErro(json.error ?? 'Erro ao salvar agendamento.')
+      return
+    }
     router.push('/admin/agendamentos')
   }
 

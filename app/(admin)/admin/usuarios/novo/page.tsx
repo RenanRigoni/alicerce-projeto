@@ -1,6 +1,7 @@
 'use client'
 
 import { TIPOS_PROFISSIONAIS, getTipoProfissionalConfig } from '@/lib/profissionais'
+import { todasPermissoes } from '@/lib/permissoes/definicoes'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -49,6 +50,8 @@ export default function NovoUsuarioPage() {
   const [novoUserId, setNovoUserId] = useState('')
   const [buscandoCep, setBuscandoCep] = useState(false)
   const [form, setForm] = useState(FORM_INICIAL)
+  const [roleAtual, setRoleAtual] = useState<string | null>(null)
+  const [permissoes, setPermissoes] = useState<Record<string, boolean>>({})
   const [linkRecuperacao, setLinkRecuperacao] = useState<string | null>(null)
   const [linkCopiado, setLinkCopiado] = useState(false)
 
@@ -57,16 +60,58 @@ export default function NovoUsuarioPage() {
   const [vinculando, setVinculando] = useState(false)
 
   const tipoConfig = getTipoProfissionalConfig(form.tipo_profissional)
+  const podeGerenciarUsuarios = permissoes.gerenciar_usuarios === true
+  const podeGerenciarResponsaveis = permissoes.gerenciar_responsaveis === true
+  const podeCadastrarPacientes = permissoes.cadastrar_pacientes === true
+  const rolesDisponiveis = podeGerenciarUsuarios
+    ? (roleAtual === 'recepcao'
+      ? ['pai', 'terapeuta']
+      : ['pai', 'terapeuta', 'recepcao', 'admin'])
+    : (podeGerenciarResponsaveis ? ['pai'] : [])
 
   useEffect(() => {
-    if (form.role !== 'pai') return
+    const supabase = createClient()
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        router.push('/login')
+        return
+      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, permissoes')
+        .eq('id', user.id)
+        .single()
+      if (!profile) {
+        router.push('/admin/dashboard')
+        return
+      }
+
+      const efetivas = todasPermissoes(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>)
+      setRoleAtual(profile.role)
+      setPermissoes(efetivas)
+
+      const permitidos = efetivas.gerenciar_usuarios
+        ? (profile.role === 'recepcao' ? ['pai', 'terapeuta'] : ['pai', 'terapeuta', 'recepcao', 'admin'])
+        : (efetivas.gerenciar_responsaveis ? ['pai'] : [])
+      if (permitidos.length === 0) {
+        router.push('/admin/dashboard')
+        return
+      }
+      if (!permitidos.includes(form.role)) {
+        setForm(prev => ({ ...prev, role: permitidos[0] }))
+      }
+    })
+  }, [router, form.role])
+
+  useEffect(() => {
+    if (form.role !== 'pai' || !podeGerenciarResponsaveis) return
     createClient()
       .from('pacientes')
       .select('id, nome, codigo_interno')
       .eq('status', 'ativo')
       .order('nome')
       .then(({ data }) => setPacientes(data ?? []))
-  }, [form.role])
+  }, [form.role, podeGerenciarResponsaveis])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -244,14 +289,16 @@ export default function NovoUsuarioPage() {
               <Button onClick={() => vincularEConcluir(false)} disabled={vinculando}>
                 {vinculando ? 'Salvando...' : pacientesSelecionados.length > 0 ? 'Vincular e concluir' : 'Concluir sem vincular'}
               </Button>
-              <button
-                onClick={() => vincularEConcluir(true)}
-                disabled={vinculando}
-                className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 disabled:opacity-50"
-                style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
-              >
-                + Cadastrar novo paciente
-              </button>
+              {podeCadastrarPacientes && (
+                <button
+                  onClick={() => vincularEConcluir(true)}
+                  disabled={vinculando}
+                  className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 disabled:opacity-50"
+                  style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                >
+                  + Cadastrar novo paciente
+                </button>
+              )}
             </div>
           </div>
         </Card>
@@ -277,10 +324,10 @@ export default function NovoUsuarioPage() {
               Perfil <span style={{ color: 'var(--color-rose-main)' }}>*</span>
             </label>
             <select name="role" value={form.role} onChange={handleChange} className="input-base">
-              <option value="pai">Família (pais/responsáveis)</option>
-              <option value="terapeuta">Profissional clínico</option>
-              <option value="recepcao">Recepção</option>
-              <option value="admin">Admin</option>
+              {rolesDisponiveis.includes('pai') && <option value="pai">Família (pais/responsáveis)</option>}
+              {rolesDisponiveis.includes('terapeuta') && <option value="terapeuta">Profissional clínico</option>}
+              {rolesDisponiveis.includes('recepcao') && <option value="recepcao">Recepção</option>}
+              {rolesDisponiveis.includes('admin') && <option value="admin">Admin</option>}
             </select>
           </div>
 

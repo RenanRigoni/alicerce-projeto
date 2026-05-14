@@ -1,4 +1,5 @@
 import { getTipoProfissionalConfig, isTipoProfissional } from '@/lib/profissionais'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, permissoes')
     .eq('id', user.id)
     .single()
 
@@ -46,7 +47,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Role inválido' }, { status: 400 })
   }
 
-  if (profile.role === 'recepcao' && !['terapeuta', 'pai'].includes(role)) {
+  const permissoes = (profile.permissoes ?? {}) as Record<string, boolean>
+  const podeGerenciarUsuarios = temPermissao(profile.role, permissoes, 'gerenciar_usuarios')
+  const podeGerenciarResponsaveis = temPermissao(profile.role, permissoes, 'gerenciar_responsaveis')
+
+  if (!podeGerenciarUsuarios && !(role === 'pai' && podeGerenciarResponsaveis)) {
+    return NextResponse.json({ error: 'Sem permissão para criar este tipo de usuário' }, { status: 403 })
+  }
+
+  if (profile.role === 'recepcao' && podeGerenciarUsuarios && !['terapeuta', 'pai'].includes(role)) {
     return NextResponse.json({ error: 'Recepção só pode cadastrar profissionais e responsáveis' }, { status: 403 })
   }
 

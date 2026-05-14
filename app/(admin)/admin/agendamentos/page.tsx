@@ -3,8 +3,13 @@ import { Card } from '@/components/ui/Card'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
 import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
 import { AgendamentosLista, type AgendamentoItem } from '@/components/admin/AgendamentosLista'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
+import { notFound } from 'next/navigation'
 
 export default async function AgendamentosPage() {
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.criar_agendamentos) notFound()
+
   const supabase = await createClient()
 
   const hoje = new Date()

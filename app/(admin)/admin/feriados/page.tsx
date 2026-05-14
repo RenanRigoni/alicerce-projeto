@@ -1,8 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 import { Card } from '@/components/ui/Card'
+import { notFound } from 'next/navigation'
 import { FeriadoForm } from './FeriadoForm'
 
 export default async function FeriadosPage() {
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.gerenciar_feriados) notFound()
+
   const supabase = await createClient()
 
   const { data: feriados } = await supabase

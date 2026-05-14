@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { PerfilPacienteTabs } from '@/components/paciente/PerfilPacienteTabs'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 
 export default async function AdminPacienteDetalhePage({
   params,
@@ -8,16 +9,15 @@ export default async function AdminPacienteDetalhePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.ver_todos_pacientes) notFound()
+
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const { data: me } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  const podeVerClinico = perfil.efetivas.ver_relatorios_todos
 
   const [
     { data: paciente },
@@ -39,36 +39,36 @@ export default async function AdminPacienteDetalhePage({
       .from('paciente_responsaveis')
       .select('tipo, profiles(id, nome, responsaveis_detalhes(endereco, cidade, cep, telefone_principal))')
       .eq('paciente_id', id),
-    supabase
+    podeVerClinico ? supabase
       .from('pacientes_dados_clinicos')
       .select('*')
       .eq('paciente_id', id)
-      .maybeSingle(),
-    supabase
+      .maybeSingle() : Promise.resolve({ data: null }),
+    podeVerClinico ? supabase
       .from('relatorios')
       .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
-    supabase
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    podeVerClinico ? supabase
       .from('evolucoes')
       .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
-    supabase
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    podeVerClinico ? supabase
       .from('documentos')
       .select('id, tipo, descricao, visivel_pais, criado_em, arquivo_url')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
-    supabase
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    podeVerClinico ? supabase
       .from('orientacoes')
       .select('id, titulo, tipo, url_midia, conteudo, criado_em')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
-    supabase
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    podeVerClinico ? supabase
       .from('solicitacoes_alta')
       .select('id, status, tipo, motivo, documento_url, argumentacao_recusa, criado_em, profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
       .eq('paciente_id', id)
-      .order('criado_em', { ascending: false }),
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
   ])
 
   if (!paciente) notFound()
@@ -128,8 +128,9 @@ export default async function AdminPacienteDetalhePage({
       documentos={documentos ?? []}
       orientacoes={orientacoes ?? []}
       altas={altasMapped}
-      role={me?.role as 'admin' | 'recepcao'}
+      role={perfil.role as 'admin' | 'recepcao'}
       ehTerapeutaVinculado={false}
+      permissoes={perfil.efetivas}
     />
   )
 }

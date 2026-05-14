@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         user.id,
         ...(podeVincularTerapeutas && Array.isArray(terapeutas) ? terapeutas : []),
       ]))
-    : (Array.isArray(terapeutas) ? terapeutas : [])
+    : (podeVincularTerapeutas && Array.isArray(terapeutas) ? terapeutas : [])
 
   // Vincula terapeutas se informados. Profissional sem permissão de vínculo sempre vincula a si mesmo.
   if (terapeutasParaVincular.length > 0) {

@@ -304,9 +304,9 @@ export function PerfilPacienteTabs({
 
   const isAdminOuRecepcao = role === 'admin' || role === 'recepcao'
   const terapeutaPodeAtuarNoPaciente = role === 'terapeuta' && (ehTerapeutaVinculado || permissoes.ver_todos_pacientes === true)
-  const podeEditarPaciente = isAdminOuRecepcao || (terapeutaPodeAtuarNoPaciente && permissoes.editar_pacientes === true)
-  const podeAlterarStatusPaciente = isAdminOuRecepcao || (terapeutaPodeAtuarNoPaciente && permissoes.desativar_reativar_paciente === true)
-  const podeGerenciarResponsaveis = isAdminOuRecepcao || (terapeutaPodeAtuarNoPaciente && permissoes.gerenciar_responsaveis === true)
+  const podeEditarPaciente = (isAdminOuRecepcao && permissoes.editar_pacientes === true) || (terapeutaPodeAtuarNoPaciente && permissoes.editar_pacientes === true)
+  const podeAlterarStatusPaciente = (isAdminOuRecepcao && permissoes.desativar_reativar_paciente === true) || (terapeutaPodeAtuarNoPaciente && permissoes.desativar_reativar_paciente === true)
+  const podeGerenciarResponsaveis = (isAdminOuRecepcao && permissoes.gerenciar_responsaveis === true) || (terapeutaPodeAtuarNoPaciente && permissoes.gerenciar_responsaveis === true)
   const podeEditarClinicos = role === 'terapeuta' && ehTerapeutaVinculado
   const [alterandoStatus, setAlterandoStatus] = useState(false)
   const [erroStatus, setErroStatus] = useState('')
@@ -513,7 +513,7 @@ export function PerfilPacienteTabs({
                 Reativar paciente
               </a>
             )}
-            {isAdminOuRecepcao && (
+            {role === 'admin' && (
               <DeletarPacienteButton
                 pacienteId={paciente.id}
                 pacienteNome={paciente.nome}

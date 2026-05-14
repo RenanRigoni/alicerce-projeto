@@ -18,7 +18,13 @@ interface Paciente {
   criado_em: string
 }
 
-export function PacientesLista({ todos }: { todos: Paciente[] }) {
+export function PacientesLista({
+  todos,
+  podeCadastrarPacientes,
+}: {
+  todos: Paciente[]
+  podeCadastrarPacientes: boolean
+}) {
   const [filtros, setFiltros] = useState<Set<StatusPaciente>>(new Set(['ativo']))
   const [busca, setBusca] = useState('')
 
@@ -74,13 +80,15 @@ export function PacientesLista({ todos }: { todos: Paciente[] }) {
               </button>
             ))}
           </div>
-          <Link
-            href="/admin/pacientes/novo"
-            className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
-            style={{ background: 'var(--color-rose-main)' }}
-          >
-            + Novo paciente
-          </Link>
+          {podeCadastrarPacientes && (
+            <Link
+              href="/admin/pacientes/novo"
+              className="text-sm font-medium px-4 py-2 rounded-xl text-white transition-all duration-200 active:scale-[0.98]"
+              style={{ background: 'var(--color-rose-main)' }}
+            >
+              + Novo paciente
+            </Link>
+          )}
         </div>
       </div>
 

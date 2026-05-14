@@ -1,7 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
+import { notFound } from 'next/navigation'
 import { ResponsaveisLista } from './ResponsaveisLista'
 
 export default async function ResponsaveisPage() {
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.gerenciar_responsaveis) notFound()
+
   const supabase = await createClient()
 
   const { data } = await supabase
@@ -30,5 +35,5 @@ export default async function ResponsaveisPage() {
       })),
   }))
 
-  return <ResponsaveisLista todos={todos} />
+  return <ResponsaveisLista todos={todos} podeVerPacientes={perfil.efetivas.ver_todos_pacientes} />
 }

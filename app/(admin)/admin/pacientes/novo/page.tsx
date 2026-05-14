@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { todasPermissoes } from '@/lib/permissoes/definicoes'
 
 interface Terapeuta { id: string; nome: string }
 interface Responsavel { id: string; nome: string }
@@ -32,6 +33,7 @@ function NovoPacienteForm() {
   const [terapeutasSelecionados, setTerapeutasSelecionados] = useState<string[]>([])
   const [responsavelSelecionado, setResponsavelSelecionado] = useState(responsavelId ?? '')
   const [horarios, setHorarios] = useState<Horario[]>([{ dia: 'segunda', hora: '' }])
+  const [permissoes, setPermissoes] = useState<Record<string, boolean>>({})
 
   const [form, setForm] = useState({
     nome: '',
@@ -44,11 +46,31 @@ function NovoPacienteForm() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.from('profiles').select('id, nome').eq('role', 'terapeuta').order('nome')
-      .then(({ data }) => setTerapeutas(data ?? []))
-    supabase.from('profiles').select('id, nome').eq('role', 'pai').order('nome')
-      .then(({ data }) => setResponsaveis(data ?? []))
-  }, [])
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, permissoes')
+        .eq('id', user.id)
+        .single()
+      if (profile) {
+        const efetivas = todasPermissoes(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>)
+        setPermissoes(efetivas)
+        if (!efetivas.cadastrar_pacientes) {
+          router.push('/admin/pacientes')
+          return
+        }
+        if (efetivas.vincular_terapeutas) {
+          supabase.from('profiles').select('id, nome').eq('role', 'terapeuta').order('nome')
+            .then(({ data }) => setTerapeutas(data ?? []))
+        }
+        if (efetivas.gerenciar_responsaveis) {
+          supabase.from('profiles').select('id, nome').eq('role', 'pai').order('nome')
+            .then(({ data }) => setResponsaveis(data ?? []))
+        }
+      }
+    })
+  }, [router])
 
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -97,8 +119,8 @@ function NovoPacienteForm() {
         turno_preferencia: form.turno_preferencia || null,
         convenio_ou_particular: form.convenio_ou_particular || null,
         horarios_atendimento: horariosValidos,
-        terapeutas: terapeutasSelecionados,
-        responsavel_id: responsavelSelecionado || null,
+        terapeutas: podeVincularTerapeutas ? terapeutasSelecionados : [],
+        responsavel_id: podeGerenciarResponsaveis ? (responsavelSelecionado || null) : null,
       }),
     })
 
@@ -115,6 +137,8 @@ function NovoPacienteForm() {
 
   const voltarUrl = responsavelId ? `/admin/usuarios/${responsavelId}` : '/admin/pacientes'
   const labelStyle = { color: 'var(--color-ink-mid)' }
+  const podeGerenciarResponsaveis = permissoes.gerenciar_responsaveis === true
+  const podeVincularTerapeutas = permissoes.vincular_terapeutas === true
 
   return (
     <div className="space-y-6 max-w-xl">
@@ -219,6 +243,7 @@ function NovoPacienteForm() {
           </div>
 
           {/* Responsável */}
+          {podeGerenciarResponsaveis && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-sm font-medium" style={labelStyle}>
@@ -243,8 +268,10 @@ function NovoPacienteForm() {
               ))}
             </select>
           </div>
+          )}
 
           {/* Profissionais */}
+          {podeVincularTerapeutas && (
           <div>
             <label className="block text-sm font-medium mb-2" style={labelStyle}>
               Profissionais responsáveis
@@ -270,6 +297,7 @@ function NovoPacienteForm() {
               </div>
             )}
           </div>
+          )}
 
           {/* Horários */}
           <div>

@@ -1,8 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
+import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
+import { notFound } from 'next/navigation'
 import { NovoComunicadoForm } from './NovoComunicadoForm'
 import { ComunicadosList } from './ComunicadosList'
 
 export default async function ComunicadosPage() {
+  const perfil = await getPerfilPermissoesAtual()
+  if (!perfil?.efetivas.criar_comunicados) notFound()
+
   const supabase = await createClient()
 
   const { data: comunicados } = await supabase

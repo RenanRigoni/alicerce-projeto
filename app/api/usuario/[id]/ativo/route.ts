@@ -1,5 +1,6 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { temPermissao } from '@/lib/permissoes/definicoes'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function PATCH(
@@ -11,8 +12,9 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!['admin', 'recepcao'].includes(profile?.role ?? '')) {
+  const { data: profile } = await supabase.from('profiles').select('role, permissoes').eq('id', user.id).single()
+  const permissoes = (profile?.permissoes ?? {}) as Record<string, boolean>
+  if (!profile || !['admin', 'recepcao'].includes(profile.role) || !temPermissao(profile.role, permissoes, 'gerenciar_usuarios')) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 

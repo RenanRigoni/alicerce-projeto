@@ -59,3 +59,29 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true })
 }
+
+export async function DELETE(request: NextRequest) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'NÃ£o autorizado' }, { status: 401 })
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, permissoes')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || !temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'gerenciar_feriados')) {
+    return NextResponse.json({ error: 'Sem permissÃ£o' }, { status: 403 })
+  }
+
+  const payload = await request.json().catch(() => null)
+  const id = typeof payload?.id === 'string' ? payload.id : ''
+  if (!id) return NextResponse.json({ error: 'Feriado invÃ¡lido' }, { status: 400 })
+
+  const adminClient = createAdminClient()
+  const { error } = await adminClient.from('feriados').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: 'Erro ao excluir feriado.' }, { status: 500 })
+
+  return NextResponse.json({ success: true })
+}

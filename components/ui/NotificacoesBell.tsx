@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 interface Notificacao {
   id: string
@@ -12,11 +12,28 @@ interface Notificacao {
   criado_em: string
 }
 
+interface PainelPosicao {
+  left: number
+  top: number
+  width: number
+  maxListHeight: number
+}
+
+const PANEL_MAX_WIDTH = 320
+const PANEL_MAX_HEIGHT = 480
+const PANEL_GAP = 12
+const VIEWPORT_MARGIN = 16
+const PANEL_HEADER_HEIGHT = 50
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
 export function NotificacoesBell() {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([])
   const [aberto, setAberto] = useState(false)
   const [carregando, setCarregando] = useState(true)
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const [pos, setPos] = useState<PainelPosicao | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -56,20 +73,65 @@ export function NotificacoesBell() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  const calcularPosicao = useCallback((): PainelPosicao | null => {
+    const rect = buttonRef.current?.getBoundingClientRect()
+    if (!rect) return null
+
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const width = Math.min(PANEL_MAX_WIDTH, Math.max(0, viewportWidth - VIEWPORT_MARGIN * 2))
+    const maxLeft = Math.max(VIEWPORT_MARGIN, viewportWidth - width - VIEWPORT_MARGIN)
+
+    let left: number
+    if (viewportWidth - rect.right - PANEL_GAP >= width) {
+      left = rect.right + PANEL_GAP
+    } else {
+      left = rect.left + rect.width / 2 - width / 2
+    }
+
+    const availableBelow = Math.max(0, viewportHeight - rect.bottom - PANEL_GAP - VIEWPORT_MARGIN)
+    const availableAbove = Math.max(0, rect.top - PANEL_GAP - VIEWPORT_MARGIN)
+    const openBelow = availableBelow >= Math.min(260, PANEL_MAX_HEIGHT) || availableBelow >= availableAbove
+    const availableHeight = openBelow ? availableBelow : availableAbove
+    const maxPanelHeight = Math.max(120, Math.min(PANEL_MAX_HEIGHT, availableHeight))
+    const rawTop = openBelow ? rect.bottom + PANEL_GAP : rect.top - PANEL_GAP - maxPanelHeight
+    const maxTop = Math.max(VIEWPORT_MARGIN, viewportHeight - maxPanelHeight - VIEWPORT_MARGIN)
+
+    return {
+      left: clamp(left, VIEWPORT_MARGIN, maxLeft),
+      top: clamp(rawTop, VIEWPORT_MARGIN, maxTop),
+      width,
+      maxListHeight: Math.max(120, maxPanelHeight - PANEL_HEADER_HEIGHT),
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!aberto) return
+
+    function updatePosition() {
+      const nextPos = calcularPosicao()
+      if (nextPos) setPos(nextPos)
+    }
+
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [aberto, calcularPosicao])
+
   function toggle() {
     if (aberto) {
       setAberto(false)
       setPos(null)
       return
     }
-    const rect = buttonRef.current?.getBoundingClientRect()
-    if (rect) {
-      // Painel de 320px de largura; abre à direita do botão
-      // Ancora o bottom do painel no bottom do botão para crescer para cima
-      const panelH = Math.min(480, window.innerHeight - 80)
-      const top = Math.max(16, rect.bottom - panelH)
-      setPos({ left: rect.right + 12, top })
-    }
+
+    const nextPos = calcularPosicao()
+    if (!nextPos) return
+    setPos(nextPos)
     setAberto(true)
   }
 
@@ -117,14 +179,15 @@ export function NotificacoesBell() {
             position: 'fixed',
             left: pos.left,
             top: pos.top,
-            width: 320,
+            width: pos.width,
+            maxHeight: pos.maxListHeight + PANEL_HEADER_HEIGHT,
             zIndex: 9999,
             background: 'var(--color-warm-white)',
             border: '1px solid var(--color-border-soft)',
             boxShadow: '0 8px 40px rgba(44,32,24,0.15)',
           }}
         >
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--color-border-soft)' }}>
+          <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--color-border-soft)' }}>
             <span className="text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>Notificações</span>
             {naoLidas > 0 && (
               <button onClick={marcarTodasLidas} className="text-xs transition-opacity hover:opacity-70" style={{ color: 'var(--color-rose-main)' }}>
@@ -133,7 +196,7 @@ export function NotificacoesBell() {
             )}
           </div>
 
-          <div className="overflow-y-auto divide-y" style={{ maxHeight: 384, borderColor: 'var(--color-border-soft)' }}>
+          <div className="overflow-y-auto divide-y" style={{ maxHeight: pos.maxListHeight, borderColor: 'var(--color-border-soft)' }}>
             {carregando ? (
               <div className="px-4 py-6 text-center text-sm" style={{ color: 'var(--color-ink-faint)' }}>Carregando...</div>
             ) : notificacoes.length === 0 ? (

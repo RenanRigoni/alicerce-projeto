@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/Button'
 
 type Status = 'checking' | 'unsupported' | 'denied' | 'inactive' | 'active' | 'saving'
 
@@ -151,21 +150,33 @@ export function PushNotificationSettings() {
     return <p className="text-xs" style={{ color: '#B91C1C' }}>Notificações bloqueadas no navegador.</p>
   }
 
+  const ativo = status === 'active'
+  const salvando = status === 'saving'
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs" style={{ color: status === 'active' ? 'var(--color-sage-deep)' : 'var(--color-ink-faint)' }}>
-          {status === 'active' ? 'Notificações ativadas' : 'Notificações desativadas'}
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs" style={{ color: 'var(--color-ink-mid)' }}>
+          Notificações push
         </span>
-        {status === 'active' ? (
-          <Button type="button" variant="ghost" size="sm" onClick={desativar}>
-            Desativar
-          </Button>
-        ) : (
-          <Button type="button" variant="secondary" size="sm" onClick={ativar} disabled={status === 'saving'}>
-            Ativar notificações
-          </Button>
-        )}
+        <button
+          type="button"
+          onClick={ativo ? desativar : ativar}
+          disabled={salvando}
+          aria-checked={ativo}
+          role="switch"
+          className="relative shrink-0 rounded-full transition-colors duration-200 disabled:opacity-50"
+          style={{
+            width: 40,
+            height: 22,
+            background: ativo ? 'var(--color-rose-main)' : 'var(--color-border)',
+          }}
+        >
+          <span
+            className="absolute top-0.5 w-[18px] h-[18px] bg-white rounded-full shadow-sm transition-transform duration-200"
+            style={{ transform: ativo ? 'translateX(20px)' : 'translateX(2px)' }}
+          />
+        </button>
       </div>
       {erro && <p className="text-xs" style={{ color: '#B91C1C' }}>{erro}</p>}
     </div>

@@ -40,7 +40,7 @@ Fases sequenciais; cada uma entregável antes da próxima começar.
 
 ### 1.2 Perfil do profissional — gaps restantes
 - [x] UF do conselho (campo opcional — para atestados e NFS-e futuros) — #FEITO-NECESSARIO-REVISAR
-- [ ] Código CBO (opcional — convênio/NFS-e)
+- [x] Código CBO (opcional — convênio/NFS-e) — #FEITO-NECESSARIO-REVISAR
 - [ ] Biografia (textarea — exibida no portal para responsáveis)
 
 ### 1.3 Configurações da clínica

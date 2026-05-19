@@ -1,6 +1,6 @@
 'use client'
 
-import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig } from '@/lib/profissionais'
+import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig, isCodigoCboValido, normalizarCodigoCbo } from '@/lib/profissionais'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -54,6 +54,7 @@ interface Props {
     conselho_tipo?: string | null
     conselho_numero?: string | null
     conselho_uf?: string | null
+    cbo_codigo?: string | null
   }
   detalhes: {
     endereco: string | null
@@ -86,6 +87,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     tipo_profissional: usuario.tipo_profissional ?? 'terapeuta_ocupacional',
     conselho_numero: usuario.conselho_numero ?? usuario.crefito ?? '',
     conselho_uf: usuario.conselho_uf ?? '',
+    cbo_codigo: usuario.cbo_codigo ?? '',
     telefone_principal: detalhes?.telefone_principal ?? '',
     endereco: detalhes?.endereco ?? '',
     cidade: detalhes?.cidade ?? '',
@@ -126,6 +128,11 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
       return
     }
 
+    if (usuario.role === 'terapeuta' && !isCodigoCboValido(normalizarCodigoCbo(form.cbo_codigo))) {
+      setErro('Código CBO deve ter 6 dígitos.')
+      return
+    }
+
     const cpfCnpjDigits = form.cpf_cnpj.replace(/\D/g, '')
     if (usuario.role === 'terapeuta' && cpfCnpjDigits && ![11, 14].includes(cpfCnpjDigits.length)) {
       setErro('CPF/CNPJ deve ter 11 ou 14 dígitos.')
@@ -145,6 +152,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
           tipo_profissional: form.tipo_profissional,
           conselho_numero: form.conselho_numero,
           conselho_uf: form.conselho_uf,
+          cbo_codigo: form.cbo_codigo,
           cpf_cnpj: form.cpf_cnpj,
         } : {}),
       }),
@@ -251,6 +259,21 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
                     <option key={uf} value={uf}>{uf}</option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
+                  Código CBO
+                </label>
+                <input
+                  name="cbo_codigo"
+                  value={form.cbo_codigo}
+                  onChange={handle}
+                  placeholder="Ex: 2238-10"
+                  inputMode="numeric"
+                  className={inputCls}
+                  style={inputStyle}
+                />
               </div>
 
               <div>

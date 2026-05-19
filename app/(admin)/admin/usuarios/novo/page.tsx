@@ -1,6 +1,6 @@
 'use client'
 
-import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig } from '@/lib/profissionais'
+import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig, isCodigoCboValido, normalizarCodigoCbo } from '@/lib/profissionais'
 import { todasPermissoes } from '@/lib/permissoes/definicoes'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
@@ -28,6 +28,7 @@ const FORM_INICIAL = {
   tipo_profissional: 'terapeuta_ocupacional',
   conselho_numero: '',
   conselho_uf: '',
+  cbo_codigo: '',
 }
 
 async function buscarCep(cep: string): Promise<{ logradouro: string; localidade: string } | null> {
@@ -160,6 +161,11 @@ export default function NovoUsuarioPage() {
       return
     }
 
+    if (form.role === 'terapeuta' && !isCodigoCboValido(normalizarCodigoCbo(form.cbo_codigo))) {
+      setErro('Código CBO deve ter 6 dígitos.')
+      return
+    }
+
     setCarregando(true)
 
     const payload = {
@@ -181,6 +187,7 @@ export default function NovoUsuarioPage() {
         tipo_profissional: form.tipo_profissional,
         conselho_numero: form.conselho_numero,
         conselho_uf: form.conselho_uf,
+        cbo_codigo: form.cbo_codigo,
         cpf_cnpj: form.cpf_cnpj_profissional,
       } : {}),
     }
@@ -457,6 +464,21 @@ export default function NovoUsuarioPage() {
                     <option key={uf} value={uf}>{uf}</option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={L}>
+                  Código CBO <span className="text-xs font-normal" style={hint}>(opcional)</span>
+                </label>
+                <input
+                  name="cbo_codigo"
+                  value={form.cbo_codigo}
+                  onChange={handleChange}
+                  placeholder="Ex: 2238-10"
+                  inputMode="numeric"
+                  className="input-base"
+                />
+                <p className="text-xs mt-1" style={hint}>Usado futuramente em convênio e NFS-e</p>
               </div>
 
               <div>

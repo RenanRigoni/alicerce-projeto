@@ -1,6 +1,6 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getTipoProfissionalConfig, isTipoProfissional, isUfBrasil } from '@/lib/profissionais'
+import { getTipoProfissionalConfig, isCodigoCboValido, isTipoProfissional, isUfBrasil, normalizarCodigoCbo } from '@/lib/profissionais'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -78,12 +78,17 @@ export async function PATCH(
     const conselhoUf = typeof body.conselho_uf === 'string' && body.conselho_uf.trim()
       ? body.conselho_uf.trim().toUpperCase()
       : null
+    const cboCodigo = normalizarCodigoCbo(body.cbo_codigo)
     if (!conselhoNumero) {
       return NextResponse.json({ error: `${tipoConfig.conselho} é obrigatório para profissionais` }, { status: 400 })
     }
 
     if (conselhoUf && !isUfBrasil(conselhoUf)) {
       return NextResponse.json({ error: 'UF do conselho inválida' }, { status: 400 })
+    }
+
+    if (!isCodigoCboValido(cboCodigo)) {
+      return NextResponse.json({ error: 'Código CBO deve ter 6 dígitos' }, { status: 400 })
     }
 
     const cpfCnpj = normalizarCpfCnpj(body.cpf_cnpj)
@@ -95,6 +100,7 @@ export async function PATCH(
     profileUpdate.conselho_tipo = tipoConfig.conselho
     profileUpdate.conselho_numero = conselhoNumero
     profileUpdate.conselho_uf = conselhoUf
+    profileUpdate.cbo_codigo = cboCodigo
     profileUpdate.crefito = conselhoNumero
     profileUpdate.cpf_cnpj = cpfCnpj
 
@@ -102,6 +108,7 @@ export async function PATCH(
     metadataUpdate.conselho_tipo = tipoConfig.conselho
     metadataUpdate.conselho_numero = conselhoNumero
     metadataUpdate.conselho_uf = conselhoUf
+    metadataUpdate.cbo_codigo = cboCodigo
     metadataUpdate.crefito = conselhoNumero
   }
 

@@ -19,10 +19,10 @@ export default async function ProfissionaisPage() {
     .from('profiles')
     .select(podeVerPacientes
       ? `
-        id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf,
+        id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo,
         paciente_terapeutas(pacientes(id, nome, codigo_interno, status))
       `
-      : 'id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf')
+      : 'id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo')
     .eq('role', 'terapeuta')
     .order('nome')
 
@@ -39,6 +39,7 @@ export default async function ProfissionaisPage() {
       conselhoUf: p.conselho_uf,
       crefitoLegado: p.crefito,
     }),
+    cboCodigo: p.cbo_codigo,
     pacientes: (p.paciente_terapeutas ?? [])
       .filter((pt: any) => pt.pacientes)
       .map((pt: any) => pt.pacientes),
@@ -90,6 +91,11 @@ export default async function ProfissionaisPage() {
                       {p.conselho && (
                         <span className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
                           {p.conselho}
+                        </span>
+                      )}
+                      {p.cboCodigo && (
+                        <span className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
+                          CBO {p.cboCodigo}
                         </span>
                       )}
                       {p.telefone && (

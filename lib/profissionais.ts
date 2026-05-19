@@ -29,6 +29,26 @@ export function isUfBrasil(value: unknown): value is UfBrasil {
   return typeof value === 'string' && UFS_BRASIL.includes(value as UfBrasil)
 }
 
+export function normalizarCodigoCbo(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+
+  const raw = value.trim()
+  if (!raw) return null
+
+  const digits = raw.replace(/\D/g, '')
+  if (!digits) return raw
+
+  if (digits.length !== 6) {
+    return raw
+  }
+
+  return `${digits.slice(0, 4)}-${digits.slice(4)}`
+}
+
+export function isCodigoCboValido(value: string | null) {
+  return value === null || /^\d{4}-\d{2}$/.test(value)
+}
+
 export function formatarConselhoProfissional({
   tipoProfissional,
   conselhoTipo,

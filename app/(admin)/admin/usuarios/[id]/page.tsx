@@ -52,7 +52,7 @@ export default async function UsuarioDetalhePage({
 
   const { data: usuario } = await supabase
     .from('profiles')
-    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, permissoes')
+    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, permissoes')
     .eq('id', id)
     .single()
   if (!usuario) notFound()
@@ -176,6 +176,7 @@ export default async function UsuarioDetalhePage({
           <Campo label="Telefone" valor={detalhesResponsavel?.telefone_principal ?? usuario.telefone} />
           {tipoProfissional && <Campo label="Tipo profissional" valor={tipoProfissional.label} />}
           {usuario.role === 'terapeuta' && <Campo label="Conselho" valor={conselhoProfissional} />}
+          {usuario.role === 'terapeuta' && <Campo label="Código CBO" valor={usuario.cbo_codigo ? `CBO ${usuario.cbo_codigo}` : null} />}
           {usuario.role === 'terapeuta' && <Campo label="CPF/CNPJ" valor={formatarCpfCnpj(usuario.cpf_cnpj)} />}
           {detalhesResponsavel?.endereco && (
             <div className="col-span-2">

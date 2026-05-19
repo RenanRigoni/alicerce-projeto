@@ -124,6 +124,25 @@ const diasLabel: Record<string, string> = {
 }
 const turnoLabel: Record<string, string> = { manha: 'Manhã', tarde: 'Tarde', qualquer: 'Qualquer' }
 
+function calcularIdade(dataNascimento: string | null): string | null {
+  if (!dataNascimento) return null
+  const nasc = new Date(dataNascimento + 'T12:00:00')
+  const hoje = new Date()
+  let anos = hoje.getFullYear() - nasc.getFullYear()
+  let meses = hoje.getMonth() - nasc.getMonth()
+  let dias = hoje.getDate() - nasc.getDate()
+  if (dias < 0) {
+    meses--
+    dias += new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate()
+  }
+  if (meses < 0) { anos--; meses += 12 }
+  const partes: string[] = []
+  if (anos > 0) partes.push(`${anos} ${anos === 1 ? 'ano' : 'anos'}`)
+  if (meses > 0) partes.push(`${meses} ${meses === 1 ? 'mês' : 'meses'}`)
+  if (dias > 0) partes.push(`${dias} ${dias === 1 ? 'dia' : 'dias'}`)
+  return partes.length ? partes.join(', ') : 'Recém-nascido'
+}
+
 function Campo({ label, valor }: { label: string; valor?: string | null }) {
   if (!valor) return null
   return (
@@ -390,7 +409,8 @@ export function PerfilPacienteTabs({
               <Campo label="Data de início" valor={paciente.data_inicio
                 ? new Date(paciente.data_inicio).toLocaleDateString('pt-BR') : null} />
               <Campo label="Data de nascimento" valor={paciente.data_nascimento
-                ? new Date(paciente.data_nascimento).toLocaleDateString('pt-BR') : null} />
+                ? new Date(paciente.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : null} />
+              <Campo label="Idade" valor={calcularIdade(paciente.data_nascimento)} />
               <Campo label="Sexo" valor={
                 paciente.sexo === 'masculino' ? 'Masculino' :
                 paciente.sexo === 'feminino' ? 'Feminino' :
@@ -772,7 +792,7 @@ export function PerfilPacienteTabs({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-              {evolucoes.length} evolução{evolucoes.length !== 1 ? 'ões' : ''}
+              {evolucoes.length} {evolucoes.length === 1 ? 'evolução' : 'evoluções'}
             </span>
             {role === 'terapeuta' && paciente.status === 'ativo' && (
               <a

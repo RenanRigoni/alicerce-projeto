@@ -39,7 +39,7 @@ Fases sequenciais; cada uma entregável antes da próxima começar.
 - [ ] **Estrutura em tabs no perfil:** Informações | Atendimentos | Documentos
 
 ### 1.2 Perfil do profissional — gaps restantes
-- [ ] UF do conselho (campo opcional — para atestados e NFS-e futuros)
+- [x] UF do conselho (campo opcional — para atestados e NFS-e futuros) — #FEITO-NECESSARIO-REVISAR
 - [ ] Código CBO (opcional — convênio/NFS-e)
 - [ ] Biografia (textarea — exibida no portal para responsáveis)
 

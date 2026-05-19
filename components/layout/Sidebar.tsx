@@ -101,6 +101,7 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [tooltip, setTooltip] = useState<{ label: string; y: number } | null>(null)
 
@@ -123,10 +124,15 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
     setTooltip({ label, y: rect.top + rect.height / 2 })
   }
 
+  function closeExpanded() {
+    setExpanded(false)
+    setTooltip(null)
+  }
+
   return (
     <>
-      {/* ── Tooltip fixo — position:fixed escapa qualquer overflow ── */}
-      {tooltip && (
+      {/* ── Tooltip fixo — só no modo collapsed ── */}
+      {tooltip && !expanded && (
         <div
           className="hidden lg:block"
           style={{
@@ -162,33 +168,113 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
 
       {/* ── Desktop sidebar ─────────────────────────────────── */}
       <aside
-        className="fixed left-0 top-0 bottom-0 w-16 z-40 hidden lg:flex flex-col"
+        className="fixed left-0 top-0 bottom-0 z-50 hidden lg:flex flex-col overflow-hidden"
         style={{
+          width: expanded ? 240 : 64,
+          transition: 'width 200ms ease',
           background: 'var(--color-warm-white)',
           borderRight: '1px solid var(--color-border)',
         }}
       >
-        {/* Logo */}
-        <Link
-          href={dashboardByRole[role]}
-          className="h-16 w-16 flex items-center justify-center shrink-0 transition-opacity hover:opacity-75"
+        {/* ── Header ── */}
+        <div
+          className="shrink-0"
           style={{ borderBottom: '1px solid var(--color-border-soft)' }}
         >
-          <Image
-            src="/logo.png"
-            alt="Alicerce"
-            width={36}
-            height={36}
-            priority
-            style={{ objectFit: 'contain', width: 36, height: 36 }}
-          />
-        </Link>
+          {expanded ? (
+            /* Expandido: logo horizontal + botão X */
+            <div className="h-14 flex items-center justify-between px-3 gap-2">
+              <Link
+                href={dashboardByRole[role]}
+                onClick={closeExpanded}
+                className="flex items-center hover:opacity-75 transition-opacity shrink-0"
+              >
+                <Image
+                  src="/logo_hor.png"
+                  alt="Alicerce"
+                  width={90}
+                  height={28}
+                  priority
+                  style={{ objectFit: 'contain', height: 28, width: 'auto' }}
+                />
+              </Link>
+              <button
+                onClick={closeExpanded}
+                className="p-2 rounded-lg hover:bg-[var(--color-border-soft)] transition-colors shrink-0"
+                aria-label="Fechar menu"
+              >
+                <X size={18} style={{ color: 'var(--color-ink-mid)' }} />
+              </button>
+            </div>
+          ) : (
+            /* Collapsed: logo ícone + botão hambúrguer */
+            <div className="flex flex-col items-center">
+              <Link
+                href={dashboardByRole[role]}
+                className="w-16 h-12 flex items-center justify-center hover:opacity-75 transition-opacity"
+              >
+                <Image
+                  src="/logo.png"
+                  alt="Alicerce"
+                  width={32}
+                  height={32}
+                  priority
+                  style={{ objectFit: 'contain', width: 32, height: 32 }}
+                />
+              </Link>
+              <button
+                onClick={() => setExpanded(true)}
+                className="w-16 h-9 flex items-center justify-center hover:bg-[var(--color-border-soft)] transition-colors rounded-lg"
+                aria-label="Abrir menu"
+              >
+                <Menu size={17} style={{ color: 'var(--color-ink-soft)' }} />
+              </button>
+            </div>
+          )}
+        </div>
 
-        {/* Nav items — sem overflow para não cortar tooltip */}
-        <nav className="flex-1 py-2 flex flex-col gap-0.5">
+        {/* ── Nav ── */}
+        <nav className="flex-1 py-2 flex flex-col gap-0.5 overflow-hidden">
           {items.map(item => {
             const Icon = item.icon
             const active = isActive(item.href)
+
+            if (expanded) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeExpanded}
+                  className="mx-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all"
+                  style={{
+                    color: active ? 'var(--color-rose-main)' : 'var(--color-ink-mid)',
+                    background: active ? 'var(--color-rose-blush)' : 'transparent',
+                    fontWeight: active ? 500 : 400,
+                    textDecoration: 'none',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      const el = e.currentTarget as HTMLElement
+                      el.style.background = 'var(--color-border-soft)'
+                      el.style.color = 'var(--color-ink)'
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      const el = e.currentTarget as HTMLElement
+                      el.style.background = 'transparent'
+                      el.style.color = 'var(--color-ink-mid)'
+                    }
+                  }}
+                >
+                  <Icon size={18} strokeWidth={active ? 2.5 : 1.75} />
+                  {item.label}
+                </Link>
+              )
+            }
+
+            /* Collapsed: só ícone + tooltip */
             return (
               <div
                 key={item.href}
@@ -224,7 +310,7 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
           })}
         </nav>
 
-        {/* Bottom: notifications + avatar */}
+        {/* ── Bottom: notificações + avatar ── */}
         <div
           className="shrink-0 flex flex-col items-center gap-3 py-4"
           style={{ borderTop: '1px solid var(--color-border-soft)' }}

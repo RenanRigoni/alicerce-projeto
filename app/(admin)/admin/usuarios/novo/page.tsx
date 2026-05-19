@@ -14,16 +14,21 @@ interface Paciente { id: string; nome: string; codigo_interno: string | null }
 const FORM_INICIAL = {
   role: 'pai',
   nome: '',
+  email: '',
   telefone: '',
+  data_nascimento: '',
+  cpf_cnpj: '',
+  rg: '',
+  sexo: '',
   cep: '',
   endereco: '',
+  bairro: '',
   numero: '',
   complemento: '',
   cidade: '',
+  estado: '',
   contato_emergencia_nome: '',
   contato_emergencia_telefone: '',
-  email: '',
-  cpf_cnpj: '',
   cpf_cnpj_profissional: '',
   tipo_profissional: 'terapeuta_ocupacional',
   conselho_numero: '',
@@ -31,14 +36,19 @@ const FORM_INICIAL = {
   cbo_codigo: '',
 }
 
-async function buscarCep(cep: string): Promise<{ logradouro: string; localidade: string } | null> {
+async function buscarCep(cep: string): Promise<{ logradouro: string; localidade: string; bairro: string; uf: string } | null> {
   const digits = cep.replace(/\D/g, '')
   if (digits.length !== 8) return null
   try {
     const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
     const data = await res.json()
     if (data.erro) return null
-    return { logradouro: data.logradouro ?? '', localidade: data.localidade ?? '' }
+    return {
+      logradouro: data.logradouro ?? '',
+      localidade: data.localidade ?? '',
+      bairro: data.bairro ?? '',
+      uf: data.uf ?? '',
+    }
   } catch {
     return null
   }
@@ -74,19 +84,13 @@ export default function NovoUsuarioPage() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
-        router.push('/login')
-        return
-      }
+      if (!user) { router.push('/login'); return }
       const { data: profile } = await supabase
         .from('profiles')
         .select('role, permissoes')
         .eq('id', user.id)
         .single()
-      if (!profile) {
-        router.push('/admin/dashboard')
-        return
-      }
+      if (!profile) { router.push('/admin/dashboard'); return }
 
       const efetivas = todasPermissoes(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>)
       setRoleAtual(profile.role)
@@ -95,10 +99,7 @@ export default function NovoUsuarioPage() {
       const permitidos = efetivas.gerenciar_usuarios
         ? (profile.role === 'recepcao' ? ['pai', 'terapeuta'] : ['pai', 'terapeuta', 'recepcao', 'admin'])
         : (efetivas.gerenciar_responsaveis ? ['pai'] : [])
-      if (permitidos.length === 0) {
-        router.push('/admin/dashboard')
-        return
-      }
+      if (permitidos.length === 0) { router.push('/admin/dashboard'); return }
       if (!permitidos.includes(form.role)) {
         setForm(prev => ({ ...prev, role: permitidos[0] }))
       }
@@ -119,6 +120,10 @@ export default function NovoUsuarioPage() {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
+  function setSexo(valor: string) {
+    setForm(prev => ({ ...prev, sexo: prev.sexo === valor ? '' : valor }))
+  }
+
   async function handleCepBlur(e: React.FocusEvent<HTMLInputElement>) {
     const cep = e.target.value
     if (cep.replace(/\D/g, '').length !== 8) return
@@ -126,7 +131,13 @@ export default function NovoUsuarioPage() {
     const resultado = await buscarCep(cep)
     setBuscandoCep(false)
     if (resultado) {
-      setForm(prev => ({ ...prev, endereco: resultado.logradouro, cidade: resultado.localidade }))
+      setForm(prev => ({
+        ...prev,
+        endereco: resultado.logradouro || prev.endereco,
+        cidade: resultado.localidade || prev.cidade,
+        bairro: resultado.bairro || prev.bairro,
+        estado: resultado.uf || prev.estado,
+      }))
     }
   }
 
@@ -174,11 +185,16 @@ export default function NovoUsuarioPage() {
       role: form.role,
       ...(form.role === 'pai' ? {
         telefone: form.telefone,
+        data_nascimento: form.data_nascimento || null,
+        rg: form.rg || null,
+        sexo: form.sexo || null,
         cep: form.cep,
         endereco: form.endereco,
+        bairro: form.bairro || null,
         numero: form.numero,
-        complemento: form.complemento,
+        complemento: form.complemento || null,
         cidade: form.cidade,
+        estado: form.estado || null,
         contato_emergencia_nome: form.contato_emergencia_nome,
         contato_emergencia_telefone: form.contato_emergencia_telefone,
         cpf_cnpj: form.cpf_cnpj,
@@ -203,9 +219,7 @@ export default function NovoUsuarioPage() {
 
     if (!res.ok) { setErro(json.error ?? 'Erro ao criar usuário.'); return }
 
-    if (json.link_recuperacao) {
-      setLinkRecuperacao(json.link_recuperacao)
-    }
+    if (json.link_recuperacao) setLinkRecuperacao(json.link_recuperacao)
 
     if (form.role === 'pai' && json.user_id) {
       setNovoUserId(json.user_id)
@@ -234,6 +248,7 @@ export default function NovoUsuarioPage() {
 
   const L = { color: 'var(--color-ink-mid)' }
   const hint = { color: 'var(--color-ink-faint)' }
+  const secao = { color: 'var(--color-ink-faint)', letterSpacing: '0.06em' }
 
   if (etapa === 'vincular') {
     return (
@@ -328,6 +343,8 @@ export default function NovoUsuarioPage() {
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* Perfil */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={L}>
               Perfil <span style={{ color: 'var(--color-rose-main)' }}>*</span>
@@ -340,74 +357,13 @@ export default function NovoUsuarioPage() {
             </select>
           </div>
 
+          {/* Nome + E-mail — todos os perfis */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={L}>
               Nome completo <span style={{ color: 'var(--color-rose-main)' }}>*</span>
             </label>
             <input name="nome" value={form.nome} onChange={handleChange} required placeholder="Nome completo" className="input-base" />
           </div>
-
-          {form.role === 'pai' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={L}>
-                  Telefone principal <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-                </label>
-                <input name="telefone" value={form.telefone} onChange={handleChange} required placeholder="(00) 00000-0000" className="input-base" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={L}>
-                  CEP <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-                </label>
-                <div className="relative">
-                  <input name="cep" value={form.cep} onChange={handleChange} onBlur={handleCepBlur} required placeholder="00000-000" maxLength={9} className="input-base pr-8" />
-                  {buscandoCep && (
-                    <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  )}
-                </div>
-                <p className="text-xs mt-1" style={hint}>Endereço e cidade preenchidos automaticamente</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={L}>
-                  Endereço <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-                </label>
-                <input name="endereco" value={form.endereco} onChange={handleChange} required placeholder="Rua, Avenida..." className="input-base" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={L}>
-                    Número <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-                  </label>
-                  <input name="numero" value={form.numero} onChange={handleChange} required placeholder="123" className="input-base" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={L}>Complemento</label>
-                  <input name="complemento" value={form.complemento} onChange={handleChange} placeholder="Apto, Bloco..." className="input-base" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={L}>
-                  Cidade <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-                </label>
-                <input name="cidade" value={form.cidade} onChange={handleChange} required placeholder="Cidade" className="input-base" />
-              </div>
-
-              <fieldset className="space-y-3">
-                <legend className="text-sm font-medium mb-1.5" style={L}>
-                  Contato de Emergência <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-                </legend>
-                <input name="contato_emergencia_nome" value={form.contato_emergencia_nome} onChange={handleChange} required placeholder="Nome do contato" className="input-base" />
-                <input name="contato_emergencia_telefone" value={form.contato_emergencia_telefone} onChange={handleChange} required placeholder="Telefone do contato — (00) 00000-0000" className="input-base" />
-              </fieldset>
-            </>
-          )}
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={L}>
@@ -416,16 +372,151 @@ export default function NovoUsuarioPage() {
             <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="email@exemplo.com" className="input-base" />
           </div>
 
+          {/* ── RESPONSÁVEL ────────────────────────────────── */}
           {form.role === 'pai' && (
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={L}>
-                CPF <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-              </label>
-              <input name="cpf_cnpj" value={form.cpf_cnpj} onChange={handleChange} required placeholder="000.000.000-00" className="input-base" />
-              <p className="text-xs mt-1" style={hint}>Permite acesso pelo CPF na tela de login</p>
-            </div>
+            <>
+              {/* Dados pessoais */}
+              <div className="pt-2">
+                <p className="text-xs font-semibold uppercase mb-3" style={secao}>Dados pessoais</p>
+                <div className="space-y-3">
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={L}>
+                      Telefone principal <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                    </label>
+                    <input name="telefone" value={form.telefone} onChange={handleChange} required placeholder="(00) 00000-0000" className="input-base" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={L}>Data de nascimento</label>
+                      <input type="date" name="data_nascimento" value={form.data_nascimento} onChange={handleChange} className="input-base" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={L}>
+                        CPF <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                      </label>
+                      <input name="cpf_cnpj" value={form.cpf_cnpj} onChange={handleChange} required placeholder="000.000.000-00" className="input-base" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={L}>RG</label>
+                    <input name="rg" value={form.rg} onChange={handleChange} placeholder="00.000.000-0" className="input-base" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={L}>Sexo</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { v: 'feminino', l: 'Feminino' },
+                        { v: 'masculino', l: 'Masculino' },
+                        { v: 'outro', l: 'Outro' },
+                      ].map(({ v, l }) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setSexo(v)}
+                          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150"
+                          style={form.sexo === v
+                            ? { background: 'var(--color-rose-main)', color: '#fff', border: '1px solid var(--color-rose-main)' }
+                            : { background: 'var(--color-warm-white)', color: 'var(--color-ink-mid)', border: '1px solid var(--color-border)' }
+                          }
+                        >
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Endereço */}
+              <div className="pt-2">
+                <p className="text-xs font-semibold uppercase mb-3" style={secao}>Endereço</p>
+                <div className="space-y-3">
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={L}>
+                      CEP <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                    </label>
+                    <div className="relative">
+                      <input name="cep" value={form.cep} onChange={handleChange} onBlur={handleCepBlur} required placeholder="00000-000" maxLength={9} className="input-base pr-8" />
+                      {buscandoCep && (
+                        <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className="text-xs mt-1" style={hint}>Endereço, bairro e cidade preenchidos automaticamente</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={L}>
+                      Logradouro <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                    </label>
+                    <input name="endereco" value={form.endereco} onChange={handleChange} required placeholder="Rua, Avenida..." className="input-base" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={L}>Bairro</label>
+                    <input name="bairro" value={form.bairro} onChange={handleChange} placeholder="Bairro" className="input-base" />
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-3">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium mb-1.5" style={L}>
+                        Número <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                      </label>
+                      <input name="numero" value={form.numero} onChange={handleChange} required placeholder="123" className="input-base" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium mb-1.5" style={L}>Complemento</label>
+                      <input name="complemento" value={form.complemento} onChange={handleChange} placeholder="Apto, Bloco..." className="input-base" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium mb-1.5" style={L}>UF</label>
+                      <select name="estado" value={form.estado} onChange={handleChange} className="input-base">
+                        <option value="">—</option>
+                        {UFS_BRASIL.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={L}>
+                      Cidade <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                    </label>
+                    <input name="cidade" value={form.cidade} onChange={handleChange} required placeholder="Cidade" className="input-base" />
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Contato de Emergência */}
+              <div className="pt-2">
+                <p className="text-xs font-semibold uppercase mb-3" style={secao}>Contato de Emergência</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={L}>
+                      Nome do contato <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                    </label>
+                    <input name="contato_emergencia_nome" value={form.contato_emergencia_nome} onChange={handleChange} required placeholder="Nome completo" className="input-base" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={L}>
+                      Telefone do contato <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                    </label>
+                    <input name="contato_emergencia_telefone" value={form.contato_emergencia_telefone} onChange={handleChange} required placeholder="(00) 00000-0000" className="input-base" />
+                  </div>
+                </div>
+              </div>
+            </>
           )}
 
+          {/* ── TERAPEUTA ──────────────────────────────────── */}
           {form.role === 'terapeuta' && (
             <>
               <div>

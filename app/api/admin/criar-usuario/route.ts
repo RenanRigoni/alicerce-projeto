@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     tipo_profissional, conselho_numero, conselho_uf, cbo_codigo,
     telefone, cep, endereco, numero, complemento, cidade,
     contato_emergencia_nome, contato_emergencia_telefone,
+    data_nascimento, rg, sexo, bairro, estado,
   } = body
 
   if (!nome || !email || !role) {
@@ -130,6 +131,9 @@ export async function POST(request: NextRequest) {
       conselho_uf: conselhoUf,
       cbo_codigo: cboCodigo,
       ...(cpfCnpjNorm ? { cpf_cnpj: cpfCnpjNorm } : {}),
+      ...(role === 'pai' && data_nascimento ? { data_nascimento } : {}),
+      ...(role === 'pai' && typeof rg === 'string' && rg.trim() ? { rg: rg.trim() } : {}),
+      ...(role === 'pai' && sexo ? { sexo } : {}),
     })
     .eq('id', userId)
 
@@ -139,9 +143,11 @@ export async function POST(request: NextRequest) {
       telefone_principal: telefone?.trim() ?? null,
       cep: cep?.replace(/\D/g, '') ?? null,
       endereco: endereco?.trim() ?? null,
+      bairro: bairro?.trim() ?? null,
       numero: numero?.trim() ?? null,
       complemento: complemento?.trim() ?? null,
       cidade: cidade?.trim() ?? null,
+      estado: estado?.trim() ?? null,
       contato_emergencia: contato_emergencia_nome?.trim() ?? null,
       contato_emergencia_telefone: contato_emergencia_telefone?.trim() ?? null,
     })

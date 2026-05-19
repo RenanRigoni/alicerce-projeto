@@ -12,16 +12,6 @@ const roleLabel: Record<string, string> = {
   admin: 'Admin', recepcao: 'Recepção', terapeuta: 'Profissional', pai: 'Família',
 }
 
-const ESTADOS_CIVIS = [
-  { value: '',               label: 'Não informado' },
-  { value: 'solteiro',      label: 'Solteiro(a)' },
-  { value: 'casado',        label: 'Casado(a)' },
-  { value: 'divorciado',    label: 'Divorciado(a)' },
-  { value: 'viuvo',         label: 'Viúvo(a)' },
-  { value: 'uniao_estavel', label: 'União estável' },
-  { value: 'outro',         label: 'Outro' },
-]
-
 function mascaraTelefone(valor: string) {
   const d = valor.replace(/\D/g, '').slice(0, 11)
   if (d.length <= 2) return d.length ? `(${d}` : ''
@@ -68,7 +58,6 @@ interface Props {
     data_nascimento?: string | null
     rg?: string | null
     sexo?: string | null
-    estado_civil?: string | null
     especialidade?: string | null
     biografia?: string | null
   }
@@ -129,7 +118,6 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     data_nascimento:   usuario.data_nascimento ?? '',
     rg:                usuario.rg ?? '',
     sexo:              usuario.sexo ?? '',
-    estado_civil:      usuario.estado_civil ?? '',
     // terapeuta
     tipo_profissional: usuario.tipo_profissional ?? 'terapeuta_ocupacional',
     conselho_numero:   usuario.conselho_numero ?? usuario.crefito ?? '',
@@ -187,7 +175,6 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
         data_nascimento: form.data_nascimento || null,
         rg:             form.rg || null,
         sexo:           form.sexo || null,
-        estado_civil:   form.estado_civil || null,
         ...(usuario.role === 'terapeuta' ? {
           tipo_profissional: form.tipo_profissional,
           conselho_numero:   form.conselho_numero,
@@ -314,13 +301,6 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
                 </button>
               ))}
             </div>
-          </div>
-
-          <div>
-            <Label>Estado civil</Label>
-            <select name="estado_civil" value={form.estado_civil} onChange={handle} className={inputCls} style={inputStyle}>
-              {ESTADOS_CIVIS.map(op => <option key={op.value} value={op.value}>{op.label}</option>)}
-            </select>
           </div>
 
         </div>

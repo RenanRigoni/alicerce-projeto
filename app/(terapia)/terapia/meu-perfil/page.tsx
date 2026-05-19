@@ -11,7 +11,7 @@ export default async function MeuPerfilTerapiaPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, role, telefone, cpf_cnpj, criado_em, foto_url, data_nascimento, rg, sexo, estado_civil, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, especialidade, biografia')
+    .select('nome, role, telefone, cpf_cnpj, criado_em, foto_url, data_nascimento, rg, sexo, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, especialidade, biografia')
     .eq('id', user.id)
     .single()
 
@@ -51,7 +51,6 @@ export default async function MeuPerfilTerapiaPage() {
         dataNascimento={profile.data_nascimento ?? null}
         rg={profile.rg ?? null}
         sexo={profile.sexo ?? null}
-        estadoCivil={profile.estado_civil ?? null}
         tipoProfissional={profile.tipo_profissional ?? null}
         conselhoTipo={profile.conselho_tipo ?? null}
         conselhoNumero={profile.conselho_numero ?? null}

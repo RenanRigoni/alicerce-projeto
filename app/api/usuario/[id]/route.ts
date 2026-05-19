@@ -63,7 +63,6 @@ export async function PATCH(
   // Campos pessoais comuns a todos os roles
   profileUpdate.data_nascimento = str(body.data_nascimento)
   profileUpdate.rg              = str(body.rg)
-  profileUpdate.estado_civil    = str(body.estado_civil) as string | null
   const sexoValido = ['masculino', 'feminino', 'outro']
   profileUpdate.sexo = sexoValido.includes(body.sexo) ? (body.sexo as string) : null
 

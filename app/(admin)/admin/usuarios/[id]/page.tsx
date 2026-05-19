@@ -49,11 +49,6 @@ function AvatarUsuario({ nome, fotoUrl, role }: { nome: string; fotoUrl?: string
   )
 }
 
-const ESTADOS_CIVIS_LABEL: Record<string, string> = {
-  solteiro: 'Solteiro(a)', casado: 'Casado(a)', divorciado: 'Divorciado(a)',
-  viuvo: 'Viúvo(a)', uniao_estavel: 'União estável', outro: 'Outro',
-}
-
 function formatarCpfCnpj(valor?: string | null) {
   const d = valor?.replace(/\D/g, '') ?? ''
   if (d.length === 11) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
@@ -75,7 +70,7 @@ export default async function UsuarioDetalhePage({
 
   const { data: usuario } = await supabase
     .from('profiles')
-    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, permissoes, foto_url, data_nascimento, rg, sexo, estado_civil, especialidade, biografia')
+    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, permissoes, foto_url, data_nascimento, rg, sexo, especialidade, biografia')
     .eq('id', id)
     .single()
   if (!usuario) notFound()
@@ -218,7 +213,6 @@ export default async function UsuarioDetalhePage({
           <Campo label="RG" valor={usuario.rg} />
           <Campo label="CPF/CNPJ" valor={formatarCpfCnpj(usuario.cpf_cnpj)} />
           <Campo label="Sexo" valor={usuario.sexo === 'masculino' ? 'Masculino' : usuario.sexo === 'feminino' ? 'Feminino' : usuario.sexo === 'outro' ? 'Outro' : null} />
-          <Campo label="Estado civil" valor={ESTADOS_CIVIS_LABEL[usuario.estado_civil ?? ''] ?? null} />
           {tipoProfissional && <Campo label="Tipo profissional" valor={tipoProfissional.label} />}
           {usuario.role === 'terapeuta' && <Campo label="Conselho" valor={conselhoProfissional} />}
           {usuario.role === 'terapeuta' && <Campo label="Código CBO" valor={usuario.cbo_codigo ? `CBO ${usuario.cbo_codigo}` : null} />}

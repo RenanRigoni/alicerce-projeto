@@ -16,7 +16,7 @@ export default async function MeuPerfilPortalPage() {
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('nome, role, cpf_cnpj, criado_em, foto_url, data_nascimento, rg, sexo, estado_civil')
+      .select('nome, role, cpf_cnpj, criado_em, foto_url, data_nascimento, rg, sexo')
       .eq('id', user.id)
       .single(),
     supabase
@@ -60,7 +60,6 @@ export default async function MeuPerfilPortalPage() {
         dataNascimento={profile.data_nascimento ?? null}
         rg={profile.rg ?? null}
         sexo={profile.sexo ?? null}
-        estadoCivil={profile.estado_civil ?? null}
         tipoProfissional={null}
         conselhoTipo={null}
         conselhoNumero={null}

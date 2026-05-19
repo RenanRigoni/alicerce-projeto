@@ -17,7 +17,6 @@ export async function salvarMeuPerfil(formData: FormData) {
     data_nascimento: str('data_nascimento') || null,
     rg:              str('rg'),
     sexo:            str('sexo') || null,
-    estado_civil:    str('estado_civil') || null,
   }
 
   if (role === 'terapeuta') {

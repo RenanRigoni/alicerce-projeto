@@ -19,7 +19,6 @@ interface Props {
   dataNascimento: string | null
   rg: string | null
   sexo: string | null
-  estadoCivil: string | null
   tipoProfissional: string | null
   conselhoTipo: string | null
   conselhoNumero: string | null
@@ -46,16 +45,6 @@ const avatarColors: Record<string, string> = {
   terapeuta: 'bg-[var(--color-sage-light)] text-[var(--color-sage-deep)]',
   pai:       'bg-[var(--color-peach-light)] text-[var(--color-peach-main)]',
 }
-
-const ESTADOS_CIVIS = [
-  { value: '',               label: 'Não informado' },
-  { value: 'solteiro',      label: 'Solteiro(a)' },
-  { value: 'casado',        label: 'Casado(a)' },
-  { value: 'divorciado',    label: 'Divorciado(a)' },
-  { value: 'viuvo',         label: 'Viúvo(a)' },
-  { value: 'uniao_estavel', label: 'União estável' },
-  { value: 'outro',         label: 'Outro' },
-]
 
 function formatarCpf(valor?: string | null) {
   const d = valor?.replace(/\D/g, '') ?? ''
@@ -102,7 +91,6 @@ export function MeuPerfilForm(props: Props) {
   const [dataNasc, setDataNasc]           = useState(props.dataNascimento ?? '')
   const [rg, setRg]                       = useState(props.rg ?? '')
   const [sexo, setSexo]                   = useState(props.sexo ?? '')
-  const [estadoCivil, setEstadoCivil]     = useState(props.estadoCivil ?? '')
   const [conselhoNum, setConselhoNum]     = useState(props.conselhoNumero ?? '')
   const [conselhoUf, setConselhoUf]       = useState(props.conselhoUf ?? '')
   const [cbo, setCbo]                     = useState(props.cboCodigo ?? '')
@@ -112,7 +100,6 @@ export function MeuPerfilForm(props: Props) {
   const tipoConfig        = role === 'terapeuta' ? getTipoProfissionalConfig(tipoProfissional) : null
   const cpfFormatado      = formatarCpf(cpf)
   const dataCriacao       = new Date(criadoEm).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-  const estadoCivilLabel  = ESTADOS_CIVIS.find(e => e.value === estadoCivil)?.label ?? ''
   const sexoLabel         = sexo === 'masculino' ? 'Masculino' : sexo === 'feminino' ? 'Feminino' : sexo === 'outro' ? 'Outro' : ''
   const dataNascFormatada = dataNasc
     ? new Date(dataNasc + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -130,7 +117,6 @@ export function MeuPerfilForm(props: Props) {
     setDataNasc(props.dataNascimento ?? '')
     setRg(props.rg ?? '')
     setSexo(props.sexo ?? '')
-    setEstadoCivil(props.estadoCivil ?? '')
     setConselhoNum(props.conselhoNumero ?? '')
     setConselhoUf(props.conselhoUf ?? '')
     setCbo(props.cboCodigo ?? '')
@@ -197,7 +183,6 @@ export function MeuPerfilForm(props: Props) {
         fd.append('data_nascimento', dataNasc)
         fd.append('rg', rg)
         fd.append('sexo', sexo)
-        fd.append('estado_civil', estadoCivil)
         if (role === 'terapeuta') {
           fd.append('conselho_numero', conselhoNum)
           fd.append('conselho_uf', conselhoUf)
@@ -385,14 +370,6 @@ export function MeuPerfilForm(props: Props) {
                   ))}
                 </div>
               ) : <Val empty="Não informado">{sexoLabel}</Val>}
-            </Campo>
-
-            <Campo label="Estado civil" editando={editando}>
-              {editando ? (
-                <select value={estadoCivil} onChange={e => setEstadoCivil(e.target.value)} className={inputCls} style={inputActiveStyle}>
-                  {ESTADOS_CIVIS.map(op => <option key={op.value} value={op.value}>{op.label}</option>)}
-                </select>
-              ) : <Val empty="Não informado">{estadoCivilLabel}</Val>}
             </Campo>
 
             {/* Cargo — sempre bloqueado */}

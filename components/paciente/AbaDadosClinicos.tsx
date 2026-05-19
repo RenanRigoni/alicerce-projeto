@@ -35,6 +35,13 @@ const camposClinicos: Array<{ key: keyof Form; label: string; tipo?: 'date' | 't
   { key: 'pontos_atencao_equipe',       label: 'Pontos de atenção para a equipe', tipo: 'textarea' },
 ]
 
+const SECOES_EDIT: Array<{ titulo: string; keys: (keyof Form)[] }> = [
+  { titulo: 'Diagnóstico', keys: ['hipotese_diagnostica', 'diagnostico', 'data_avaliacao_inicial'] },
+  { titulo: 'Planejamento', keys: ['objetivos_terapeuticos', 'plano_terapeutico', 'demandas_prioritarias', 'metas_curto_prazo', 'metas_medio_prazo'] },
+  { titulo: 'Acompanhamento', keys: ['obs_clinicas_gerais', 'estrategias_utilizadas', 'orientacoes_para_casa', 'evolucao_resumida'] },
+  { titulo: 'Dados complementares', keys: ['sensibilidades_restricoes', 'nivel_suporte', 'obs_comportamento_regulacao', 'informacoes_escolares', 'pontos_atencao_equipe'] },
+]
+
 function formFromDados(d: DadosClinicos | null): Form {
   const empty: Form = {
     hipotese_diagnostica: null, diagnostico: null, objetivos_terapeuticos: null,
@@ -96,7 +103,7 @@ function SecaoClinicos({ titulo, keys, form, camposMap }: {
               style={{ color: 'var(--color-ink)' }}
             >
               {key === 'data_avaliacao_inicial' && form[key]
-                ? new Date(form[key]!).toLocaleDateString('pt-BR')
+                ? new Date(form[key]! + 'T12:00:00').toLocaleDateString('pt-BR')
                 : form[key]}
             </div>
           </div>
@@ -225,66 +232,81 @@ export function AbaDadosClinicos({ pacienteId, dadosIniciais, podeEditar }: Prop
   }
 
   // Modo edição
+  const camposInfoMap = new Map(camposClinicos.map(c => [c.key, c]))
+
   return (
-    <Card>
-      <div className="space-y-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--color-ink-mid)' }}>
-            Editar dados clínicos
-          </h3>
-          <button
-            onClick={handleCancelar}
-            className="text-xs transition-opacity hover:opacity-70"
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-ink-mid)' }}>
+          Editar dados clínicos
+        </h3>
+        <button
+          onClick={handleCancelar}
+          className="text-xs transition-opacity hover:opacity-70"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Cancelar
+        </button>
+      </div>
+
+      {SECOES_EDIT.map(secao => (
+        <Card key={secao.titulo}>
+          <h4
+            className="text-xs font-semibold uppercase tracking-wide mb-4"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Cancelar
-          </button>
-        </div>
-
-        {camposClinicos.map(({ key, label, tipo }) => (
-          <div key={String(key)}>
-            <label
-              className="block text-sm font-medium mb-1.5"
-              style={{ color: 'var(--color-ink-mid)' }}
-            >
-              {label}
-            </label>
-            {tipo === 'textarea' ? (
-              <textarea
-                value={form[key] ?? ''}
-                onChange={e => handleChange(key, e.target.value)}
-                rows={3}
-                className="input-base resize-y"
-              />
-            ) : tipo === 'date' ? (
-              <input
-                type="date"
-                value={form[key] ?? ''}
-                onChange={e => handleChange(key, e.target.value)}
-                className="input-base"
-              />
-            ) : (
-              <input
-                type="text"
-                value={form[key] ?? ''}
-                onChange={e => handleChange(key, e.target.value)}
-                className="input-base"
-              />
-            )}
+            {secao.titulo}
+          </h4>
+          <div className="space-y-4">
+            {secao.keys.map(key => {
+              const campo = camposInfoMap.get(key)!
+              return (
+                <div key={String(key)}>
+                  <label
+                    className="block text-sm font-medium mb-1.5"
+                    style={{ color: 'var(--color-ink-mid)' }}
+                  >
+                    {campo.label}
+                  </label>
+                  {campo.tipo === 'textarea' ? (
+                    <textarea
+                      value={form[key] ?? ''}
+                      onChange={e => handleChange(key, e.target.value)}
+                      rows={3}
+                      className="input-base resize-y"
+                    />
+                  ) : campo.tipo === 'date' ? (
+                    <input
+                      type="date"
+                      value={form[key] ?? ''}
+                      onChange={e => handleChange(key, e.target.value)}
+                      className="input-base"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={form[key] ?? ''}
+                      onChange={e => handleChange(key, e.target.value)}
+                      className="input-base"
+                    />
+                  )}
+                </div>
+              )
+            })}
           </div>
-        ))}
+        </Card>
+      ))}
 
-        {erro && (
-          <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>
-        )}
+      {erro && (
+        <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>
+      )}
 
-        <div className="flex gap-3 pt-1">
-          <Button onClick={handleSalvar} disabled={salvando}>
-            {salvando ? 'Salvando...' : 'Salvar dados clínicos'}
-          </Button>
-          <Button variant="ghost" onClick={handleCancelar}>Cancelar</Button>
-        </div>
+      <div className="flex gap-3">
+        <Button onClick={handleSalvar} disabled={salvando}>
+          {salvando ? 'Salvando...' : 'Salvar dados clínicos'}
+        </Button>
+        <Button variant="ghost" onClick={handleCancelar}>Cancelar</Button>
       </div>
-    </Card>
+    </div>
   )
 }

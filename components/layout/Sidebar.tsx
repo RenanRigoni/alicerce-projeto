@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
@@ -104,8 +104,9 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [userMenuPos, setUserMenuPos] = useState<{ left: number; bottom: number } | null>(null)
   const [tooltip, setTooltip] = useState<{ label: string; y: number } | null>(null)
+  const avatarRef = useRef<HTMLButtonElement>(null)
 
   const items = (navConfig[role] ?? []).filter(item =>
     !item.permission || permissoes[item.permission] === true
@@ -319,63 +320,67 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
         >
           <NotificacoesBell />
 
-          <div className="relative">
-            <button
-              onClick={() => setUserMenuOpen(v => !v)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold transition-opacity hover:opacity-80 ${avatarColors[role]}`}
-              title={nome}
-            >
-              {initials(nome)}
-            </button>
-
-            {userMenuOpen && (
-              <div
-                className="absolute bottom-0 left-full z-50 w-56 rounded-2xl py-1"
-                style={{
-                  marginLeft: 12,
-                  background: 'var(--color-warm-white)',
-                  border: '1px solid var(--color-border)',
-                  boxShadow: '0 8px 32px rgba(44,32,24,0.12)',
-                }}
-              >
-                <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border-soft)' }}>
-                  <div className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>{nome}</div>
-                  <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>{roleLabel[role]}</div>
-                </div>
-
-                {role === 'pai' && (
-                  <Link
-                    href="/privacidade"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block px-4 py-2.5 text-sm transition-colors hover:bg-[var(--color-border-soft)]"
-                    style={{ color: 'var(--color-ink-mid)', textDecoration: 'none' }}
-                    onClick={() => setUserMenuOpen(false)}
-                  >
-                    Política de Privacidade
-                  </Link>
-                )}
-
-                <div className="px-4 py-3" style={{ borderTop: '1px solid var(--color-border-soft)', borderBottom: '1px solid var(--color-border-soft)' }}>
-                  <PushNotificationSettings />
-                </div>
-
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition-colors hover:bg-[var(--color-border-soft)]"
-                  style={{ color: 'var(--color-ink-mid)' }}
-                >
-                  <LogOut size={15} />
-                  Sair da conta
-                </button>
-              </div>
-            )}
-          </div>
+          <button
+            ref={avatarRef}
+            onClick={() => {
+              if (userMenuPos) { setUserMenuPos(null); return }
+              const rect = avatarRef.current?.getBoundingClientRect()
+              if (rect) setUserMenuPos({ left: rect.right + 12, bottom: window.innerHeight - rect.bottom })
+            }}
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold transition-opacity hover:opacity-80 ${avatarColors[role]}`}
+            title={nome}
+          >
+            {initials(nome)}
+          </button>
         </div>
       </aside>
 
-      {userMenuOpen && (
-        <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+      {/* ── User menu dropdown — position:fixed escapa overflow:hidden da sidebar ── */}
+      {userMenuPos && (
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setUserMenuPos(null)} />
+          <div
+            className="fixed z-[9999] w-56 rounded-2xl py-1"
+            style={{
+              left: userMenuPos.left,
+              bottom: userMenuPos.bottom,
+              background: 'var(--color-warm-white)',
+              border: '1px solid var(--color-border)',
+              boxShadow: '0 8px 32px rgba(44,32,24,0.12)',
+            }}
+          >
+            <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border-soft)' }}>
+              <div className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>{nome}</div>
+              <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>{roleLabel[role]}</div>
+            </div>
+
+            {role === 'pai' && (
+              <Link
+                href="/privacidade"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block px-4 py-2.5 text-sm transition-colors hover:bg-[var(--color-border-soft)]"
+                style={{ color: 'var(--color-ink-mid)', textDecoration: 'none' }}
+                onClick={() => setUserMenuPos(null)}
+              >
+                Política de Privacidade
+              </Link>
+            )}
+
+            <div className="px-4 py-3" style={{ borderTop: '1px solid var(--color-border-soft)', borderBottom: '1px solid var(--color-border-soft)' }}>
+              <PushNotificationSettings />
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition-colors hover:bg-[var(--color-border-soft)]"
+              style={{ color: 'var(--color-ink-mid)' }}
+            >
+              <LogOut size={15} />
+              Sair da conta
+            </button>
+          </div>
+        </>
       )}
 
       {/* ── Mobile: top bar ──────────────────────────────────── */}

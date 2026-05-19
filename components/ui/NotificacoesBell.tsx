@@ -16,7 +16,9 @@ export function NotificacoesBell() {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([])
   const [aberto, setAberto] = useState(false)
   const [carregando, setCarregando] = useState(true)
-  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const naoLidas = notificacoes.filter(n => !n.lida).length
 
@@ -41,11 +43,35 @@ export function NotificacoesBell() {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false)
+      const target = e.target as Node
+      if (
+        containerRef.current?.contains(target) === false &&
+        !buttonRef.current?.contains(target)
+      ) {
+        setAberto(false)
+        setPos(null)
+      }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  function toggle() {
+    if (aberto) {
+      setAberto(false)
+      setPos(null)
+      return
+    }
+    const rect = buttonRef.current?.getBoundingClientRect()
+    if (rect) {
+      // Painel de 320px de largura; abre à direita do botão
+      // Ancora o bottom do painel no bottom do botão para crescer para cima
+      const panelH = Math.min(480, window.innerHeight - 80)
+      const top = Math.max(16, rect.bottom - panelH)
+      setPos({ left: rect.right + 12, top })
+    }
+    setAberto(true)
+  }
 
   async function marcarTodasLidas() {
     const naoLidasIds = notificacoes.filter(n => !n.lida).map(n => n.id)
@@ -62,9 +88,10 @@ export function NotificacoesBell() {
   }
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
-        onClick={() => setAberto(v => !v)}
+        ref={buttonRef}
+        onClick={toggle}
         className="relative p-1.5 rounded-lg transition-colors hover:opacity-70"
         style={{ color: 'var(--color-ink-soft)' }}
         aria-label="Notificações"
@@ -82,12 +109,22 @@ export function NotificacoesBell() {
         )}
       </button>
 
-      {aberto && (
+      {aberto && pos && (
         <div
-          className="absolute right-0 top-full mt-2 w-80 rounded-2xl shadow-xl z-50 overflow-hidden"
-          style={{ background: 'var(--color-warm-white)', border: '1px solid var(--color-border-soft)', boxShadow: '0 8px 40px rgba(44,32,24,0.15)' }}
+          ref={containerRef}
+          className="rounded-2xl shadow-xl overflow-hidden"
+          style={{
+            position: 'fixed',
+            left: pos.left,
+            top: pos.top,
+            width: 320,
+            zIndex: 9999,
+            background: 'var(--color-warm-white)',
+            border: '1px solid var(--color-border-soft)',
+            boxShadow: '0 8px 40px rgba(44,32,24,0.15)',
+          }}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--color-border-soft)' }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--color-border-soft)' }}>
             <span className="text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>Notificações</span>
             {naoLidas > 0 && (
               <button onClick={marcarTodasLidas} className="text-xs transition-opacity hover:opacity-70" style={{ color: 'var(--color-rose-main)' }}>
@@ -96,7 +133,7 @@ export function NotificacoesBell() {
             )}
           </div>
 
-          <div className="max-h-96 overflow-y-auto divide-y" style={{ borderColor: 'var(--color-border-soft)' }}>
+          <div className="overflow-y-auto divide-y" style={{ maxHeight: 384, borderColor: 'var(--color-border-soft)' }}>
             {carregando ? (
               <div className="px-4 py-6 text-center text-sm" style={{ color: 'var(--color-ink-faint)' }}>Carregando...</div>
             ) : notificacoes.length === 0 ? (
@@ -108,11 +145,7 @@ export function NotificacoesBell() {
                 style={{ background: n.lida ? 'transparent' : 'var(--color-rose-blush)' }}
               >
                 {n.link ? (
-                  <a
-                    href={n.link}
-                    onClick={() => { marcarLida(n.id); setAberto(false) }}
-                    className="block"
-                  >
+                  <a href={n.link} onClick={() => { marcarLida(n.id); setAberto(false) }} className="block">
                     <NotificacaoItem n={n} />
                   </a>
                 ) : (
@@ -125,7 +158,7 @@ export function NotificacoesBell() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
 

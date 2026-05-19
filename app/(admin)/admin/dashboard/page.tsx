@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
+import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 import { CAMPANHAS } from '@/lib/campanhas-saude'
 import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 
@@ -59,6 +60,7 @@ export default async function AdminDashboard() {
     { data: altasRecentes },
     { data: relatóriosRecentes },
     { data: feriados },
+    { data: configAgenda },
     { data: comunicados },
     { data: pacientesHoje },
     { data: agendamentosHoje },
@@ -107,6 +109,13 @@ export default async function AdminDashboard() {
           .select('data, descricao, anual')
           .order('data')
       : Promise.resolve({ data: [] }),
+    podeCriarAgendamentos
+      ? supabase
+          .from('configuracoes_clinica')
+          .select('bloquear_feriados')
+          .eq('singleton', 'default')
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
     supabase
       .from('comunicados')
       .select('id, titulo, conteudo, criado_em, profiles(nome)')
@@ -165,22 +174,19 @@ export default async function AdminDashboard() {
     })
     .sort((a, b) => a.data.localeCompare(b.data))
 
-  // Feriados expandidos para gerarSessoes
-  const feriadosDatasSet = new Set<string>()
-  for (const f of feriados ?? []) {
-    feriadosDatasSet.add(f.data as string)
-    if ((f as any).anual) {
-      const [, mes, dia] = (f.data as string).split('-')
-      feriadosDatasSet.add(`${anoAtualBRT}-${mes}-${dia}`)
-    }
-  }
+  const feriadosDatasBloqueio = datasFeriadosParaBloqueio(
+    feriados ?? [],
+    anoAtualBRT - 1,
+    anoAtualBRT + 2,
+    configAgenda?.bloquear_feriados === true,
+  )
 
   // Agenda de hoje: sessões recorrentes + agendamentos manuais
   const sessoesHoje = gerarSessoes(
     (pacientesHoje ?? []) as Array<{ id: string; nome: string; horarios_atendimento: Array<{ dia: string; hora: string }> }>,
     hojeInicio,
     hojeFim,
-    Array.from(feriadosDatasSet),
+    feriadosDatasBloqueio,
   )
 
   const confirmMap = new Map<string, string>()

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
-import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
+import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 import { AgendamentosLista, type AgendamentoItem } from '@/components/admin/AgendamentosLista'
 import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 import { notFound } from 'next/navigation'
@@ -21,6 +21,7 @@ export default async function AgendamentosPage() {
     { data: especiais },
     { data: passados },
     { data: feriados },
+    { data: configAgenda },
     { data: confirmacoes },
   ] = await Promise.all([
     supabase
@@ -52,6 +53,11 @@ export default async function AgendamentosPage() {
       .from('feriados')
       .select('data, anual'),
     supabase
+      .from('configuracoes_clinica')
+      .select('bloquear_feriados')
+      .eq('singleton', 'default')
+      .maybeSingle(),
+    supabase
       .from('sessao_confirmacoes')
       .select('paciente_id, data_hora, token, status')
       .gte('data_hora', hoje.toISOString())
@@ -59,7 +65,12 @@ export default async function AgendamentosPage() {
   ])
 
   const anoAtual = new Date().getFullYear()
-  const feriadosDatas = expandirFeriadosAnuais(feriados ?? [], anoAtual - 1, anoAtual + 2)
+  const feriadosDatas = datasFeriadosParaBloqueio(
+    feriados ?? [],
+    anoAtual - 1,
+    anoAtual + 2,
+    configAgenda?.bloquear_feriados === true,
+  )
 
   const pacientesParaGerar = (pacientesAtivos ?? []).map((p: any) => ({
     id: p.id,

@@ -6,10 +6,12 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { todasPermissoes } from '@/lib/permissoes/definicoes'
+import { encontrarFeriadoNaData } from '@/lib/agenda/feriados'
 
 interface Perfil { id: string; nome: string }
 interface Paciente { id: string; nome: string; codigo_interno: string | null }
-interface Feriado { data: string; descricao: string }
+interface Feriado { data: string; descricao: string; anual?: boolean | null }
+interface ConfigAgenda { bloquear_feriados: boolean | null }
 
 const tipos = [
   { value: 'sessao',      label: 'Sessão terapêutica' },
@@ -23,6 +25,7 @@ export default function NovoAgendamentoPage() {
   const [terapeutas, setTerapeutas] = useState<Perfil[]>([])
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [feriados, setFeriados] = useState<Feriado[]>([])
+  const [bloquearFeriados, setBloquearFeriados] = useState(false)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
   const [feriadoAviso, setFeriadoAviso] = useState<string | null>(null)
@@ -63,11 +66,13 @@ export default function NovoAgendamentoPage() {
       Promise.all([
         supabase.from('profiles').select('id, nome').eq('role', 'terapeuta').order('nome'),
         supabase.from('pacientes').select('id, nome, codigo_interno').eq('status', 'ativo').order('nome'),
-        supabase.from('feriados').select('data, descricao').order('data'),
-      ]).then(([{ data: ts }, { data: ps }, { data: fs }]) => {
+        supabase.from('feriados').select('data, descricao, anual').order('data'),
+        supabase.from('configuracoes_clinica').select('bloquear_feriados').eq('singleton', 'default').maybeSingle(),
+      ]).then(([{ data: ts }, { data: ps }, { data: fs }, { data: config }]) => {
         setTerapeutas(ts ?? [])
         setPacientes(ps ?? [])
         setFeriados(fs ?? [])
+        setBloquearFeriados(((config as ConfigAgenda | null)?.bloquear_feriados ?? false) === true)
       })
     })
   }, [router])
@@ -78,10 +83,10 @@ export default function NovoAgendamentoPage() {
       setForm(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }))
     } else {
       if (name === 'data' && value) {
-        const feriado = feriados.find(f => f.data === value)
+        const feriado = encontrarFeriadoNaData(feriados, value)
         if (feriado) {
           setFeriadoAviso(feriado.descricao)
-          setModalFeriado(true)
+          setModalFeriado(!bloquearFeriados)
         } else {
           setFeriadoAviso(null)
         }
@@ -95,6 +100,10 @@ export default function NovoAgendamentoPage() {
     if (!form.terapeuta_id) { setErro('Selecione a profissional.'); return }
     if (!form.titulo.trim()) { setErro('Informe um título.'); return }
     if (!form.data || !form.hora) { setErro('Informe data e hora.'); return }
+    if (bloquearFeriados && feriadoAviso) {
+      setErro(`Agendamento bloqueado em feriado: ${feriadoAviso}.`)
+      return
+    }
 
     const data_hora = new Date(`${form.data}T${form.hora}:00`).toISOString()
     setCarregando(true)
@@ -123,7 +132,9 @@ export default function NovoAgendamentoPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (feriadoAviso) {
+    if (bloquearFeriados && feriadoAviso) {
+      setErro(`Agendamento bloqueado em feriado: ${feriadoAviso}.`)
+    } else if (feriadoAviso) {
       setModalFeriado(true)
     } else {
       await salvar()

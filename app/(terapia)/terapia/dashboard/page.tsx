@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
+import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 import { CAMPANHAS } from '@/lib/campanhas-saude'
 
 const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
@@ -43,6 +44,7 @@ export default async function TerapiaDashboard() {
     { data: vinculos },
     { data: especiais },
     { data: feriados },
+    { data: configAgenda },
     { data: comunicados },
     { data: vinculosAlta },
     { data: agendamentosHoje },
@@ -66,6 +68,11 @@ export default async function TerapiaDashboard() {
       .from('feriados')
       .select('data, descricao, anual')
       .order('data'),
+    supabase
+      .from('configuracoes_clinica')
+      .select('bloquear_feriados')
+      .eq('singleton', 'default')
+      .maybeSingle(),
     supabase
       .from('comunicados')
       .select('id, titulo, conteudo, criado_em')
@@ -107,15 +114,12 @@ export default async function TerapiaDashboard() {
   const pacientesComAlta = (vinculosAlta ?? []).map((v: any) => v.pacientes).filter(Boolean)
   const pacientesComHorario = pacientesAtivos.map((v: any) => v.pacientes).filter(Boolean)
 
-  // Feriados expandidos para gerarSessoes
-  const feriadosDatasSet = new Set<string>()
-  for (const f of feriados ?? []) {
-    feriadosDatasSet.add(f.data as string)
-    if ((f as any).anual) {
-      const [, mes, dia] = (f.data as string).split('-')
-      feriadosDatasSet.add(`${anoAtualBRT}-${mes}-${dia}`)
-    }
-  }
+  const feriadosDatasBloqueio = datasFeriadosParaBloqueio(
+    feriados ?? [],
+    anoAtualBRT - 1,
+    anoAtualBRT + 2,
+    configAgenda?.bloquear_feriados === true,
+  )
 
   // Próximas sessões (30 dias) para bloco de compromissos
   const em30dias = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000)
@@ -123,7 +127,7 @@ export default async function TerapiaDashboard() {
     pacientesComHorario as Array<{ id: string; nome: string; horarios_atendimento: Array<{ dia: string; hora: string }> }>,
     agora,
     em30dias,
-    Array.from(feriadosDatasSet),
+    feriadosDatasBloqueio,
   )
 
   const proximosCompromissos = [
@@ -146,7 +150,7 @@ export default async function TerapiaDashboard() {
     pacientesComHorario as Array<{ id: string; nome: string; horarios_atendimento: Array<{ dia: string; hora: string }> }>,
     hojeInicio,
     hojeFim,
-    Array.from(feriadosDatasSet),
+    feriadosDatasBloqueio,
   )
 
   const confirmMap = new Map<string, string>()

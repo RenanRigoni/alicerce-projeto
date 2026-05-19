@@ -4,7 +4,7 @@ import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 import { OrientacaoCard } from '@/components/portal/OrientacaoCard'
 import { CalendarioMensalPortal } from '@/components/portal/CalendarioMensalPortal'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
-import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
+import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 import { CAMPANHAS } from '@/lib/campanhas-saude'
 
 const tipoLabel: Record<string, string> = {
@@ -22,7 +22,7 @@ export default async function PortalDashboard() {
 
   const pacienteIds = (vinculos ?? []).map((v: any) => v.paciente_id as string)
 
-  const [{ data: comunicados }, { data: agendamentos }, { data: feriados }, { data: orientacoes }, { data: relatoriosRecentes }, { data: evolucoesRecentes }] = await Promise.all([
+  const [{ data: comunicados }, { data: agendamentos }, { data: feriados }, { data: configAgenda }, { data: orientacoes }, { data: relatoriosRecentes }, { data: evolucoesRecentes }] = await Promise.all([
     supabase
       .from('comunicados')
       .select('id, titulo, conteudo, criado_em')
@@ -42,6 +42,11 @@ export default async function PortalDashboard() {
       .from('feriados')
       .select('data, descricao, anual')
       .order('data'),
+    supabase
+      .from('configuracoes_clinica')
+      .select('bloquear_feriados')
+      .eq('singleton', 'default')
+      .maybeSingle(),
     pacienteIds.length > 0
       ? supabase
           .from('orientacoes')
@@ -82,7 +87,12 @@ export default async function PortalDashboard() {
   const em3meses = new Date(agora.getFullYear(), agora.getMonth() + 3, agora.getDate())
   const inicio3meses = new Date(agora.getFullYear(), agora.getMonth() - 1, 1)
   const anoAtual = new Date().getFullYear()
-  const feriadosDatas = expandirFeriadosAnuais(feriados ?? [], anoAtual - 1, anoAtual + 2)
+  const feriadosDatas = datasFeriadosParaBloqueio(
+    feriados ?? [],
+    anoAtual - 1,
+    anoAtual + 2,
+    configAgenda?.bloquear_feriados === true,
+  )
 
   const sessoesRec = gerarSessoes(pacientesAtivos, inicio3meses, em3meses, feriadosDatas)
 

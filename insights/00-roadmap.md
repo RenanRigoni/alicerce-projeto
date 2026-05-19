@@ -51,7 +51,7 @@ Fases sequenciais; cada uma entregável antes da próxima começar.
 - [x] Primeiro dia da semana (domingo ou segunda) — #FEITO-NECESSARIO-REVISAR
 - [ ] Horários de funcionamento por dia + múltiplos turnos
       Schema: tabela `horarios_funcionamento` (clinica_id, dia_semana, hora_inicio, hora_fim)
-- [ ] Toggle: bloquear agenda em feriados nacionais (**opcional** — profissional pode usar o feriado para atividade diferente)
+- [x] Toggle: bloquear agenda em feriados nacionais (**opcional** — profissional pode usar o feriado para atividade diferente) — #FEITO-NECESSARIO-REVISAR
 
 ---
 
@@ -62,7 +62,7 @@ Fases sequenciais; cada uma entregável antes da próxima começar.
 - [ ] Grade respeita horários de funcionamento da clínica (slots fora do horário ficam cinza)
 - [ ] Flag por usuário: permitir agendamentos fora do horário (admin/recepção)
 - [ ] Intervalo de tempo da agenda respeita configuração da Fase 1
-- [ ] Bloquear feriados automaticamente quando toggle ativado (tabela `feriados` já existe)
+- [x] Bloquear feriados automaticamente quando toggle ativado (tabela `feriados` já existe) — #FEITO-NECESSARIO-REVISAR
 
 ---
 

@@ -25,3 +25,20 @@ export function expandirFeriadosAnuais(
 
   return Array.from(datas)
 }
+
+export function datasFeriadosParaBloqueio(
+  feriados: Array<{ data: string; anual?: boolean | null }>,
+  anoInicio: number,
+  anoFim: number,
+  bloquearFeriados?: boolean | null,
+): string[] {
+  if (!bloquearFeriados) return []
+  return expandirFeriadosAnuais(feriados, anoInicio, anoFim)
+}
+
+export function encontrarFeriadoNaData<T extends { data: string; anual?: boolean | null }>(
+  feriados: T[],
+  data: string,
+): T | undefined {
+  return feriados.find(f => f.data === data || (f.anual === true && f.data.slice(5) === data.slice(5)))
+}

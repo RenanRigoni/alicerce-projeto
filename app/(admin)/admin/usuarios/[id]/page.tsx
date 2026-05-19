@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { notFound } from 'next/navigation'
 import { AcoesUsuario } from './AcoesUsuario'
 import { AgendaSemanalTerapeuta } from '@/components/admin/AgendaSemanalTerapeuta'
-import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
+import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 import { formatarConselhoProfissional, getTipoProfissionalConfig } from '@/lib/profissionais'
 import { PermissoesEditor } from '@/components/admin/PermissoesEditor'
 import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
@@ -105,18 +105,28 @@ export default async function UsuarioDetalhePage({
   const confirmacoesIniciais: Record<string, { token: string; status: string }> = {}
 
   if (usuario.role === 'terapeuta') {
-    const [{ data: vinculos }, { data: feriados }] = await Promise.all([
+    const [{ data: vinculos }, { data: feriados }, { data: configAgenda }] = await Promise.all([
       supabase
         .from('paciente_terapeutas')
         .select('pacientes(id, nome, status, horarios_atendimento)')
         .eq('terapeuta_id', id),
       supabase.from('feriados').select('data, anual'),
+      supabase
+        .from('configuracoes_clinica')
+        .select('bloquear_feriados')
+        .eq('singleton', 'default')
+        .maybeSingle(),
     ])
     pacientesTerapeuta = (vinculos ?? [])
       .map((v: any) => v.pacientes)
       .filter((p: any) => p && p.status === 'ativo')
     const anoAtual = new Date().getFullYear()
-    feriadosDatas = expandirFeriadosAnuais(feriados ?? [], anoAtual - 1, anoAtual + 2)
+    feriadosDatas = datasFeriadosParaBloqueio(
+      feriados ?? [],
+      anoAtual - 1,
+      anoAtual + 2,
+      configAgenda?.bloquear_feriados === true,
+    )
 
     const pacientesIds = pacientesTerapeuta.map(p => p.id)
     if (pacientesIds.length > 0) {

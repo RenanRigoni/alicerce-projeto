@@ -1,7 +1,14 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { temPermissao } from '@/lib/permissoes/definicoes'
+import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 import { NextRequest, NextResponse } from 'next/server'
+
+function dataBRTFromIso(iso: string) {
+  const dt = new Date(iso)
+  const brt = new Date(dt.getTime() - 3 * 60 * 60 * 1000)
+  return brt.toISOString().slice(0, 10)
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
@@ -36,6 +43,26 @@ export async function POST(request: NextRequest) {
   }
 
   const adminClient = createAdminClient()
+
+  const { data: configAgenda } = await adminClient
+    .from('configuracoes_clinica')
+    .select('bloquear_feriados')
+    .eq('singleton', 'default')
+    .maybeSingle()
+
+  if (configAgenda?.bloquear_feriados === true) {
+    const dataBRT = dataBRTFromIso(dataHora)
+    const ano = Number(dataBRT.slice(0, 4))
+    const { data: feriados } = await adminClient
+      .from('feriados')
+      .select('data, anual')
+    const feriadosBloqueados = datasFeriadosParaBloqueio(feriados ?? [], ano - 1, ano + 1, true)
+
+    if (feriadosBloqueados.includes(dataBRT)) {
+      return NextResponse.json({ error: 'Agendamento bloqueado em feriado pela configuração da clínica.' }, { status: 400 })
+    }
+  }
+
   const { error } = await adminClient.from('agendamentos').insert({
     terapeuta_id: terapeutaId,
     paciente_id: pacienteId,

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { CalendarioAgenda } from '@/components/terapia/CalendarioAgenda'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
-import { expandirFeriadosAnuais } from '@/lib/agenda/feriados'
+import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 
 export default async function AgendaPage() {
   const supabase = await createClient()
@@ -14,6 +14,7 @@ export default async function AgendaPage() {
     { data: vinculos },
     { data: especiais },
     { data: feriados },
+    { data: configAgenda },
     { data: confirmacoes },
   ] = await Promise.all([
     supabase
@@ -31,6 +32,11 @@ export default async function AgendaPage() {
       .select('data, descricao, anual')
       .order('data'),
     supabase
+      .from('configuracoes_clinica')
+      .select('bloquear_feriados')
+      .eq('singleton', 'default')
+      .maybeSingle(),
+    supabase
       .from('sessao_confirmacoes')
       .select('paciente_id, data_hora, token, status')
       .gte('data_hora', inicio.toISOString())
@@ -42,7 +48,12 @@ export default async function AgendaPage() {
     .filter((p: any) => p && p.status === 'ativo')
 
   const anoAtual = new Date().getFullYear()
-  const feriadosDatas = expandirFeriadosAnuais(feriados ?? [], anoAtual - 1, anoAtual + 2)
+  const feriadosDatas = datasFeriadosParaBloqueio(
+    feriados ?? [],
+    anoAtual - 1,
+    anoAtual + 2,
+    configAgenda?.bloquear_feriados === true,
+  )
   const sessoesRec = gerarSessoes(pacientes, inicio, fim, feriadosDatas)
 
   // Monta mapa de confirmações: "paciente_id_YYYY-MM-DD_HH:MM" → { token, status }

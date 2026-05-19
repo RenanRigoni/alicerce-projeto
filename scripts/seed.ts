@@ -11,7 +11,7 @@ loadEnvConfig(process.cwd())
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const SENHA_PADRAO = 'Alicerce'
+const SENHA_PADRAO = 'alicerce'
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   throw new Error(

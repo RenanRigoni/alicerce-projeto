@@ -21,6 +21,7 @@ import {
   LogOut,
   Menu,
   X,
+  Settings,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -46,8 +47,9 @@ const navConfig: Record<string, NavItem[]> = {
     { href: '/admin/agendamentos', label: 'Agenda',        icon: CalendarDays,    permission: 'criar_agendamentos' },
     { href: '/admin/feriados',     label: 'Feriados',      icon: CalendarOff,     permission: 'gerenciar_feriados' },
     { href: '/admin/comunicados',  label: 'Comunicados',   icon: Megaphone,       permission: 'criar_comunicados' },
-    { href: '/admin/auditoria',    label: 'Auditoria',     icon: ScrollText,      permission: 'ver_auditoria' },
-    { href: '/admin/usuarios',     label: 'Usuários',      icon: ShieldCheck,     permission: 'gerenciar_usuarios' },
+    { href: '/admin/auditoria',     label: 'Auditoria',      icon: ScrollText,  permission: 'ver_auditoria' },
+    { href: '/admin/usuarios',      label: 'Usuários',       icon: ShieldCheck, permission: 'gerenciar_usuarios' },
+    { href: '/admin/configuracoes', label: 'Configurações',  icon: Settings,    permission: null },
   ],
   recepcao: [
     { href: '/admin/dashboard',    label: 'Início',        icon: LayoutDashboard, permission: null },

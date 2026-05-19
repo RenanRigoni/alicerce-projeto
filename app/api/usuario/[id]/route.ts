@@ -55,8 +55,17 @@ export async function PATCH(
     return NextResponse.json({ error: 'Nome e e-mail são obrigatórios' }, { status: 400 })
   }
 
-  const profileUpdate: Record<string, string | null> = { nome }
+  const str = (v: unknown) => typeof v === 'string' && v.trim() ? v.trim() : null
+
+  const profileUpdate: Record<string, string | null | boolean> = { nome }
   if (alvo.role !== 'pai') profileUpdate.telefone = telefone || null
+
+  // Campos pessoais comuns a todos os roles
+  profileUpdate.data_nascimento = str(body.data_nascimento)
+  profileUpdate.rg              = str(body.rg)
+  profileUpdate.estado_civil    = str(body.estado_civil) as string | null
+  const sexoValido = ['masculino', 'feminino', 'outro']
+  profileUpdate.sexo = sexoValido.includes(body.sexo) ? (body.sexo as string) : null
 
   const metadataUpdate: Record<string, string | null> = {
     nome,
@@ -103,6 +112,8 @@ export async function PATCH(
     profileUpdate.cbo_codigo = cboCodigo
     profileUpdate.crefito = conselhoNumero
     profileUpdate.cpf_cnpj = cpfCnpj
+    profileUpdate.especialidade = str(body.especialidade)
+    profileUpdate.biografia = str(body.biografia)
 
     metadataUpdate.tipo_profissional = tipoConfig.value
     metadataUpdate.conselho_tipo = tipoConfig.conselho

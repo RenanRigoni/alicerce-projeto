@@ -18,7 +18,7 @@ export default async function EditarUsuarioPage({
 
   const { data: usuario } = await supabase
     .from('profiles')
-    .select('id, nome, role, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo')
+    .select('id, nome, role, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, data_nascimento, rg, sexo, estado_civil, especialidade, biografia')
     .eq('id', id)
     .single()
 
@@ -34,12 +34,20 @@ export default async function EditarUsuarioPage({
 
   const { data: authUser } = await adminClient.auth.admin.getUserById(id)
 
-  let detalhes: { endereco: string | null; cidade: string | null; cep: string | null; telefone_principal: string | null; contato_emergencia: string | null } | null = null
+  let detalhes: {
+    endereco: string | null
+    cidade: string | null
+    cep: string | null
+    numero: string | null
+    complemento: string | null
+    telefone_principal: string | null
+    contato_emergencia: string | null
+  } | null = null
 
   if (usuario.role === 'pai') {
     const { data } = await supabase
       .from('responsaveis_detalhes')
-      .select('endereco, cidade, cep, telefone_principal, contato_emergencia')
+      .select('endereco, cidade, cep, numero, complemento, telefone_principal, contato_emergencia')
       .eq('id', id)
       .maybeSingle()
     detalhes = data ?? null

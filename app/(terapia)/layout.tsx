@@ -11,7 +11,7 @@ export default async function TerapiaLayout({ children }: { children: React.Reac
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, role, permissoes')
+    .select('nome, role, permissoes, foto_url')
     .eq('id', user.id)
     .single()
 
@@ -22,6 +22,7 @@ export default async function TerapiaLayout({ children }: { children: React.Reac
       <Sidebar
         role="terapeuta"
         nome={profile.nome}
+        fotoUrl={profile.foto_url ?? null}
         permissoes={todasPermissoes(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>)}
       />
       <main className="lg:pl-16 pt-14 lg:pt-0">

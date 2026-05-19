@@ -28,6 +28,7 @@ import {
 interface SidebarProps {
   role: 'admin' | 'recepcao' | 'terapeuta' | 'pai'
   nome: string
+  fotoUrl?: string | null
   permissoes?: Record<string, boolean>
 }
 
@@ -99,7 +100,7 @@ function initials(nome: string) {
   return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
 }
 
-export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
+export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -334,10 +335,13 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
               const rect = avatarRef.current?.getBoundingClientRect()
               if (rect) setUserMenuPos({ left: rect.right + 12, bottom: window.innerHeight - rect.bottom })
             }}
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold transition-opacity hover:opacity-80 ${avatarColors[role]}`}
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold transition-opacity hover:opacity-80 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}
             title={nome}
           >
-            {initials(nome)}
+            {fotoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
+            ) : initials(nome)}
           </button>
         </div>
       </aside>
@@ -482,8 +486,11 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
               style={{ borderTop: '1px solid var(--color-border)' }}
             >
               <div className="flex items-center gap-3 px-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${avatarColors[role]}`}>
-                  {initials(nome)}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}>
+                  {fotoUrl
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
+                    : initials(nome)}
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>{nome}</div>

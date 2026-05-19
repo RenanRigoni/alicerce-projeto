@@ -108,6 +108,13 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
   const [tooltip, setTooltip] = useState<{ label: string; y: number } | null>(null)
   const avatarRef = useRef<HTMLButtonElement>(null)
 
+  const profileUrl: Record<string, string> = {
+    admin:     '/admin/meu-perfil',
+    recepcao:  '/admin/meu-perfil',
+    terapeuta: '/terapia/meu-perfil',
+    pai:       '/portal/meus-dados',
+  }
+
   const items = (navConfig[role] ?? []).filter(item =>
     !item.permission || permissoes[item.permission] === true
   )
@@ -349,10 +356,15 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
               boxShadow: '0 8px 32px rgba(44,32,24,0.12)',
             }}
           >
-            <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border-soft)' }}>
+            <Link
+              href={profileUrl[role]}
+              onClick={() => setUserMenuPos(null)}
+              className="block px-4 py-3 rounded-t-2xl transition-colors hover:bg-[var(--color-border-soft)]"
+              style={{ borderBottom: '1px solid var(--color-border-soft)', textDecoration: 'none' }}
+            >
               <div className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>{nome}</div>
               <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>{roleLabel[role]}</div>
-            </div>
+            </Link>
 
             {role === 'pai' && (
               <Link

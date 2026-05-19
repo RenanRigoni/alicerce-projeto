@@ -38,9 +38,9 @@
   --color-border:      #EAE0D8;
   --color-border-soft: #F2EBE5;
 
-  /* Fontes */
-  --font-lora:    var(--font-lora-var), 'Lora', Georgia, serif;
-  --font-dm-sans: var(--font-barlow-var), 'Barlow', 'DM Sans', system-ui, sans-serif;
+  /* Fontes — Barlow única família, pesos diferenciam hierarquia */
+  --font-lora:    var(--font-barlow-var), 'Barlow', system-ui, sans-serif;
+  --font-dm-sans: var(--font-barlow-var), 'Barlow', system-ui, sans-serif;
 }
 
 /* ─── Base ───────────────────────────────────────────────────── */

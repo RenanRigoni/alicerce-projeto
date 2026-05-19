@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Navbar } from '@/components/layout/Navbar'
+import { Sidebar } from '@/components/layout/Sidebar'
 import { todasPermissoes } from '@/lib/permissoes/definicoes'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -21,13 +21,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--color-cream)' }}>
-      <Navbar
+      <Sidebar
         role={profile.role as 'admin' | 'recepcao'}
         nome={profile.nome}
         permissoes={todasPermissoes(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>)}
       />
-      <main className="max-w-5xl mx-auto px-4 py-8 animate-fade-up">
-        {children}
+      <main className="lg:pl-16 pt-14 lg:pt-0">
+        <div className="max-w-5xl mx-auto px-4 py-8 animate-fade-up">
+          {children}
+        </div>
       </main>
     </div>
   )

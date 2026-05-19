@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Navbar } from '@/components/layout/Navbar'
+import { Sidebar } from '@/components/layout/Sidebar'
 import { ConsentimentoModal } from '@/components/portal/ConsentimentoModal'
 import { POLICY_VERSION } from '@/lib/consentimento'
 
@@ -29,10 +29,12 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--color-peach-light)' }}>
-      <Navbar role="pai" nome={profile.nome} />
+      <Sidebar role="pai" nome={profile.nome} />
       {precisaConsentimento && <ConsentimentoModal />}
-      <main className="max-w-5xl mx-auto px-4 py-8 animate-fade-up">
-        {children}
+      <main className="lg:pl-16 pt-14 lg:pt-0">
+        <div className="max-w-5xl mx-auto px-4 py-8 animate-fade-up">
+          {children}
+        </div>
       </main>
     </div>
   )

@@ -15,6 +15,7 @@
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
     "jwt-decode": "^4.0.0",
+    "lucide-react": "^1.16.0",
     "next": "16.2.3",
     "pdf-lib": "^1.17.1",
     "react": "19.2.4",

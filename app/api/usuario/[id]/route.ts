@@ -1,6 +1,6 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getTipoProfissionalConfig, isTipoProfissional } from '@/lib/profissionais'
+import { getTipoProfissionalConfig, isTipoProfissional, isUfBrasil } from '@/lib/profissionais'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -75,8 +75,15 @@ export async function PATCH(
     const conselhoNumero = typeof body.conselho_numero === 'string'
       ? body.conselho_numero.trim()
       : ''
+    const conselhoUf = typeof body.conselho_uf === 'string' && body.conselho_uf.trim()
+      ? body.conselho_uf.trim().toUpperCase()
+      : null
     if (!conselhoNumero) {
       return NextResponse.json({ error: `${tipoConfig.conselho} é obrigatório para profissionais` }, { status: 400 })
+    }
+
+    if (conselhoUf && !isUfBrasil(conselhoUf)) {
+      return NextResponse.json({ error: 'UF do conselho inválida' }, { status: 400 })
     }
 
     const cpfCnpj = normalizarCpfCnpj(body.cpf_cnpj)
@@ -87,12 +94,14 @@ export async function PATCH(
     profileUpdate.tipo_profissional = tipoConfig.value
     profileUpdate.conselho_tipo = tipoConfig.conselho
     profileUpdate.conselho_numero = conselhoNumero
+    profileUpdate.conselho_uf = conselhoUf
     profileUpdate.crefito = conselhoNumero
     profileUpdate.cpf_cnpj = cpfCnpj
 
     metadataUpdate.tipo_profissional = tipoConfig.value
     metadataUpdate.conselho_tipo = tipoConfig.conselho
     metadataUpdate.conselho_numero = conselhoNumero
+    metadataUpdate.conselho_uf = conselhoUf
     metadataUpdate.crefito = conselhoNumero
   }
 

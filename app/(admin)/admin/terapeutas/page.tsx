@@ -19,10 +19,10 @@ export default async function ProfissionaisPage() {
     .from('profiles')
     .select(podeVerPacientes
       ? `
-        id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero,
+        id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf,
         paciente_terapeutas(pacientes(id, nome, codigo_interno, status))
       `
-      : 'id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero')
+      : 'id, nome, ativo, telefone, crefito, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf')
     .eq('role', 'terapeuta')
     .order('nome')
 
@@ -36,6 +36,7 @@ export default async function ProfissionaisPage() {
       tipoProfissional: p.tipo_profissional,
       conselhoTipo: p.conselho_tipo,
       conselhoNumero: p.conselho_numero,
+      conselhoUf: p.conselho_uf,
       crefitoLegado: p.crefito,
     }),
     pacientes: (p.paciente_terapeutas ?? [])

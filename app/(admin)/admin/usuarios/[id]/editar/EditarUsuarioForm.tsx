@@ -1,6 +1,6 @@
 'use client'
 
-import { TIPOS_PROFISSIONAIS, getTipoProfissionalConfig } from '@/lib/profissionais'
+import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig } from '@/lib/profissionais'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -53,6 +53,7 @@ interface Props {
     tipo_profissional?: string | null
     conselho_tipo?: string | null
     conselho_numero?: string | null
+    conselho_uf?: string | null
   }
   detalhes: {
     endereco: string | null
@@ -84,6 +85,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     cpf_cnpj: mascaraCpfCnpj(usuario.cpf_cnpj ?? ''),
     tipo_profissional: usuario.tipo_profissional ?? 'terapeuta_ocupacional',
     conselho_numero: usuario.conselho_numero ?? usuario.crefito ?? '',
+    conselho_uf: usuario.conselho_uf ?? '',
     telefone_principal: detalhes?.telefone_principal ?? '',
     endereco: detalhes?.endereco ?? '',
     cidade: detalhes?.cidade ?? '',
@@ -142,6 +144,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
         ...(usuario.role === 'terapeuta' ? {
           tipo_profissional: form.tipo_profissional,
           conselho_numero: form.conselho_numero,
+          conselho_uf: form.conselho_uf,
           cpf_cnpj: form.cpf_cnpj,
         } : {}),
       }),
@@ -236,6 +239,18 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
                   {tipoConfig.conselho}
                 </label>
                 <input name="conselho_numero" value={form.conselho_numero} onChange={handle} className={inputCls} style={inputStyle} />
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>
+                  UF do conselho
+                </label>
+                <select name="conselho_uf" value={form.conselho_uf} onChange={handle} className={inputCls} style={inputStyle}>
+                  <option value="">Não informado</option>
+                  {UFS_BRASIL.map(uf => (
+                    <option key={uf} value={uf}>{uf}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

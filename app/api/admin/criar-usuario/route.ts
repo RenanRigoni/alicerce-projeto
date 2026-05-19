@@ -1,4 +1,4 @@
-import { getTipoProfissionalConfig, isTipoProfissional } from '@/lib/profissionais'
+import { getTipoProfissionalConfig, isTipoProfissional, isUfBrasil } from '@/lib/profissionais'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   const {
     nome, email, role, crefito, cpf_cnpj, paciente_id,
-    tipo_profissional, conselho_numero,
+    tipo_profissional, conselho_numero, conselho_uf,
     telefone, cep, endereco, numero, complemento, cidade,
     contato_emergencia_nome, contato_emergencia_telefone,
   } = body
@@ -67,6 +67,9 @@ export async function POST(request: NextRequest) {
     ? conselho_numero.trim()
     : (typeof crefito === 'string' ? crefito.trim() : '')
   const conselhoTipo = tipoConfig?.conselho ?? null
+  const conselhoUf = typeof conselho_uf === 'string' && conselho_uf.trim()
+    ? conselho_uf.trim().toUpperCase()
+    : null
 
   if (role === 'terapeuta' && !tipoProfissional) {
     return NextResponse.json({ error: 'Tipo profissional inválido' }, { status: 400 })
@@ -74,6 +77,10 @@ export async function POST(request: NextRequest) {
 
   if (role === 'terapeuta' && !conselhoNumero) {
     return NextResponse.json({ error: `${conselhoTipo ?? 'Conselho'} é obrigatório para profissionais` }, { status: 400 })
+  }
+
+  if (role === 'terapeuta' && conselhoUf && !isUfBrasil(conselhoUf)) {
+    return NextResponse.json({ error: 'UF do conselho inválida' }, { status: 400 })
   }
 
   if (role === 'pai') {
@@ -95,6 +102,7 @@ export async function POST(request: NextRequest) {
       ...(tipoProfissional ? { tipo_profissional: tipoProfissional } : {}),
       ...(conselhoTipo ? { conselho_tipo: conselhoTipo } : {}),
       ...(conselhoNumero ? { conselho_numero: conselhoNumero, crefito: conselhoNumero } : {}),
+      ...(conselhoUf ? { conselho_uf: conselhoUf } : {}),
     },
   })
 
@@ -113,6 +121,7 @@ export async function POST(request: NextRequest) {
       ...(tipoProfissional ? { tipo_profissional: tipoProfissional } : {}),
       ...(conselhoTipo ? { conselho_tipo: conselhoTipo } : {}),
       ...(conselhoNumero ? { conselho_numero: conselhoNumero, crefito: conselhoNumero } : {}),
+      conselho_uf: conselhoUf,
       ...(cpfCnpjNorm ? { cpf_cnpj: cpfCnpjNorm } : {}),
     })
     .eq('id', userId)

@@ -18,7 +18,7 @@ export default async function EditarUsuarioPage({
 
   const { data: usuario } = await supabase
     .from('profiles')
-    .select('id, nome, role, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero')
+    .select('id, nome, role, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf')
     .eq('id', id)
     .single()
 

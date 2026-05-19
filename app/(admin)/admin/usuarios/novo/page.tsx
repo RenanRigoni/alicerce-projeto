@@ -1,6 +1,6 @@
 'use client'
 
-import { TIPOS_PROFISSIONAIS, getTipoProfissionalConfig } from '@/lib/profissionais'
+import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig } from '@/lib/profissionais'
 import { todasPermissoes } from '@/lib/permissoes/definicoes'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
@@ -27,6 +27,7 @@ const FORM_INICIAL = {
   cpf_cnpj_profissional: '',
   tipo_profissional: 'terapeuta_ocupacional',
   conselho_numero: '',
+  conselho_uf: '',
 }
 
 async function buscarCep(cep: string): Promise<{ logradouro: string; localidade: string } | null> {
@@ -179,6 +180,7 @@ export default function NovoUsuarioPage() {
       ...(form.role === 'terapeuta' ? {
         tipo_profissional: form.tipo_profissional,
         conselho_numero: form.conselho_numero,
+        conselho_uf: form.conselho_uf,
         cpf_cnpj: form.cpf_cnpj_profissional,
       } : {}),
     }
@@ -443,6 +445,18 @@ export default function NovoUsuarioPage() {
                   className="input-base"
                 />
                 <p className="text-xs mt-1" style={hint}>Obrigatório para assinatura e identificação profissional</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={L}>
+                  UF do conselho <span className="text-xs font-normal" style={hint}>(opcional)</span>
+                </label>
+                <select name="conselho_uf" value={form.conselho_uf} onChange={handleChange} className="input-base">
+                  <option value="">Não informado</option>
+                  {UFS_BRASIL.map(uf => (
+                    <option key={uf} value={uf}>{uf}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

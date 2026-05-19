@@ -52,7 +52,7 @@ export default async function UsuarioDetalhePage({
 
   const { data: usuario } = await supabase
     .from('profiles')
-    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, permissoes')
+    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, permissoes')
     .eq('id', id)
     .single()
   if (!usuario) notFound()
@@ -73,6 +73,7 @@ export default async function UsuarioDetalhePage({
         tipoProfissional: usuario.tipo_profissional,
         conselhoTipo: usuario.conselho_tipo,
         conselhoNumero: usuario.conselho_numero,
+        conselhoUf: usuario.conselho_uf,
         crefitoLegado: usuario.crefito,
       })
     : ''

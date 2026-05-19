@@ -48,7 +48,7 @@ Fases sequenciais; cada uma entregável antes da próxima começar.
 - [ ] Dados fiscais: CNPJ/CPF, razão social, nome fantasia, tipo PF/PJ
 - [ ] Endereço comercial + endereço de cobrança separado (NFS-e futuro)
 - [ ] Intervalo de tempo da agenda configurável (30 / 45 / 50 / 60 min)
-- [ ] Primeiro dia da semana (domingo ou segunda)
+- [x] Primeiro dia da semana (domingo ou segunda) — #FEITO-NECESSARIO-REVISAR
 - [ ] Horários de funcionamento por dia + múltiplos turnos
       Schema: tabela `horarios_funcionamento` (clinica_id, dia_semana, hora_inicio, hora_fim)
 - [ ] Toggle: bloquear agenda em feriados nacionais (**opcional** — profissional pode usar o feriado para atividade diferente)

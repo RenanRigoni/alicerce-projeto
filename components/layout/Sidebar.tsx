@@ -102,6 +102,7 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [tooltip, setTooltip] = useState<{ label: string; y: number } | null>(null)
 
   const items = (navConfig[role] ?? []).filter(item =>
     !item.permission || permissoes[item.permission] === true
@@ -117,8 +118,48 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
     router.push('/login')
   }
 
+  function showTooltip(e: React.MouseEvent<HTMLDivElement>, label: string) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setTooltip({ label, y: rect.top + rect.height / 2 })
+  }
+
   return (
     <>
+      {/* ── Tooltip fixo — position:fixed escapa qualquer overflow ── */}
+      {tooltip && (
+        <div
+          className="hidden lg:block"
+          style={{
+            position: 'fixed',
+            left: 72,
+            top: tooltip.y,
+            transform: 'translateY(-50%)',
+            zIndex: 9999,
+            pointerEvents: 'none',
+            background: 'var(--color-ink)',
+            color: '#fff',
+            borderRadius: 8,
+            padding: '5px 11px',
+            fontSize: 13,
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+          }}
+        >
+          {tooltip.label}
+          <span
+            style={{
+              position: 'absolute',
+              right: '100%',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              border: '5px solid transparent',
+              borderRightColor: 'var(--color-ink)',
+            }}
+          />
+        </div>
+      )}
+
       {/* ── Desktop sidebar ─────────────────────────────────── */}
       <aside
         className="fixed left-0 top-0 bottom-0 w-16 z-40 hidden lg:flex flex-col"
@@ -143,16 +184,20 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
           />
         </Link>
 
-        {/* Nav items */}
-        <nav className="flex-1 py-2 flex flex-col gap-0.5 overflow-y-auto overflow-x-visible">
+        {/* Nav items — sem overflow para não cortar tooltip */}
+        <nav className="flex-1 py-2 flex flex-col gap-0.5">
           {items.map(item => {
             const Icon = item.icon
             const active = isActive(item.href)
             return (
-              <div key={item.href} className="group relative flex items-center">
+              <div
+                key={item.href}
+                onMouseEnter={e => showTooltip(e, item.label)}
+                onMouseLeave={() => setTooltip(null)}
+              >
                 <Link
                   href={item.href}
-                  className="w-16 h-11 flex items-center justify-center rounded-xl mx-0 transition-all duration-150"
+                  className="w-16 h-11 flex items-center justify-center rounded-xl transition-all duration-150"
                   style={{
                     color: active ? 'var(--color-rose-main)' : 'var(--color-ink-soft)',
                     background: active ? 'var(--color-rose-blush)' : 'transparent',
@@ -174,38 +219,6 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
                 >
                   <Icon size={19} strokeWidth={active ? 2.5 : 1.75} />
                 </Link>
-
-                {/* Hover tooltip */}
-                <div
-                  className="absolute left-full z-50 pointer-events-none
-                    invisible opacity-0 translate-x-[-6px]
-                    group-hover:visible group-hover:opacity-100 group-hover:translate-x-0
-                    transition-all duration-150"
-                  style={{
-                    marginLeft: 10,
-                    background: 'var(--color-ink)',
-                    color: '#fff',
-                    borderRadius: 8,
-                    padding: '5px 11px',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
-                  }}
-                >
-                  {item.label}
-                  <span
-                    style={{
-                      position: 'absolute',
-                      right: '100%',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      borderWidth: 5,
-                      borderStyle: 'solid',
-                      borderColor: 'transparent var(--color-ink) transparent transparent',
-                    }}
-                  />
-                </div>
               </div>
             )
           })}
@@ -218,7 +231,6 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
         >
           <NotificacoesBell />
 
-          {/* Avatar + user menu */}
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(v => !v)}
@@ -274,7 +286,6 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
         </div>
       </aside>
 
-      {/* Overlay para fechar user menu */}
       {userMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
       )}
@@ -309,7 +320,7 @@ export function Sidebar({ role, nome, permissoes = {} }: SidebarProps) {
         </div>
       </div>
 
-      {/* Mobile overlay sidebar */}
+      {/* Mobile overlay */}
       {mobileOpen && (
         <>
           <div

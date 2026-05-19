@@ -8,7 +8,7 @@ import { CAMPANHAS } from '@/lib/campanhas-saude'
 import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 
 const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
-const tipoLabel: Record<string, string> = { devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro' }
+const tipoLabel: Record<string, string> = { devolutiva: 'Devolutiva', reuniao: 'Reunião', reposicao: 'Reposição', bloqueio: 'Indisponível', outro: 'Outro' }
 
 function dd(n: number) { return String(n).padStart(2, '0') }
 

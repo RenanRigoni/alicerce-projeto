@@ -7,7 +7,7 @@ import { CAMPANHAS } from '@/lib/campanhas-saude'
 
 const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
 const tipoLabel: Record<string, string> = {
-  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
+  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', reposicao: 'Reposição', bloqueio: 'Indisponível', outro: 'Outro',
 }
 
 function dd(n: number) { return String(n).padStart(2, '0') }
@@ -30,6 +30,7 @@ export default async function TerapiaDashboard() {
   const segStr = `${segBRT.getUTCFullYear()}-${dd(segBRT.getUTCMonth() + 1)}-${dd(segBRT.getUTCDate())}`
   const semanaInicio = new Date(`${segStr}T00:00:00-03:00`)
   const semanaFim    = new Date(semanaInicio.getTime() + 7 * 86400000 - 1000)
+  const em30dias = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000)
 
   const mesAtualBRT  = agoraBRT.getUTCMonth() + 1
   const anoAtualBRT  = agoraBRT.getUTCFullYear()
@@ -49,6 +50,7 @@ export default async function TerapiaDashboard() {
     { data: vinculosAlta },
     { data: agendamentosHoje },
     { data: confirmacoesHoje },
+    { data: confirmacoesProximas },
     { data: confirmacoesSemana },
     { data: confirmacoesMes },
   ] = await Promise.all([
@@ -98,6 +100,12 @@ export default async function TerapiaDashboard() {
       .lte('data_hora', hojeFim.toISOString()),
     supabase
       .from('sessao_confirmacoes')
+      .select('paciente_id, data_hora, status')
+      .eq('terapeuta_id', user!.id)
+      .gte('data_hora', agora.toISOString())
+      .lte('data_hora', em30dias.toISOString()),
+    supabase
+      .from('sessao_confirmacoes')
       .select('status')
       .eq('terapeuta_id', user!.id)
       .gte('data_hora', semanaInicio.toISOString())
@@ -122,7 +130,6 @@ export default async function TerapiaDashboard() {
   )
 
   // Próximas sessões (30 dias) para bloco de compromissos
-  const em30dias = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000)
   const sessoesProximas = gerarSessoes(
     pacientesComHorario as Array<{ id: string; nome: string; horarios_atendimento: Array<{ dia: string; hora: string }> }>,
     agora,
@@ -130,8 +137,22 @@ export default async function TerapiaDashboard() {
     feriadosDatasBloqueio,
   )
 
+  const canceladasProximasSet = new Set<string>()
+  for (const c of confirmacoesProximas ?? []) {
+    if ((c as any).status !== 'cancelada') continue
+    const dt = new Date((c as any).data_hora)
+    const brt = new Date(dt.getTime() - 3 * 60 * 60 * 1000)
+    const brtDate = brt.toISOString().slice(0, 10)
+    const brtHora = brt.toISOString().slice(11, 16)
+    canceladasProximasSet.add(`${(c as any).paciente_id}_${brtDate}_${brtHora}`)
+  }
+
   const proximosCompromissos = [
-    ...sessoesProximas,
+    ...sessoesProximas.filter(s => {
+      if (!s.paciente) return true
+      const key = `${s.paciente.id}_${s.data_hora.slice(0, 10)}_${s.data_hora.slice(11, 16)}`
+      return !canceladasProximasSet.has(key)
+    }),
     ...(especiais ?? []).map((a: any) => ({
       id: a.id,
       tipo: a.tipo,

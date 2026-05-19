@@ -8,7 +8,7 @@ import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 import { CAMPANHAS } from '@/lib/campanhas-saude'
 
 const tipoLabel: Record<string, string> = {
-  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
+  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', reposicao: 'Reposição', bloqueio: 'Indisponível', outro: 'Outro',
 }
 
 export default async function PortalDashboard() {
@@ -22,7 +22,12 @@ export default async function PortalDashboard() {
 
   const pacienteIds = (vinculos ?? []).map((v: any) => v.paciente_id as string)
 
-  const [{ data: comunicados }, { data: agendamentos }, { data: feriados }, { data: configAgenda }, { data: orientacoes }, { data: relatoriosRecentes }, { data: evolucoesRecentes }] = await Promise.all([
+  const agora = new Date()
+  const agoraBRT = new Date(agora.getTime() - 3 * 60 * 60 * 1000)
+  const em3meses = new Date(agora.getFullYear(), agora.getMonth() + 3, agora.getDate())
+  const inicio3meses = new Date(agora.getFullYear(), agora.getMonth() - 1, 1)
+
+  const [{ data: comunicados }, { data: agendamentos }, { data: feriados }, { data: configAgenda }, { data: orientacoes }, { data: relatoriosRecentes }, { data: evolucoesRecentes }, { data: confirmacoes }] = await Promise.all([
     supabase
       .from('comunicados')
       .select('id, titulo, conteudo, criado_em')
@@ -73,6 +78,14 @@ export default async function PortalDashboard() {
           .order('publicado_em', { ascending: false })
           .limit(5)
       : Promise.resolve({ data: [] }),
+    pacienteIds.length > 0
+      ? supabase
+          .from('sessao_confirmacoes')
+          .select('paciente_id, data_hora, status')
+          .in('paciente_id', pacienteIds)
+          .gte('data_hora', inicio3meses.toISOString())
+          .lte('data_hora', em3meses.toISOString())
+      : Promise.resolve({ data: [] }),
   ])
 
   // Gera sessões recorrentes para os próximos 3 meses (para o calendário)
@@ -80,12 +93,8 @@ export default async function PortalDashboard() {
     .map((v: any) => v.pacientes)
     .filter((p: any) => p && p.status === 'ativo')
 
-  const agora = new Date()
-  const agoraBRT = new Date(agora.getTime() - 3 * 60 * 60 * 1000)
   const campanha = CAMPANHAS[agoraBRT.getUTCMonth()]
 
-  const em3meses = new Date(agora.getFullYear(), agora.getMonth() + 3, agora.getDate())
-  const inicio3meses = new Date(agora.getFullYear(), agora.getMonth() - 1, 1)
   const anoAtual = new Date().getFullYear()
   const feriadosDatas = datasFeriadosParaBloqueio(
     feriados ?? [],
@@ -96,9 +105,23 @@ export default async function PortalDashboard() {
 
   const sessoesRec = gerarSessoes(pacientesAtivos, inicio3meses, em3meses, feriadosDatas)
 
+  const canceladasSet = new Set<string>()
+  for (const c of confirmacoes ?? []) {
+    if ((c as any).status !== 'cancelada') continue
+    const dt = new Date((c as any).data_hora)
+    const brt = new Date(dt.getTime() - 3 * 60 * 60 * 1000)
+    const brtDate = brt.toISOString().slice(0, 10)
+    const brtHora = brt.toISOString().slice(11, 16)
+    canceladasSet.add(`${(c as any).paciente_id}_${brtDate}_${brtHora}`)
+  }
+
   // Monta eventos para o calendário
   const eventosCalendario = [
-    ...sessoesRec.map(s => ({
+    ...sessoesRec.filter(s => {
+      if (!s.paciente) return true
+      const key = `${s.paciente.id}_${s.data_hora.slice(0, 10)}_${s.data_hora.slice(11, 16)}`
+      return !canceladasSet.has(key)
+    }).map(s => ({
       id: s.id,
       data: s.data_hora.slice(0, 10),
       hora: new Date(s.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),

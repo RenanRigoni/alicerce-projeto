@@ -6,7 +6,7 @@ import { OrientacaoCard } from '@/components/portal/OrientacaoCard'
 import { SolicitarAltaPortal } from '@/components/portal/SolicitarAltaPortal'
 
 const tipoLabel: Record<string, string> = {
-  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
+  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', reposicao: 'Reposição', bloqueio: 'Indisponível', outro: 'Outro',
 }
 
 export default async function PacientePortalPage({

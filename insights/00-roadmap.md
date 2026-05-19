@@ -58,7 +58,7 @@ Fases sequenciais; cada uma entregável antes da próxima começar.
 ## Fase 2 — Agenda melhorada
 > **Por que segundo:** com cadastros ricos, a agenda ganha configurações que impactam o dia a dia.
 
-- [ ] **Bloqueio de horário** como tipo separado (não cancela agendamento — bloqueia slot)
+- [x] **Bloqueio de horário** como tipo separado (profissional bloqueia a agenda e pode cancelar ou remarcar atendimento conflitante) — #FEITO-NECESSARIO-REVISAR
 - [ ] Grade respeita horários de funcionamento da clínica (slots fora do horário ficam cinza)
 - [ ] Flag por usuário: permitir agendamentos fora do horário (admin/recepção)
 - [ ] Intervalo de tempo da agenda respeita configuração da Fase 1

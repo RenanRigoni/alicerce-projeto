@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect, type FormEvent } from 'react'
 
 export interface EventoAgenda {
   id: string
@@ -23,15 +24,39 @@ interface Props {
   feriados: Feriado[]
 }
 
+interface ConflitoBloqueio {
+  id: string
+  origem: 'recorrente' | 'agendamento'
+  tipo: string
+  titulo: string
+  data_hora: string
+  duracao_minutos: number
+  pacienteId: string | null
+  pacienteNome: string | null
+}
+
+interface SugestaoReposicao {
+  data_hora: string
+  duracao_minutos: number
+}
+
+interface BloqueioPendente {
+  data_hora: string
+  duracao_minutos: number
+  motivo: string | null
+}
+
 const tipoStyle: Record<string, { background: string; color: string; border: string }> = {
   sessao:     { background: 'var(--color-rose-blush)',    color: 'var(--color-rose-deep)',     border: 'var(--color-rose-soft)' },
   devolutiva: { background: 'var(--color-lavender-light)', color: 'var(--color-lavender-main)', border: 'var(--color-lavender-soft)' },
   reuniao:    { background: '#EFF6FF',    color: '#1D4ED8',     border: '#BFDBFE' },
+  reposicao:  { background: '#ECFDF5',    color: '#047857',     border: '#A7F3D0' },
+  bloqueio:   { background: '#F3F4F6',    color: '#4B5563',     border: '#D1D5DB' },
   outro:      { background: 'var(--color-border-soft)',   color: 'var(--color-ink-mid)',       border: 'var(--color-border)' },
 }
 
 const tipoLabel: Record<string, string> = {
-  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
+  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', reposicao: 'Reposição', bloqueio: 'Indisponível', outro: 'Outro',
 }
 
 const confirmacaoConfig: Record<string, { label: string; bg: string; color: string; border: string }> = {
@@ -84,6 +109,25 @@ function horaEvento(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function horaInputInicial() {
+  const d = new Date()
+  d.setMinutes(Math.ceil(d.getMinutes() / 10) * 10, 0, 0)
+  return d.toTimeString().slice(0, 5)
+}
+
+function toIsoBRT(data: string, hora: string) {
+  return `${data}T${hora}:00-03:00`
+}
+
+function formatarDataHora(iso: string) {
+  const d = new Date(iso)
+  return `${d.toLocaleDateString('pt-BR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+  })} · ${horaEvento(iso)}`
+}
+
 function IconeWhatsApp() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -93,12 +137,29 @@ function IconeWhatsApp() {
 }
 
 export function CalendarioAgenda({ eventos, feriados }: Props) {
+  const router = useRouter()
   const [view, setView] = useState<'semana' | 'mes'>('semana')
   const [dataBase, setDataBase] = useState(new Date())
   const [eventoAberto, setEventoAberto] = useState<EventoAgenda | null>(null)
   const [diaAberto, setDiaAberto] = useState<{ dateStr: string; evs: EventoAgenda[] } | null>(null)
   const [waLoading, setWaLoading] = useState(false)
   const [waConfirmacao, setWaConfirmacao] = useState<{ token: string; status: string } | null>(null)
+  const [bloqueioAberto, setBloqueioAberto] = useState(false)
+  const [bloqueioLoading, setBloqueioLoading] = useState(false)
+  const [bloqueioErro, setBloqueioErro] = useState<string | null>(null)
+  const [bloqueioForm, setBloqueioForm] = useState(() => ({
+    data: localDateStr(new Date()),
+    hora: horaInputInicial(),
+    duracao: '50',
+    motivo: '',
+  }))
+  const [bloqueioPendente, setBloqueioPendente] = useState<{
+    payload: BloqueioPendente
+    conflitos: ConflitoBloqueio[]
+    sugestoes: SugestaoReposicao[]
+  } | null>(null)
+  const [reposicaoAberta, setReposicaoAberta] = useState(false)
+  const [reposicaoSlot, setReposicaoSlot] = useState<string | null>(null)
 
   useEffect(() => {
     setWaConfirmacao(null)
@@ -129,6 +190,86 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
     }
   }
 
+  function limparBloqueio() {
+    setBloqueioAberto(false)
+    setBloqueioPendente(null)
+    setReposicaoAberta(false)
+    setReposicaoSlot(null)
+    setBloqueioErro(null)
+  }
+
+  async function postBloqueio(body: Record<string, unknown>) {
+    setBloqueioLoading(true)
+    setBloqueioErro(null)
+    try {
+      const res = await fetch('/api/terapeuta/bloqueio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setBloqueioErro(json.error ?? 'Erro ao salvar bloqueio.')
+        return null
+      }
+      return json
+    } catch {
+      setBloqueioErro('Erro de conexao ao salvar bloqueio.')
+      return null
+    } finally {
+      setBloqueioLoading(false)
+    }
+  }
+
+  async function handleVerificarBloqueio(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const payload: BloqueioPendente = {
+      data_hora: toIsoBRT(bloqueioForm.data, bloqueioForm.hora),
+      duracao_minutos: Number(bloqueioForm.duracao) || 50,
+      motivo: bloqueioForm.motivo.trim() || null,
+    }
+
+    const json = await postBloqueio({ modo: 'verificar', ...payload })
+    if (!json) return
+
+    const conflitos = (json.conflitos ?? []) as ConflitoBloqueio[]
+    const sugestoes = (json.sugestoes ?? []) as SugestaoReposicao[]
+
+    if (conflitos.length === 0) {
+      const criado = await postBloqueio({ modo: 'confirmar', ...payload })
+      if (!criado) return
+      limparBloqueio()
+      router.refresh()
+      return
+    }
+
+    setBloqueioAberto(false)
+    setBloqueioPendente({ payload, conflitos, sugestoes })
+    setReposicaoSlot(sugestoes[0]?.data_hora ?? null)
+  }
+
+  async function handleConfirmarBloqueio() {
+    if (!bloqueioPendente) return
+    const criado = await postBloqueio({ modo: 'confirmar', ...bloqueioPendente.payload })
+    if (!criado) return
+    limparBloqueio()
+    router.refresh()
+  }
+
+  async function handleReposicaoBloqueio() {
+    if (!bloqueioPendente || !reposicaoSlot) return
+    const conflito = bloqueioPendente.conflitos[0]
+    const criado = await postBloqueio({
+      modo: 'reposicao',
+      ...bloqueioPendente.payload,
+      conflito_id: conflito.id,
+      reposicao_data_hora: reposicaoSlot,
+    })
+    if (!criado) return
+    limparBloqueio()
+    router.refresh()
+  }
+
   const confirmacaoStatus =
     waConfirmacao?.status ?? eventoAberto?.confirmacao?.status ?? null
 
@@ -137,6 +278,8 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
     confirmacaoStatus === 'cancelada' ||
     confirmacaoStatus === 'expirada' ||
     confirmacaoStatus === 'pendente'
+  const podeEnviarConfirmacao =
+    !!eventoAberto?.paciente && (eventoAberto.tipo === 'sessao' || eventoAberto.tipo === 'reposicao')
 
   // ── SEMANA ──────────────────────────────────────────────────
   const monday = getMondayOfWeek(dataBase)
@@ -229,6 +372,17 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
           }}
         >
           Hoje
+        </button>
+
+        <button
+          onClick={() => setBloqueioAberto(true)}
+          className="text-xs font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-85"
+          style={{
+            color: '#fff',
+            background: 'var(--color-ink-mid)',
+          }}
+        >
+          + Bloquear horário
         </button>
       </div>
 
@@ -443,6 +597,284 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
         </div>
       )}
 
+      {/* Modal: criar bloqueio */}
+      {bloqueioAberto && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ background: 'rgba(44,32,24,0.4)' }}
+          onClick={limparBloqueio}
+        >
+          <form
+            onSubmit={handleVerificarBloqueio}
+            className="rounded-2xl p-5 max-w-sm w-full space-y-4"
+            style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-semibold" style={{ color: 'var(--color-ink)' }}>
+                  Bloquear horário
+                </h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+                  {formatarDataHora(toIsoBRT(bloqueioForm.data, bloqueioForm.hora))}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={limparBloqueio}
+                className="text-lg leading-none transition-opacity hover:opacity-60"
+                style={{ color: 'var(--color-ink-faint)' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-xs font-medium" style={{ color: 'var(--color-ink-soft)' }}>
+                Data
+                <input
+                  type="date"
+                  value={bloqueioForm.data}
+                  min={localDateStr(new Date())}
+                  onChange={e => setBloqueioForm(prev => ({ ...prev, data: e.target.value }))}
+                  className="mt-1 w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{ border: '1px solid var(--color-border)', background: 'var(--color-warm-white)', color: 'var(--color-ink)' }}
+                  required
+                />
+              </label>
+              <label className="text-xs font-medium" style={{ color: 'var(--color-ink-soft)' }}>
+                Hora
+                <input
+                  type="time"
+                  value={bloqueioForm.hora}
+                  onChange={e => setBloqueioForm(prev => ({ ...prev, hora: e.target.value }))}
+                  className="mt-1 w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{ border: '1px solid var(--color-border)', background: 'var(--color-warm-white)', color: 'var(--color-ink)' }}
+                  required
+                />
+              </label>
+            </div>
+
+            <label className="text-xs font-medium block" style={{ color: 'var(--color-ink-soft)' }}>
+              Duração
+              <select
+                value={bloqueioForm.duracao}
+                onChange={e => setBloqueioForm(prev => ({ ...prev, duracao: e.target.value }))}
+                className="mt-1 w-full rounded-xl px-3 py-2 text-sm outline-none"
+                style={{ border: '1px solid var(--color-border)', background: 'var(--color-warm-white)', color: 'var(--color-ink)' }}
+              >
+                <option value="30">30 minutos</option>
+                <option value="45">45 minutos</option>
+                <option value="50">50 minutos</option>
+                <option value="60">60 minutos</option>
+                <option value="90">90 minutos</option>
+                <option value="120">120 minutos</option>
+              </select>
+            </label>
+
+            <label className="text-xs font-medium block" style={{ color: 'var(--color-ink-soft)' }}>
+              Motivo
+              <input
+                type="text"
+                value={bloqueioForm.motivo}
+                onChange={e => setBloqueioForm(prev => ({ ...prev, motivo: e.target.value }))}
+                placeholder="Consulta, reunião, não atender"
+                className="mt-1 w-full rounded-xl px-3 py-2 text-sm outline-none"
+                style={{ border: '1px solid var(--color-border)', background: 'var(--color-warm-white)', color: 'var(--color-ink)' }}
+              />
+            </label>
+
+            {bloqueioErro && (
+              <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+                {bloqueioErro}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={limparBloqueio}
+                className="px-3 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
+                style={{ color: 'var(--color-ink-soft)', border: '1px solid var(--color-border)' }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={bloqueioLoading}
+                className="px-3 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-85 disabled:opacity-50"
+                style={{ color: '#fff', background: 'var(--color-rose-main)' }}
+              >
+                {bloqueioLoading ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: conflito no bloqueio */}
+      {bloqueioPendente && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ background: 'rgba(44,32,24,0.4)' }}
+          onClick={limparBloqueio}
+        >
+          <div
+            className="rounded-2xl p-5 max-w-md w-full space-y-4 max-h-[85vh] overflow-y-auto"
+            style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-semibold" style={{ color: 'var(--color-ink)' }}>
+                  Horário ocupado
+                </h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+                  {formatarDataHora(bloqueioPendente.payload.data_hora)}
+                </p>
+              </div>
+              <button
+                onClick={limparBloqueio}
+                className="text-lg leading-none transition-opacity hover:opacity-60"
+                style={{ color: 'var(--color-ink-faint)' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {bloqueioPendente.conflitos.map(conf => (
+                <div
+                  key={conf.id}
+                  className="rounded-xl px-3 py-2"
+                  style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
+                >
+                  <div className="text-xs font-medium" style={{ color: '#92400E' }}>
+                    {formatarDataHora(conf.data_hora)} · {tipoLabel[conf.tipo] ?? conf.tipo}
+                  </div>
+                  <div className="text-sm" style={{ color: 'var(--color-ink)' }}>
+                    {conf.pacienteNome ?? conf.titulo}
+                  </div>
+                  <div className="text-xs" style={{ color: '#B45309' }}>
+                    {conf.duracao_minutos} minutos
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {reposicaoAberta ? (
+              <div className="space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--color-ink-soft)' }}>
+                  Horários disponíveis
+                </div>
+
+                {bloqueioPendente.sugestoes.length > 0 ? (
+                  <div className="grid gap-2">
+                    {bloqueioPendente.sugestoes.map(s => {
+                      const selected = reposicaoSlot === s.data_hora
+                      return (
+                        <button
+                          key={s.data_hora}
+                          type="button"
+                          onClick={() => setReposicaoSlot(s.data_hora)}
+                          className="w-full text-left rounded-xl px-3 py-2 text-sm transition-opacity hover:opacity-85"
+                          style={{
+                            background: selected ? 'var(--color-sage-light)' : 'var(--color-warm-white)',
+                            border: selected ? '1px solid var(--color-sage-soft)' : '1px solid var(--color-border)',
+                            color: selected ? 'var(--color-sage-deep)' : 'var(--color-ink-mid)',
+                          }}
+                        >
+                          {formatarDataHora(s.data_hora)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-sm rounded-xl px-3 py-2" style={{ background: '#F3F4F6', color: '#6B7280' }}>
+                    Nenhum horário disponível nos próximos dias.
+                  </div>
+                )}
+
+                {bloqueioErro && (
+                  <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+                    {bloqueioErro}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setReposicaoAberta(false)}
+                    className="px-3 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
+                    style={{ color: 'var(--color-ink-soft)', border: '1px solid var(--color-border)' }}
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReposicaoBloqueio}
+                    disabled={bloqueioLoading || !reposicaoSlot || bloqueioPendente.sugestoes.length === 0}
+                    className="px-3 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-85 disabled:opacity-50"
+                    style={{ color: '#fff', background: 'var(--color-sage-main)' }}
+                  >
+                    Salvar reposição
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bloqueioPendente.conflitos.length !== 1 && (
+                  <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#F3F4F6', color: '#6B7280' }}>
+                    Reposição automática disponível apenas para um atendimento por vez.
+                  </div>
+                )}
+
+                {bloqueioErro && (
+                  <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+                    {bloqueioErro}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleConfirmarBloqueio}
+                    disabled={bloqueioLoading}
+                    className="px-3 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-85 disabled:opacity-50"
+                    style={{ color: '#fff', background: 'var(--color-rose-main)' }}
+                  >
+                    CONFIRMAR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReposicaoAberta(true)}
+                    disabled={
+                      bloqueioLoading ||
+                      bloqueioPendente.conflitos.length !== 1 ||
+                      !bloqueioPendente.conflitos[0]?.pacienteId ||
+                      bloqueioPendente.sugestoes.length === 0
+                    }
+                    className="px-3 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-85 disabled:opacity-45"
+                    style={{ color: '#fff', background: 'var(--color-sage-main)' }}
+                  >
+                    REPOSIÇÃO
+                  </button>
+                  <button
+                    type="button"
+                    onClick={limparBloqueio}
+                    disabled={bloqueioLoading}
+                    className="px-3 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-80 disabled:opacity-50"
+                    style={{ color: 'var(--color-ink-soft)', border: '1px solid var(--color-border)' }}
+                  >
+                    CANCELAR
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Modal de detalhe do evento */}
       {eventoAberto && (
         <div
@@ -532,7 +964,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
             )}
 
             {/* Confirmação via WhatsApp — apenas para sessões com paciente */}
-            {eventoAberto.tipo === 'sessao' && eventoAberto.paciente && (
+            {podeEnviarConfirmacao && (
               <div
                 className="pt-2 space-y-2"
                 style={{ borderTop: '1px solid var(--color-border-soft)' }}

@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
+import { intervalosSobrepostos } from '@/lib/agenda/bloqueios'
 import { NextRequest, NextResponse } from 'next/server'
 
 function dataBRTFromIso(iso: string) {
@@ -42,6 +43,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Profissional, tÃ­tulo, data e hora sÃ£o obrigatÃ³rios' }, { status: 400 })
   }
 
+  const tiposPermitidos = ['sessao', 'devolutiva', 'reuniao', 'outro', 'bloqueio', 'reposicao']
+  if (!tiposPermitidos.includes(tipo)) {
+    return NextResponse.json({ error: 'Tipo de agendamento invalido' }, { status: 400 })
+  }
+
   const adminClient = createAdminClient()
 
   const { data: configAgenda } = await adminClient
@@ -60,6 +66,26 @@ export async function POST(request: NextRequest) {
 
     if (feriadosBloqueados.includes(dataBRT)) {
       return NextResponse.json({ error: 'Agendamento bloqueado em feriado pela configuração da clínica.' }, { status: 400 })
+    }
+  }
+
+  if (tipo !== 'bloqueio') {
+    const inicio = new Date(dataHora)
+    const fim = new Date(inicio.getTime() + duracaoMinutos * 60 * 1000)
+    const { data: bloqueios } = await adminClient
+      .from('agendamentos')
+      .select('data_hora, duracao_minutos')
+      .eq('terapeuta_id', terapeutaId)
+      .eq('tipo', 'bloqueio')
+      .gte('data_hora', new Date(inicio.getTime() - 8 * 60 * 60 * 1000).toISOString())
+      .lte('data_hora', fim.toISOString())
+
+    const bloqueado = (bloqueios ?? []).some((b: any) =>
+      intervalosSobrepostos(dataHora, duracaoMinutos, b.data_hora, b.duracao_minutos ?? 50),
+    )
+
+    if (bloqueado) {
+      return NextResponse.json({ error: 'Horario indisponivel na agenda da profissional.' }, { status: 400 })
     }
   }
 

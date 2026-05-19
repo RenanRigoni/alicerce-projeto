@@ -22,13 +22,15 @@ interface Props {
 }
 
 const tipoLabel: Record<string, string> = {
-  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', outro: 'Outro',
+  sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', reposicao: 'Reposição', bloqueio: 'Indisponível', outro: 'Outro',
 }
 
 const tipoStyle: Record<string, { background: string; color: string }> = {
   sessao:     { background: 'var(--color-rose-blush)',     color: 'var(--color-rose-deep)' },
   devolutiva: { background: 'var(--color-lavender-light)', color: 'var(--color-lavender-main)' },
   reuniao:    { background: 'var(--color-sage-light)',     color: 'var(--color-sage-deep)' },
+  reposicao:  { background: '#ECFDF5',                     color: '#047857' },
+  bloqueio:   { background: '#F3F4F6',                     color: '#4B5563' },
   outro:      { background: 'var(--color-border-soft)',    color: 'var(--color-ink-mid)' },
 }
 
@@ -116,7 +118,7 @@ export function AgendamentosLista({ porDia, diasOrdenados }: Props) {
             {porDia[dateStr].map((a, i) => {
               const conf = getConf(a)
               const isLoading = loading[a.id] ?? false
-              const isSessao = a.tipo === 'sessao' && !!a.pacienteId
+              const isSessao = (a.tipo === 'sessao' || a.tipo === 'reposicao') && !!a.pacienteId
               const podaEnviar = isSessao && (
                 conf === null || conf?.status === 'cancelada' || conf?.status === 'expirada' || conf?.status === 'pendente'
               )

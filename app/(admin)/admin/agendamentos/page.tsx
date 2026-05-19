@@ -121,7 +121,7 @@ export default async function AgendamentosPage() {
         visivel_responsavel: true,
         confirmacao,
       }
-    }),
+    }).filter(s => s.confirmacao?.status !== 'cancelada'),
     ...(especiais ?? []).map((a: any) => ({
       id: a.id,
       tipo: a.tipo,

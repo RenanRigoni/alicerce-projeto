@@ -12,7 +12,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, role, consentimento_aceito_em, consentimento_policy_versao, permissoes')
+    .select('nome, role, consentimento_aceito_em, consentimento_policy_versao, permissoes, foto_url')
     .eq('id', user.id)
     .single()
 
@@ -29,7 +29,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--color-peach-light)' }}>
-      <Sidebar role="pai" nome={profile.nome} />
+      <Sidebar role="pai" nome={profile.nome} fotoUrl={profile.foto_url ?? null} />
       {precisaConsentimento && <ConsentimentoModal />}
       <main className="lg:pl-16 pt-14 lg:pt-0">
         <div className="max-w-5xl mx-auto px-4 py-8 animate-fade-up">

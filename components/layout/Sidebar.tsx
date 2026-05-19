@@ -70,8 +70,8 @@ const navConfig: Record<string, NavItem[]> = {
     { href: '/terapia/responsaveis', label: 'Responsáveis', icon: HeartHandshake,  permission: 'gerenciar_responsaveis' },
   ],
   pai: [
-    { href: '/portal/dashboard',  label: 'Início',     icon: LayoutDashboard, permission: null },
-    { href: '/portal/meus-dados', label: 'Meus Dados', icon: CircleUserRound, permission: null },
+    { href: '/portal/dashboard',   label: 'Início',     icon: LayoutDashboard, permission: null },
+    { href: '/portal/meu-perfil',  label: 'Meu Perfil', icon: CircleUserRound, permission: null },
   ],
 }
 
@@ -113,7 +113,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
     admin:     '/admin/meu-perfil',
     recepcao:  '/admin/meu-perfil',
     terapeuta: '/terapia/meu-perfil',
-    pai:       '/portal/meus-dados',
+    pai:       '/portal/meu-perfil',
   }
 
   const items = (navConfig[role] ?? []).filter(item =>

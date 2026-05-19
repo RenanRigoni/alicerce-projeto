@@ -85,11 +85,15 @@ const inputActiveStyle = {
 export function MeuPerfilForm(props: Props) {
   const { userId, cpf, role, criadoEm, conselhoTipo, tipoProfissional } = props
 
-  const [editando, setEditando]           = useState(false)
-  const [isPending, startTransition]      = useTransition()
-  const [uploadando, setUploadando]       = useState(false)
-  const [toast, setToast]                 = useState<string | null>(null)
-  const fileRef                           = useRef<HTMLInputElement>(null)
+  const [editando, setEditando]             = useState(false)
+  const [isPending, startTransition]        = useTransition()
+  const [uploadando, setUploadando]         = useState(false)
+  const [toast, setToast]                   = useState<string | null>(null)
+  const fileRef                             = useRef<HTMLInputElement>(null)
+  const [trocandoSenha, setTrocandoSenha]   = useState(false)
+  const [novaSenha, setNovaSenha]           = useState('')
+  const [confirmSenha, setConfirmSenha]     = useState('')
+  const [senhaLoading, setSenhaLoading]     = useState(false)
 
   const [fotoUrl, setFotoUrl]             = useState(props.fotoUrl)
   const [nome, setNome]                   = useState(props.nome)
@@ -151,6 +155,25 @@ export function MeuPerfilForm(props: Props) {
       showToast('Foto atualizada!')
     } catch { showToast('Erro ao enviar foto.') }
     finally { setUploadando(false); if (fileRef.current) fileRef.current.value = '' }
+  }
+
+  async function trocarSenha() {
+    if (novaSenha.length < 6) { showToast('Senha deve ter pelo menos 6 caracteres.'); return }
+    if (novaSenha !== confirmSenha) { showToast('As senhas não coincidem.'); return }
+    setSenhaLoading(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.updateUser({ password: novaSenha })
+      if (error) throw error
+      showToast('Senha alterada com sucesso!')
+      setNovaSenha('')
+      setConfirmSenha('')
+      setTrocandoSenha(false)
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Erro ao alterar senha.')
+    } finally {
+      setSenhaLoading(false)
+    }
   }
 
   async function removerFoto() {
@@ -474,6 +497,66 @@ export function MeuPerfilForm(props: Props) {
           </div>
         </div>
       )}
+
+      {/* ── Trocar senha ── */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{ border: '1px solid var(--color-border-soft)', background: 'var(--color-warm-white)' }}
+      >
+        <div
+          className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-[var(--color-border-soft)] transition-colors"
+          style={{ borderBottom: trocandoSenha ? '1px solid var(--color-border-soft)' : 'none' }}
+          onClick={() => { setTrocandoSenha(v => !v); setNovaSenha(''); setConfirmSenha('') }}
+        >
+          <div className="text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>Trocar senha</div>
+          <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>{trocandoSenha ? '▲' : '▼'}</span>
+        </div>
+        {trocandoSenha && (
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <div className="text-xs uppercase tracking-wide mb-1.5 font-medium" style={{ color: 'var(--color-ink-faint)' }}>Nova senha</div>
+              <input
+                type="password"
+                value={novaSenha}
+                onChange={e => setNovaSenha(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                className={inputCls}
+                style={inputActiveStyle}
+              />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide mb-1.5 font-medium" style={{ color: 'var(--color-ink-faint)' }}>Confirmar nova senha</div>
+              <input
+                type="password"
+                value={confirmSenha}
+                onChange={e => setConfirmSenha(e.target.value)}
+                placeholder="Repita a senha"
+                className={inputCls}
+                style={inputActiveStyle}
+              />
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={trocarSenha}
+                disabled={senhaLoading}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-opacity disabled:opacity-60"
+                style={{ background: 'var(--color-rose-main)', color: '#fff' }}
+              >
+                {senhaLoading && <Loader2 size={14} className="animate-spin" />}
+                Salvar nova senha
+              </button>
+              <button
+                onClick={() => { setTrocandoSenha(false); setNovaSenha(''); setConfirmSenha('') }}
+                disabled={senhaLoading}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm transition-opacity hover:opacity-70"
+                style={{ color: 'var(--color-ink-mid)' }}
+              >
+                <X size={14} /> Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Toast */}
       {toast && (

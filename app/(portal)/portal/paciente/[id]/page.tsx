@@ -78,7 +78,10 @@ export default async function PacientePortalPage({
       .gte('data', new Date().toISOString().slice(0, 10))
       .order('data')
       .limit(10),
-    supabase.rpc('nomes_terapeutas_do_paciente', { p_paciente_id: id }),
+    supabase
+      .from('paciente_terapeutas')
+      .select('terapeuta:profiles!terapeuta_id(id, nome, foto_url)')
+      .eq('paciente_id', id),
     supabase
       .from('pacientes_dados_clinicos')
       .select('hipotese_diagnostica, diagnostico, objetivos_terapeuticos, plano_terapeutico, obs_clinicas_gerais')
@@ -125,7 +128,11 @@ export default async function PacientePortalPage({
     })),
   ].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
 
-  const terapeutasNomes: string[] = (terapeutas ?? []).filter(Boolean)
+  type TerapeutaInfo = { id: string; nome: string; fotoUrl: string | null }
+  const terapeutasDados: TerapeutaInfo[] = (terapeutas ?? [])
+    .map((v: any) => v.terapeuta)
+    .filter(Boolean)
+    .map((p: any) => ({ id: p.id, nome: p.nome ?? '', fotoUrl: p.foto_url ?? null }))
 
   const diasLabel: Record<string, string> = {
     segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado',
@@ -227,19 +234,31 @@ export default async function PacientePortalPage({
               </div>
             )}
 
-            {terapeutasNomes.length > 0 && (
+            {terapeutasDados.length > 0 && (
               <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--color-border-soft)' }}>
                 <div className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--color-ink-faint)' }}>Profissionais</div>
                 <div className="flex flex-wrap gap-2">
-                  {terapeutasNomes.map((nome: string) => (
-                    <span
-                      key={nome}
-                      className="text-sm px-3 py-1 rounded-full"
-                      style={{ background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }}
-                    >
-                      {nome}
-                    </span>
-                  ))}
+                  {terapeutasDados.map(t => {
+                    const ini = t.nome.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
+                    return (
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                        style={{ background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }}
+                      >
+                        <div
+                          className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold flex-shrink-0"
+                          style={{ background: 'var(--color-sage-soft)', color: 'var(--color-sage-deep)' }}
+                        >
+                          {t.fotoUrl
+                            // eslint-disable-next-line @next/next/no-img-element
+                            ? <img src={t.fotoUrl} alt={t.nome} className="w-full h-full object-cover" />
+                            : ini}
+                        </div>
+                        <span className="text-sm">{t.nome}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}

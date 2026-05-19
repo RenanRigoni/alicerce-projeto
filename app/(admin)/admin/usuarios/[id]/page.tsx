@@ -31,6 +31,29 @@ function Campo({ label, valor }: { label: string; valor?: string | null }) {
   )
 }
 
+function AvatarUsuario({ nome, fotoUrl, role }: { nome: string; fotoUrl?: string | null; role: string }) {
+  const bg: Record<string, string> = { admin: 'var(--color-rose-blush)', recepcao: '#FEF3C7', terapeuta: 'var(--color-sage-light)', pai: 'var(--color-peach-light)' }
+  const cl: Record<string, string> = { admin: 'var(--color-rose-deep)', recepcao: '#92400E', terapeuta: 'var(--color-sage-deep)', pai: 'var(--color-peach-main)' }
+  const ini = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+  if (fotoUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={fotoUrl} alt={nome} className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
+  }
+  return (
+    <div
+      className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-semibold flex-shrink-0"
+      style={{ background: bg[role] ?? '#F3F4F6', color: cl[role] ?? '#374151' }}
+    >
+      {ini}
+    </div>
+  )
+}
+
+const ESTADOS_CIVIS_LABEL: Record<string, string> = {
+  solteiro: 'Solteiro(a)', casado: 'Casado(a)', divorciado: 'Divorciado(a)',
+  viuvo: 'Viúvo(a)', uniao_estavel: 'União estável', outro: 'Outro',
+}
+
 function formatarCpfCnpj(valor?: string | null) {
   const d = valor?.replace(/\D/g, '') ?? ''
   if (d.length === 11) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
@@ -52,7 +75,7 @@ export default async function UsuarioDetalhePage({
 
   const { data: usuario } = await supabase
     .from('profiles')
-    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, permissoes')
+    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, permissoes, foto_url, data_nascimento, rg, sexo, estado_civil, especialidade, biografia')
     .eq('id', id)
     .single()
   if (!usuario) notFound()
@@ -154,28 +177,35 @@ export default async function UsuarioDetalhePage({
   return (
     <div className="space-y-6 max-w-xl">
       {/* Cabeçalho */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <a
-          href={usuario.role === 'pai' ? '/admin/responsaveis' : usuario.role === 'terapeuta' ? '/admin/terapeutas' : '/admin/usuarios'}
-          className="text-sm transition-colors hover:opacity-70"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          ← Voltar
-        </a>
-        <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
-          {usuario.nome}
-        </h1>
-        <Badge color={roleColor[usuario.role] ?? 'gray'}>{roleLabel[usuario.role] ?? usuario.role}</Badge>
-        {!ativo && <Badge color="gray">Inativo</Badge>}
-        {isAdminOuRecepcao && (
-          <a
-            href={`/admin/usuarios/${id}/editar`}
-            className="ml-auto text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
-            style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-mid)', background: 'var(--color-warm-white)' }}
-          >
-            Editar
-          </a>
-        )}
+      <div className="flex items-start gap-4 flex-wrap">
+        <AvatarUsuario nome={usuario.nome} fotoUrl={usuario.foto_url} role={usuario.role} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap mb-1">
+            <a
+              href={usuario.role === 'pai' ? '/admin/responsaveis' : usuario.role === 'terapeuta' ? '/admin/terapeutas' : '/admin/usuarios'}
+              className="text-sm transition-colors hover:opacity-70"
+              style={{ color: 'var(--color-ink-soft)' }}
+            >
+              ← Voltar
+            </a>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
+              {usuario.nome}
+            </h1>
+            <Badge color={roleColor[usuario.role] ?? 'gray'}>{roleLabel[usuario.role] ?? usuario.role}</Badge>
+            {!ativo && <Badge color="gray">Inativo</Badge>}
+            {isAdminOuRecepcao && (
+              <a
+                href={`/admin/usuarios/${id}/editar`}
+                className="ml-auto text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
+                style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-mid)', background: 'var(--color-warm-white)' }}
+              >
+                Editar
+              </a>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Dados do perfil */}
@@ -184,10 +214,15 @@ export default async function UsuarioDetalhePage({
           <Campo label="Nome completo" valor={usuario.nome} />
           <Campo label="E-mail" valor={email} />
           <Campo label="Telefone" valor={detalhesResponsavel?.telefone_principal ?? usuario.telefone} />
+          <Campo label="Data de nascimento" valor={usuario.data_nascimento ? new Date(usuario.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : null} />
+          <Campo label="RG" valor={usuario.rg} />
+          <Campo label="CPF/CNPJ" valor={formatarCpfCnpj(usuario.cpf_cnpj)} />
+          <Campo label="Sexo" valor={usuario.sexo === 'masculino' ? 'Masculino' : usuario.sexo === 'feminino' ? 'Feminino' : usuario.sexo === 'outro' ? 'Outro' : null} />
+          <Campo label="Estado civil" valor={ESTADOS_CIVIS_LABEL[usuario.estado_civil ?? ''] ?? null} />
           {tipoProfissional && <Campo label="Tipo profissional" valor={tipoProfissional.label} />}
           {usuario.role === 'terapeuta' && <Campo label="Conselho" valor={conselhoProfissional} />}
           {usuario.role === 'terapeuta' && <Campo label="Código CBO" valor={usuario.cbo_codigo ? `CBO ${usuario.cbo_codigo}` : null} />}
-          {usuario.role === 'terapeuta' && <Campo label="CPF/CNPJ" valor={formatarCpfCnpj(usuario.cpf_cnpj)} />}
+          {usuario.especialidade && <Campo label="Especialidade" valor={usuario.especialidade} />}
           {detalhesResponsavel?.endereco && (
             <div className="col-span-2">
               <Campo label="Endereço" valor={`${detalhesResponsavel.endereco}${detalhesResponsavel.cidade ? ` — ${detalhesResponsavel.cidade}` : ''}${detalhesResponsavel.cep ? `, CEP ${detalhesResponsavel.cep}` : ''}`} />
@@ -196,6 +231,11 @@ export default async function UsuarioDetalhePage({
           {detalhesResponsavel?.contato_emergencia && (
             <div className="col-span-2">
               <Campo label="Contato de emergência" valor={detalhesResponsavel.contato_emergencia} />
+            </div>
+          )}
+          {usuario.biografia && (
+            <div className="col-span-2">
+              <Campo label="Biografia" valor={usuario.biografia} />
             </div>
           )}
           <Campo label="Cadastrado em" valor={new Date(usuario.criado_em).toLocaleDateString('pt-BR')} />

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Lora, DM_Sans } from 'next/font/google'
+import { Lora, Barlow } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 
@@ -10,11 +10,11 @@ const lora = Lora({
   weight: ['400', '500', '600', '700'],
 })
 
-const dmSans = DM_Sans({
+const barlow = Barlow({
   subsets: ['latin'],
-  variable: '--font-dm-sans-var',
+  variable: '--font-barlow-var',
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700'],
 })
 
 export const metadata: Metadata = {
@@ -58,7 +58,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" data-scroll-behavior="smooth" className={`${lora.variable} ${dmSans.variable} h-full antialiased`}>
+    <html lang="pt-BR" data-scroll-behavior="smooth" className={`${lora.variable} ${barlow.variable} h-full antialiased`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />

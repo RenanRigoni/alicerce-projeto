@@ -67,6 +67,8 @@ export default async function AdminDashboard() {
     { data: confirmacoesHoje },
     { data: confirmacoesSemana },
     { data: confirmacoesMes },
+    { data: pacientesAniv },
+    { data: profissionaisAniv },
   ] = await Promise.all([
     podeVerPacientes
       ? supabase.from('pacientes').select('*', { count: 'exact', head: true }).eq('status', 'ativo')
@@ -156,9 +158,45 @@ export default async function AdminDashboard() {
           .gte('data_hora', mesInicio.toISOString())
           .lte('data_hora', mesFim.toISOString())
       : Promise.resolve({ data: [] }),
+    podeVerPacientes
+      ? supabase
+          .from('pacientes')
+          .select('id, nome, data_nascimento, foto_url')
+          .eq('status', 'ativo')
+          .not('data_nascimento', 'is', null)
+      : Promise.resolve({ data: [] }),
+    supabase
+      .from('profiles')
+      .select('id, nome, data_nascimento, foto_url, role')
+      .in('role', ['terapeuta', 'recepcao', 'admin'])
+      .eq('ativo', true)
+      .not('data_nascimento', 'is', null),
   ])
 
   const totalFamilias = new Set((familiasDados ?? []).map((f: any) => f.responsavel_id)).size
+
+  // Aniversariantes do mês
+  type Aniversariante = { id: string; nome: string; dia: number; tipo: 'paciente' | 'profissional'; fotoUrl: string | null }
+  const mesStr = dd(mesAtualBRT)
+  const diaHojeBRT = agoraBRT.getUTCDate()
+  const aniversariantesMes: Aniversariante[] = [
+    ...(pacientesAniv ?? [])
+      .filter((p: any) => (p.data_nascimento as string).split('-')[1] === mesStr)
+      .map((p: any) => ({
+        id: p.id, nome: p.nome,
+        dia: parseInt((p.data_nascimento as string).split('-')[2]),
+        tipo: 'paciente' as const,
+        fotoUrl: p.foto_url ?? null,
+      })),
+    ...(profissionaisAniv ?? [])
+      .filter((p: any) => (p.data_nascimento as string).split('-')[1] === mesStr)
+      .map((p: any) => ({
+        id: p.id, nome: p.nome,
+        dia: parseInt((p.data_nascimento as string).split('-')[2]),
+        tipo: 'profissional' as const,
+        fotoUrl: p.foto_url ?? null,
+      })),
+  ].sort((a, b) => a.dia - b.dia)
 
   // Feriados do mês atual
   const mesAtualStr = dd(mesAtualBRT)
@@ -549,6 +587,64 @@ export default async function AdminDashboard() {
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Aniversariantes do mês */}
+      {aniversariantesMes.length > 0 && (
+        <div>
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            Aniversariantes de {nomeMes}
+          </h2>
+          <Card>
+            <div className="space-y-3">
+              {aniversariantesMes.map(a => {
+                const ini = a.nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+                const ehHoje = a.dia === diaHojeBRT
+                const bgAvatar = a.tipo === 'paciente' ? 'var(--color-rose-blush)' : 'var(--color-sage-light)'
+                const clAvatar = a.tipo === 'paciente' ? 'var(--color-rose-deep)' : 'var(--color-sage-deep)'
+                return (
+                  <div key={a.id} className="flex items-center gap-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden"
+                      style={{ background: bgAvatar, color: clAvatar }}
+                    >
+                      {a.fotoUrl
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={a.fotoUrl} alt={a.nome} className="w-full h-full object-cover" />
+                        : ini}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate flex items-center gap-2" style={{ color: 'var(--color-ink)' }}>
+                        {a.nome}
+                        {ehHoje && <span className="text-base" title="Hoje!">🎂</span>}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+                        {a.tipo === 'profissional' ? 'Profissional' : 'Paciente'}
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <div
+                        className="text-xl font-bold"
+                        style={{
+                          color: ehHoje ? 'var(--color-rose-main)' : 'var(--color-ink-mid)',
+                          fontFamily: 'var(--font-lora)',
+                        }}
+                      >
+                        {a.dia}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+                        {nomeMes.slice(0, 3)}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
         </div>
       )}
 

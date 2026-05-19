@@ -10,6 +10,7 @@ interface Props {
   endereco: string | null
   cidade: string | null
   cep: string | null
+  hideNome?: boolean
 }
 
 function mascaraTelefone(valor: string) {
@@ -32,7 +33,7 @@ function parsarEmergencia(raw: string | null) {
   return { nome: raw.slice(0, idx), telefone: raw.slice(idx + 3) }
 }
 
-export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endereco, cidade, cep }: Props) {
+export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endereco, cidade, cep, hideNome = false }: Props) {
   const router = useRouter()
   const [aberto, setAberto] = useState(false)
   const [salvando, setSalvando] = useState(false)
@@ -141,10 +142,12 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
             LGPD Art. 18, III — direito de correção de dados incompletos, inexatos ou desatualizados.
           </p>
 
-          <div>
-            <label style={labelStyle}>Nome completo</label>
-            <input name="nome" value={form.nome} onChange={handle} style={inputStyle} />
-          </div>
+          {!hideNome && (
+            <div>
+              <label style={labelStyle}>Nome completo</label>
+              <input name="nome" value={form.nome} onChange={handle} style={inputStyle} />
+            </div>
+          )}
 
           <div>
             <label style={labelStyle}>Telefone principal</label>

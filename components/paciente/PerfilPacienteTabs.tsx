@@ -143,17 +143,18 @@ function calcularIdade(dataNascimento: string | null): string | null {
   return partes.length ? partes.join(', ') : 'Recém-nascido'
 }
 
-function AvatarPaciente({ nome, fotoUrl, status }: { nome: string; fotoUrl?: string | null; status: string }) {
+function AvatarPaciente({ nome, fotoUrl, status, large }: { nome: string; fotoUrl?: string | null; status: string; large?: boolean }) {
   const ini = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
   const bg: Record<string, string> = { ativo: 'var(--color-rose-blush)', alta: 'var(--color-sage-light)', desativado: '#F3F4F6' }
   const cl: Record<string, string> = { ativo: 'var(--color-rose-deep)', alta: 'var(--color-sage-deep)', desativado: '#6B7280' }
+  const sz = large ? 'w-20 h-20 text-2xl' : 'w-14 h-14 text-xl'
   if (fotoUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={fotoUrl} alt={nome} className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
+    return <img src={fotoUrl} alt={nome} className={`${sz} rounded-full object-cover flex-shrink-0`} />
   }
   return (
     <div
-      className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-semibold flex-shrink-0"
+      className={`${sz} rounded-full flex items-center justify-center font-semibold flex-shrink-0`}
       style={{ background: bg[status] ?? 'var(--color-rose-blush)', color: cl[status] ?? 'var(--color-rose-deep)' }}
     >
       {ini}
@@ -381,129 +382,147 @@ export function PerfilPacienteTabs({
 
   return (
     <>
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Cabeçalho */}
-      <div className="space-y-3">
-        <a
-          href={isAdminOuRecepcao ? '/admin/pacientes' : '/terapia/dashboard'}
-          className="text-sm transition-colors hover:opacity-70"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          ← Voltar
-        </a>
-        <div className="flex items-start gap-4">
-          <AvatarPaciente nome={paciente.nome} fotoUrl={paciente.foto_url} status={paciente.status} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1
-                    className="text-2xl font-semibold"
-                    style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
-                  >
-                    {paciente.nome}
-                  </h1>
-                  {paciente.codigo_interno && (
-                    <span className="text-xs font-mono" style={{ color: 'var(--color-ink-faint)' }}>
-                      #{paciente.codigo_interno}
-                    </span>
-                  )}
-                  <Badge color={statusColor[paciente.status]}>{statusLabel[paciente.status]}</Badge>
-                </div>
-                {paciente.data_nascimento && (
-                  <p className="text-sm mt-1" style={{ color: 'var(--color-ink-soft)' }}>
-                    {calcularIdade(paciente.data_nascimento)}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
-                {podeEditarPaciente && paciente.status === 'ativo' && (
-                  <a
-                    href={isAdminOuRecepcao
-                      ? `/admin/pacientes/${paciente.id}/editar`
-                      : `/terapia/paciente/${paciente.id}/editar`}
-                    className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
-                    style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-mid)', background: 'var(--color-warm-white)' }}
-                  >
-                    Editar
-                  </a>
-                )}
-                {isAdminOuRecepcao && podeAlterarStatusPaciente && paciente.status === 'ativo' && (
-                  <a
-                    href={`/admin/pacientes/${paciente.id}/desativar`}
-                    className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
-                    style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
-                  >
-                    Desativar
-                  </a>
-                )}
-                {isAdminOuRecepcao && podeAlterarStatusPaciente && paciente.status !== 'ativo' && (
-                  <a
-                    href={`/admin/pacientes/${paciente.id}/reativar`}
-                    className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
-                    style={{ border: '1px solid var(--color-sage-soft)', background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }}
-                  >
-                    Reativar
-                  </a>
-                )}
-                {role === 'terapeuta' && podeAlterarStatusPaciente && (
-                  <button
-                    type="button"
-                    onClick={() => alterarStatusPaciente(paciente.status === 'ativo' ? 'desativado' : 'ativo')}
-                    disabled={alterandoStatus}
-                    className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80 disabled:opacity-60"
-                    style={paciente.status === 'ativo'
-                      ? { border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }
-                      : { border: '1px solid var(--color-sage-soft)', background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }}
-                  >
-                    {alterandoStatus ? 'Processando...' : paciente.status === 'ativo' ? 'Desativar' : 'Reativar'}
-                  </button>
-                )}
-                {role === 'admin' && (
-                  <DeletarPacienteButton pacienteId={paciente.id} pacienteNome={paciente.nome} />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        {erroStatus && (
-          <p className="text-sm" style={{ color: '#B91C1C' }}>{erroStatus}</p>
-        )}
-      </div>
-
-      {/* Tabs */}
-      <div
-        className="flex gap-0.5 border-b overflow-x-auto pb-0"
-        style={{ borderColor: 'var(--color-border)' }}
+      <a
+        href={isAdminOuRecepcao ? '/admin/pacientes' : '/terapia/dashboard'}
+        className="text-sm transition-colors hover:opacity-70 inline-block"
+        style={{ color: 'var(--color-ink-soft)' }}
       >
-        {ABAS.map(aba => {
-          const count = abaCounts[aba]
-          return (
-            <button
-              key={aba}
-              onClick={() => setAbaAtiva(aba)}
-              className="px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px flex items-center gap-1.5"
-              style={{
-                borderColor: abaAtiva === aba ? 'var(--color-rose-main)' : 'transparent',
-                color: abaAtiva === aba ? 'var(--color-rose-main)' : 'var(--color-ink-soft)',
-              }}
+        ← Voltar
+      </a>
+
+      {/* Layout lateral */}
+      <div className="flex gap-5 items-start">
+
+        {/* Barra lateral esquerda */}
+        <div className="w-52 flex-shrink-0 space-y-3">
+
+          {/* Card de identidade */}
+          <div
+            className="rounded-2xl p-4 text-center"
+            style={{ background: 'var(--color-warm-white)', border: '1px solid var(--color-border)' }}
+          >
+            <div className="flex justify-center mb-3">
+              <AvatarPaciente nome={paciente.nome} fotoUrl={paciente.foto_url} status={paciente.status} large />
+            </div>
+            <h1
+              className="text-sm font-semibold leading-snug"
+              style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
             >
-              {aba}
-              {count !== undefined && count > 0 && (
-                <span
-                  className="text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center leading-none"
-                  style={{
-                    background: abaAtiva === aba ? 'var(--color-rose-blush)' : 'var(--color-border-soft)',
-                    color: abaAtiva === aba ? 'var(--color-rose-deep)' : 'var(--color-ink-faint)',
-                  }}
-                >
-                  {count}
+              {paciente.nome}
+            </h1>
+            <div className="flex items-center justify-center gap-1.5 mt-1 flex-wrap">
+              {paciente.codigo_interno && (
+                <span className="text-xs font-mono" style={{ color: 'var(--color-ink-faint)' }}>
+                  #{paciente.codigo_interno}
                 </span>
               )}
-            </button>
-          )
-        })}
-      </div>
+              <Badge color={statusColor[paciente.status]}>{statusLabel[paciente.status]}</Badge>
+            </div>
+            {paciente.data_nascimento && (
+              <p className="text-xs mt-1.5" style={{ color: 'var(--color-ink-soft)' }}>
+                {calcularIdade(paciente.data_nascimento)}
+              </p>
+            )}
+
+            <div
+              className="mt-3 pt-3 space-y-1.5 border-t"
+              style={{ borderColor: 'var(--color-border-soft)' }}
+            >
+              {podeEditarPaciente && paciente.status === 'ativo' && (
+                <a
+                  href={isAdminOuRecepcao
+                    ? `/admin/pacientes/${paciente.id}/editar`
+                    : `/terapia/paciente/${paciente.id}/editar`}
+                  className="block text-center text-xs font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
+                  style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-mid)' }}
+                >
+                  Editar dados
+                </a>
+              )}
+              {isAdminOuRecepcao && podeAlterarStatusPaciente && paciente.status === 'ativo' && (
+                <a
+                  href={`/admin/pacientes/${paciente.id}/desativar`}
+                  className="block text-center text-xs font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
+                  style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
+                >
+                  Desativar
+                </a>
+              )}
+              {isAdminOuRecepcao && podeAlterarStatusPaciente && paciente.status !== 'ativo' && (
+                <a
+                  href={`/admin/pacientes/${paciente.id}/reativar`}
+                  className="block text-center text-xs font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
+                  style={{ border: '1px solid var(--color-sage-soft)', background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }}
+                >
+                  Reativar
+                </a>
+              )}
+              {role === 'terapeuta' && podeAlterarStatusPaciente && (
+                <button
+                  type="button"
+                  onClick={() => alterarStatusPaciente(paciente.status === 'ativo' ? 'desativado' : 'ativo')}
+                  disabled={alterandoStatus}
+                  className="block w-full text-center text-xs font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80 disabled:opacity-60"
+                  style={paciente.status === 'ativo'
+                    ? { border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }
+                    : { border: '1px solid var(--color-sage-soft)', background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }}
+                >
+                  {alterandoStatus ? 'Processando...' : paciente.status === 'ativo' ? 'Desativar' : 'Reativar'}
+                </button>
+              )}
+              {role === 'admin' && (
+                <div className="flex justify-center">
+                  <DeletarPacienteButton pacienteId={paciente.id} pacienteNome={paciente.nome} />
+                </div>
+              )}
+            </div>
+            {erroStatus && (
+              <p className="text-xs mt-2" style={{ color: '#B91C1C' }}>{erroStatus}</p>
+            )}
+          </div>
+
+          {/* Navegação */}
+          <nav
+            className="rounded-2xl overflow-hidden"
+            style={{ background: 'var(--color-warm-white)', border: '1px solid var(--color-border)' }}
+          >
+            {ABAS.map((aba, i) => {
+              const count = abaCounts[aba]
+              const ativa = abaAtiva === aba
+              return (
+                <button
+                  key={aba}
+                  onClick={() => setAbaAtiva(aba)}
+                  className="w-full px-4 py-2.5 text-sm font-medium text-left flex items-center justify-between transition-all"
+                  style={ativa
+                    ? { background: 'var(--color-rose-main)', color: 'white' }
+                    : {
+                        color: 'var(--color-ink-mid)',
+                        borderBottom: i < ABAS.length - 1 ? '1px solid var(--color-border-soft)' : undefined,
+                      }}
+                >
+                  <span>{aba}</span>
+                  {count !== undefined && count > 0 && (
+                    <span
+                      className="text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center leading-none"
+                      style={ativa
+                        ? { background: 'rgba(255,255,255,0.25)', color: 'white' }
+                        : { background: 'var(--color-border-soft)', color: 'var(--color-ink-faint)' }}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </nav>
+
+        </div>
+
+        {/* Conteúdo da seção selecionada */}
+        <div className="flex-1 min-w-0">
 
       {/* ── Aba 1: Dados Gerais ─────────────────────────────── */}
       {abaAtiva === 'Dados Gerais' && (
@@ -1381,6 +1400,9 @@ export function PerfilPacienteTabs({
           </div>
         )
       })()}
+
+        </div>{/* fim conteúdo */}
+      </div>{/* fim layout lateral */}
     </div>
 
     {/* Modal: editar orientação */}

@@ -225,12 +225,12 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
                 className="w-16 h-12 flex items-center justify-center hover:opacity-75 transition-opacity"
               >
                 <Image
-                  src="/logo.png"
+                  src="/APP_ICO.png"
                   alt="Alicerce"
-                  width={32}
-                  height={32}
+                  width={44}
+                  height={44}
                   priority
-                  style={{ objectFit: 'contain', width: 32, height: 32 }}
+                  style={{ objectFit: 'contain', width: 44, height: 44 }}
                 />
               </Link>
               <button

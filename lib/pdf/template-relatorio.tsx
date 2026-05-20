@@ -6,10 +6,20 @@ import {
   Image,
   StyleSheet,
 } from '@react-pdf/renderer'
+import { readFileSync } from 'fs'
 import { join } from 'path'
 import { formatarConselhoProfissional } from '@/lib/profissionais'
 
-const LOGO_PATH = join(process.cwd(), 'public', 'logo_hor.png')
+function carregarLogoBase64(): string {
+  try {
+    const bytes = readFileSync(join(process.cwd(), 'public', 'logo_hor.png'))
+    return `data:image/png;base64,${bytes.toString('base64')}`
+  } catch {
+    return ''
+  }
+}
+
+const LOGO_SRC = carregarLogoBase64()
 
 const styles = StyleSheet.create({
   page: {
@@ -176,11 +186,14 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta, documentoTit
       <Page size="A4" style={styles.page}>
 
         {/* Marca d'água — fixa em todas as páginas */}
-        <Image src={LOGO_PATH} style={styles.watermark} fixed />
+        {LOGO_SRC && <Image src={LOGO_SRC} style={styles.watermark} fixed />}
 
         {/* Cabeçalho */}
         <View style={styles.header}>
-          <Image src={LOGO_PATH} style={styles.headerLogo} />
+          {LOGO_SRC
+            ? <Image src={LOGO_SRC} style={styles.headerLogo} />
+            : <Text style={{ fontSize: 16, fontFamily: 'Helvetica-Bold', color: '#e05a6e', marginBottom: 2 }}>Alicerce</Text>
+          }
           <Text style={styles.clinicaSub}>Espaço Terapêutico Infantil</Text>
         </View>
 

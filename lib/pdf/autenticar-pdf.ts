@@ -15,7 +15,7 @@ export interface InfoAutenticacao {
 
 function lerLogoBytes(): Uint8Array | null {
   try {
-    return new Uint8Array(readFileSync(join(process.cwd(), 'public', 'logo_hor.png')))
+    return new Uint8Array(readFileSync(join(process.cwd(), 'public', 'LOGO_H_HIGH.png')))
   } catch {
     return null
   }

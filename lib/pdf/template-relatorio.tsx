@@ -12,7 +12,7 @@ import { formatarConselhoProfissional } from '@/lib/profissionais'
 
 function carregarLogoBase64(): string {
   try {
-    const bytes = readFileSync(join(process.cwd(), 'public', 'logo_hor.png'))
+    const bytes = readFileSync(join(process.cwd(), 'public', 'LOGO_H_HIGH.png'))
     return `data:image/png;base64,${bytes.toString('base64')}`
   } catch {
     return ''

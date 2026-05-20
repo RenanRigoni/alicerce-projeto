@@ -322,28 +322,58 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
         </nav>
 
         {/* ── Bottom: notificações + avatar ── */}
-        <div
-          className="shrink-0 flex flex-col items-center gap-3 py-4"
-          style={{ borderTop: '1px solid var(--color-border-soft)' }}
-        >
-          <NotificacoesBell />
-
-          <button
-            ref={avatarRef}
-            onClick={() => {
-              if (userMenuPos) { setUserMenuPos(null); return }
-              const rect = avatarRef.current?.getBoundingClientRect()
-              if (rect) setUserMenuPos({ left: rect.right + 12, bottom: window.innerHeight - rect.bottom })
-            }}
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold transition-opacity hover:opacity-80 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}
-            title={nome}
+        {expanded ? (
+          <div
+            className="shrink-0 flex flex-col gap-0.5 py-3 px-3"
+            style={{ borderTop: '1px solid var(--color-border-soft)' }}
           >
-            {fotoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
-            ) : initials(nome)}
-          </button>
-        </div>
+            <NotificacoesBell expanded />
+            <button
+              ref={avatarRef}
+              onClick={() => {
+                if (userMenuPos) { setUserMenuPos(null); return }
+                const rect = avatarRef.current?.getBoundingClientRect()
+                if (rect) setUserMenuPos({ left: rect.right + 12, bottom: window.innerHeight - rect.bottom })
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left"
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-border-soft)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}>
+                {fotoUrl
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
+                  : initials(nome)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>{nome}</div>
+                <div className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>{roleLabel[role]}</div>
+              </div>
+            </button>
+          </div>
+        ) : (
+          <div
+            className="shrink-0 flex flex-col items-center gap-3 py-4"
+            style={{ borderTop: '1px solid var(--color-border-soft)' }}
+          >
+            <NotificacoesBell />
+            <button
+              ref={avatarRef}
+              onClick={() => {
+                if (userMenuPos) { setUserMenuPos(null); return }
+                const rect = avatarRef.current?.getBoundingClientRect()
+                if (rect) setUserMenuPos({ left: rect.right + 12, bottom: window.innerHeight - rect.bottom })
+              }}
+              className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold transition-opacity hover:opacity-80 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}
+              title={nome}
+            >
+              {fotoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
+              ) : initials(nome)}
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* ── User menu dropdown — position:fixed escapa overflow:hidden da sidebar ── */}

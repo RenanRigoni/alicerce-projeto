@@ -29,7 +29,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
 }
 
-export function NotificacoesBell() {
+export function NotificacoesBell({ expanded = false }: { expanded?: boolean }) {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([])
   const [aberto, setAberto] = useState(false)
   const [carregando, setCarregando] = useState(true)
@@ -151,25 +151,50 @@ export function NotificacoesBell() {
 
   return (
     <>
-      <button
-        ref={buttonRef}
-        onClick={toggle}
-        className="relative p-1.5 rounded-lg transition-colors hover:opacity-70"
-        style={{ color: 'var(--color-ink-soft)' }}
-        aria-label="Notificações"
-      >
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-        {naoLidas > 0 && (
-          <span
-            className="absolute -top-0.5 -right-0.5 text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center text-white"
-            style={{ background: 'var(--color-rose-main)' }}
-          >
-            {naoLidas > 9 ? '9+' : naoLidas}
-          </span>
-        )}
-      </button>
+      {expanded ? (
+        <button
+          ref={buttonRef}
+          onClick={toggle}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors"
+          style={{ color: 'var(--color-ink-mid)' }}
+          aria-label="Notificações"
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-border-soft)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+        >
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} className="shrink-0">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span className="flex-1 text-sm text-left whitespace-nowrap">Notificações</span>
+          {naoLidas > 0 && (
+            <span
+              className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white shrink-0"
+              style={{ background: 'var(--color-rose-main)' }}
+            >
+              {naoLidas > 9 ? '9+' : naoLidas}
+            </span>
+          )}
+        </button>
+      ) : (
+        <button
+          ref={buttonRef}
+          onClick={toggle}
+          className="relative p-1.5 rounded-lg transition-colors hover:opacity-70"
+          style={{ color: 'var(--color-ink-soft)' }}
+          aria-label="Notificações"
+        >
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          {naoLidas > 0 && (
+            <span
+              className="absolute -top-0.5 -right-0.5 text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center text-white"
+              style={{ background: 'var(--color-rose-main)' }}
+            >
+              {naoLidas > 9 ? '9+' : naoLidas}
+            </span>
+          )}
+        </button>
+      )}
 
       {aberto && pos && (
         <div

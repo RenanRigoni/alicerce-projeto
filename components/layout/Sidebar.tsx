@@ -201,12 +201,12 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
                 className="flex items-center hover:opacity-75 transition-opacity shrink-0"
               >
                 <Image
-                  src="/logo_hor.png"
+                  src="/LOGO_H_HIGH.png"
                   alt="Alicerce"
-                  width={90}
-                  height={28}
+                  width={140}
+                  height={40}
                   priority
-                  style={{ objectFit: 'contain', height: 28, width: 'auto' }}
+                  style={{ objectFit: 'contain', height: 40, width: 'auto' }}
                 />
               </Link>
               <button
@@ -409,12 +409,12 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
       >
         <Link href={dashboardByRole[role]}>
           <Image
-            src="/logo_hor.png"
+            src="/LOGO_H_HIGH.png"
             alt="Alicerce"
-            width={94}
-            height={36}
+            width={140}
+            height={40}
             priority
-            style={{ objectFit: 'contain', width: 94, height: 36 }}
+            style={{ objectFit: 'contain', height: 40, width: 'auto' }}
           />
         </Link>
         <div className="flex items-center gap-2">
@@ -447,7 +447,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
               className="h-14 flex items-center justify-between px-4 shrink-0"
               style={{ borderBottom: '1px solid var(--color-border)' }}
             >
-              <Image src="/logo_hor.png" alt="Alicerce" width={94} height={36} priority style={{ objectFit: 'contain' }} />
+              <Image src="/LOGO_H_HIGH.png" alt="Alicerce" width={140} height={40} priority style={{ objectFit: 'contain', height: 40, width: 'auto' }} />
               <button
                 onClick={() => setMobileOpen(false)}
                 className="p-2 rounded-lg hover:bg-[var(--color-border-soft)] transition-colors"

@@ -165,7 +165,7 @@ export function PushNotificationSettings() {
           disabled={salvando}
           aria-checked={ativo}
           role="switch"
-          className="relative shrink-0 rounded-full transition-colors duration-200 disabled:opacity-50"
+          className="relative shrink-0 rounded-full transition-colors duration-200 disabled:opacity-50 overflow-hidden"
           style={{
             width: 40,
             height: 22,
@@ -173,8 +173,8 @@ export function PushNotificationSettings() {
           }}
         >
           <span
-            className="absolute top-0.5 w-[18px] h-[18px] bg-white rounded-full shadow-sm transition-transform duration-200"
-            style={{ transform: ativo ? 'translateX(20px)' : 'translateX(2px)' }}
+            className="absolute top-[2px] left-[2px] w-[18px] h-[18px] bg-white rounded-full transition-transform duration-200"
+            style={{ transform: ativo ? 'translateX(18px)' : 'translateX(0px)' }}
           />
         </button>
       </div>

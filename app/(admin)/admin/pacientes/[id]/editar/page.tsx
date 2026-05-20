@@ -17,7 +17,7 @@ export default async function EditarPacienteAdminPage({
   const [{ data: paciente }, { data: todosTerapeutas }, { data: vinculados }] = await Promise.all([
     supabase.from('pacientes').select('*').eq('id', id).single(),
     supabase.from('profiles').select('id, nome').eq('role', 'terapeuta').order('nome'),
-    supabase.from('paciente_terapeutas').select('terapeuta_id').eq('paciente_id', id),
+    supabase.from('paciente_terapeutas').select('terapeuta_id, horarios_atendimento').eq('paciente_id', id),
   ])
 
   if (!paciente) notFound()
@@ -26,12 +26,17 @@ export default async function EditarPacienteAdminPage({
   const { data: cpfDecifrado } = await supabase.rpc('get_paciente_cpf', { p_patient_id: id })
 
   const terapeutasVinculados = (vinculados ?? []).map((v: any) => v.terapeuta_id)
+  const horariosPorTerapeuta: Record<string, Array<{ dia: string; hora: string }>> = {}
+  for (const v of vinculados ?? []) {
+    horariosPorTerapeuta[(v as any).terapeuta_id] = (v as any).horarios_atendimento ?? []
+  }
 
   return (
     <EditarPacienteAdminForm
       paciente={{ ...paciente, cpf: cpfDecifrado as string | null }}
       todosTerapeutas={todosTerapeutas ?? []}
       terapeutasIniciais={terapeutasVinculados}
+      horariosPorTerapeuta={horariosPorTerapeuta}
       podeVincularTerapeutas={perfil.efetivas.vincular_terapeutas}
     />
   )

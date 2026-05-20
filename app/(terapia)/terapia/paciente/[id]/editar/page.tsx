@@ -31,13 +31,28 @@ export default async function EditarPacienteTerapeutaPage({
   if (!vinculo && !podeVerTodosPacientes) notFound()
 
   const dbPaciente = vinculo ? supabase : createAdminClient()
-  const { data: paciente } = await dbPaciente
-    .from('pacientes')
-    .select('id, nome, data_nascimento, sexo, frequencia_atendimento, turno_preferencia, horarios_atendimento')
-    .eq('id', id)
-    .single()
+  const [{ data: paciente }, { data: vinculoHorarios }] = await Promise.all([
+    dbPaciente
+      .from('pacientes')
+      .select('id, nome, data_nascimento, sexo, frequencia_atendimento, turno_preferencia')
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('paciente_terapeutas')
+      .select('horarios_atendimento')
+      .eq('paciente_id', id)
+      .eq('terapeuta_id', user.id)
+      .maybeSingle(),
+  ])
 
   if (!paciente) notFound()
 
-  return <EditarPacienteTerapeutaForm paciente={paciente} />
+  return (
+    <EditarPacienteTerapeutaForm
+      paciente={{
+        ...paciente,
+        horarios_atendimento: (vinculoHorarios as any)?.horarios_atendimento ?? [],
+      }}
+    />
+  )
 }

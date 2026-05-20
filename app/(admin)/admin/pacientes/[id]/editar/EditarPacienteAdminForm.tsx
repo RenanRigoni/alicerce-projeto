@@ -19,12 +19,87 @@ interface Props {
   paciente: any
   todosTerapeutas: Array<{ id: string; nome: string }>
   terapeutasIniciais: string[]
+  horariosPorTerapeuta: Record<string, Horario[]>
   podeVincularTerapeutas: boolean
 }
 
 const labelStyle = { color: 'var(--color-ink-mid)' }
 
-export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasIniciais, podeVincularTerapeutas }: Props) {
+function HorariosSection({
+  horarios,
+  onChange,
+}: {
+  horarios: Horario[]
+  onChange: (h: Horario[]) => void
+}) {
+  function add() { onChange([...horarios, { dia: 'segunda', hora: '' }]) }
+  function remove(i: number) { onChange(horarios.filter((_, idx) => idx !== i)) }
+  function update(i: number, field: keyof Horario, value: string) {
+    if (field === 'hora') {
+      const digits = value.replace(/\D/g, '').slice(0, 4)
+      const formatted = digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits
+      onChange(horarios.map((h, idx) => idx === i ? { ...h, hora: formatted } : h))
+      return
+    }
+    onChange(horarios.map((h, idx) => idx === i ? { ...h, [field]: value } : h))
+  }
+
+  return (
+    <div className="mt-2 pl-6 pb-2 space-y-2">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-medium" style={{ color: 'var(--color-ink-soft)' }}>Horários de atendimento</span>
+        <button
+          type="button"
+          onClick={add}
+          className="text-xs font-medium transition-opacity hover:opacity-70"
+          style={{ color: 'var(--color-rose-main)' }}
+        >
+          + Adicionar
+        </button>
+      </div>
+      {horarios.map((h, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <select
+            value={h.dia}
+            onChange={e => update(i, 'dia', e.target.value)}
+            className="input-base flex-1"
+          >
+            {dias.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+          </select>
+          <input
+            type="text"
+            value={h.hora}
+            onChange={e => update(i, 'hora', e.target.value)}
+            placeholder="13:10"
+            maxLength={5}
+            inputMode="numeric"
+            className="input-base w-24 text-center"
+          />
+          {horarios.length > 1 && (
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="text-lg leading-none px-1 transition-colors"
+              style={{ color: 'var(--color-border)' }}
+              onMouseOver={e => (e.currentTarget.style.color = '#EF4444')}
+              onMouseOut={e => (e.currentTarget.style.color = 'var(--color-border)')}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function EditarPacienteAdminForm({
+  paciente,
+  todosTerapeutas,
+  terapeutasIniciais,
+  horariosPorTerapeuta,
+  podeVincularTerapeutas,
+}: Props) {
   const router = useRouter()
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
@@ -39,37 +114,48 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
   })
 
   const [terapeutasSel, setTerapeutasSel] = useState<string[]>(terapeutasIniciais)
-  const [horarios, setHorarios] = useState<Horario[]>(
-    paciente.horarios_atendimento?.length > 0
-      ? paciente.horarios_atendimento
-      : [{ dia: 'segunda', hora: '' }]
-  )
+  const [horariosPerTerapeuta, setHorariosPerTerapeuta] = useState<Record<string, Horario[]>>(() => {
+    const initial: Record<string, Horario[]> = {}
+    for (const id of terapeutasIniciais) {
+      initial[id] = horariosPorTerapeuta[id]?.length > 0
+        ? horariosPorTerapeuta[id]
+        : [{ dia: 'segunda', hora: '' }]
+    }
+    return initial
+  })
 
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   function toggleTerapeuta(id: string) {
-    setTerapeutasSel(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])
+    setTerapeutasSel(prev => {
+      if (prev.includes(id)) return prev.filter(t => t !== id)
+      setHorariosPerTerapeuta(h => ({
+        ...h,
+        [id]: horariosPorTerapeuta[id]?.length > 0
+          ? horariosPorTerapeuta[id]
+          : [{ dia: 'segunda', hora: '' }],
+      }))
+      return [...prev, id]
+    })
   }
 
-  function addHorario() { setHorarios(prev => [...prev, { dia: 'segunda', hora: '' }]) }
-  function removeHorario(i: number) { setHorarios(prev => prev.filter((_, idx) => idx !== i)) }
-  function updateHorario(i: number, field: keyof Horario, value: string) {
-    if (field === 'hora') {
-      const digits = value.replace(/\D/g, '').slice(0, 4)
-      const formatted = digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits
-      setHorarios(prev => prev.map((h, idx) => idx === i ? { ...h, hora: formatted } : h))
-      return
-    }
-    setHorarios(prev => prev.map((h, idx) => idx === i ? { ...h, [field]: value } : h))
+  function setHorariosForTerapeuta(id: string, horarios: Horario[]) {
+    setHorariosPerTerapeuta(prev => ({ ...prev, [id]: horarios }))
   }
 
   async function handleSalvar() {
     setErro('')
     const pattern = /^\d{2}:\d{2}$/
-    const horariosValidos = horarios.filter(h => h.hora.trim())
-    if (horariosValidos.some(h => !pattern.test(h.hora))) {
+
+    const terapeutasPayload = terapeutasSel.map(id => {
+      const horarios = (horariosPerTerapeuta[id] ?? []).filter(h => h.hora.trim())
+      if (horarios.some(h => !pattern.test(h.hora))) return null
+      return { id, horarios_atendimento: horarios }
+    })
+
+    if (terapeutasPayload.some(t => t === null)) {
       setErro('Formato de hora inválido. Use HH:MM.')
       return
     }
@@ -83,11 +169,9 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
         data_nascimento:        form.data_nascimento || null,
         sexo:                   form.sexo || null,
         cpf:                    form.cpf,
-        frequencia_atendimento: horariosValidos.length > 0 ? `${horariosValidos.length}x por semana` : null,
         turno_preferencia:      form.turno_preferencia || null,
         convenio_ou_particular: form.convenio_ou_particular || null,
-        horarios_atendimento:   horariosValidos,
-        ...(podeVincularTerapeutas ? { terapeutas: terapeutasSel } : {}),
+        ...(podeVincularTerapeutas ? { terapeutas: terapeutasPayload } : {}),
       }),
     })
 
@@ -170,66 +254,33 @@ export function EditarPacienteAdminForm({ paciente, todosTerapeutas, terapeutasI
           {podeVincularTerapeutas && (
             <div>
               <label className="block text-sm font-medium mb-2" style={labelStyle}>Profissionais</label>
-              <div className="space-y-2">
-                {todosTerapeutas.map(t => (
-                  <label key={t.id} className="flex items-center gap-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={terapeutasSel.includes(t.id)}
-                      onChange={() => toggleTerapeuta(t.id)}
-                      className="w-4 h-4"
-                      style={{ accentColor: 'var(--color-rose-main)' }}
-                    />
-                    <span className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>{t.nome}</span>
-                  </label>
-                ))}
+              <div className="space-y-1">
+                {todosTerapeutas.map(t => {
+                  const selecionado = terapeutasSel.includes(t.id)
+                  return (
+                    <div key={t.id}>
+                      <label className="flex items-center gap-2.5 cursor-pointer py-1">
+                        <input
+                          type="checkbox"
+                          checked={selecionado}
+                          onChange={() => toggleTerapeuta(t.id)}
+                          className="w-4 h-4 flex-shrink-0"
+                          style={{ accentColor: 'var(--color-rose-main)' }}
+                        />
+                        <span className="text-sm font-medium" style={{ color: 'var(--color-ink-mid)' }}>{t.nome}</span>
+                      </label>
+                      {selecionado && (
+                        <HorariosSection
+                          horarios={horariosPerTerapeuta[t.id] ?? [{ dia: 'segunda', hora: '' }]}
+                          onChange={h => setHorariosForTerapeuta(t.id, h)}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium" style={labelStyle}>Horários de atendimento</label>
-              <button
-                type="button"
-                onClick={addHorario}
-                className="text-xs font-medium transition-opacity hover:opacity-70"
-                style={{ color: 'var(--color-rose-main)' }}
-              >
-                + Adicionar
-              </button>
-            </div>
-            <div className="space-y-2">
-              {horarios.map((h, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <select value={h.dia} onChange={e => updateHorario(i, 'dia', e.target.value)} className="input-base flex-1">
-                    {dias.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                  </select>
-                  <input
-                    type="text"
-                    value={h.hora}
-                    onChange={e => updateHorario(i, 'hora', e.target.value)}
-                    placeholder="13:10"
-                    maxLength={5}
-                    inputMode="numeric"
-                    className="input-base w-24 text-center"
-                  />
-                  {horarios.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeHorario(i)}
-                      className="text-lg leading-none px-1 transition-colors"
-                      style={{ color: 'var(--color-border)' }}
-                      onMouseOver={e => (e.currentTarget.style.color = '#EF4444')}
-                      onMouseOut={e => (e.currentTarget.style.color = 'var(--color-border)')}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
 
           {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
 

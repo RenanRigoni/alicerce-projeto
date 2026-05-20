@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
   ] = await Promise.all([
     adminClient
       .from('paciente_terapeutas')
-      .select('pacientes(id, nome, status, horarios_atendimento)')
+      .select('horarios_atendimento, pacientes(id, nome, status)')
       .eq('terapeuta_id', user.id),
     adminClient
       .from('agendamentos')
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
   ])
 
   const pacientes = (vinculos ?? [])
-    .map((v: any) => v.pacientes)
+    .map((v: any) => ({ ...v.pacientes, horarios_atendimento: v.horarios_atendimento ?? [] }))
     .filter(Boolean)
 
   const anoAtual = new Date().getFullYear()

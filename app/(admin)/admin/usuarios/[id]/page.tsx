@@ -126,7 +126,7 @@ export default async function UsuarioDetalhePage({
     const [{ data: vinculos }, { data: feriados }, { data: configAgenda }] = await Promise.all([
       supabase
         .from('paciente_terapeutas')
-        .select('pacientes(id, nome, status, horarios_atendimento)')
+        .select('horarios_atendimento, pacientes(id, nome, status)')
         .eq('terapeuta_id', id),
       supabase.from('feriados').select('data, anual'),
       supabase
@@ -136,7 +136,7 @@ export default async function UsuarioDetalhePage({
         .maybeSingle(),
     ])
     pacientesTerapeuta = (vinculos ?? [])
-      .map((v: any) => v.pacientes)
+      .map((v: any) => ({ ...v.pacientes, horarios_atendimento: v.horarios_atendimento ?? [] }))
       .filter((p: any) => p && p.status === 'ativo')
     const anoAtual = new Date().getFullYear()
     feriadosDatas = datasFeriadosParaBloqueio(

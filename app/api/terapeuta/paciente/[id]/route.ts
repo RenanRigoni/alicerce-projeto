@@ -37,20 +37,34 @@ export async function PATCH(
   const body = await request.json()
   const { nome, data_nascimento, sexo, frequencia_atendimento, turno_preferencia, horarios_atendimento } = body
 
-  const updates: Record<string, any> = {}
-  if (nome !== undefined) updates.nome = nome
-  if (data_nascimento !== undefined) updates.data_nascimento = data_nascimento || null
-  if (sexo !== undefined) updates.sexo = sexo || null
-  if (frequencia_atendimento !== undefined) updates.frequencia_atendimento = frequencia_atendimento || null
-  if (turno_preferencia !== undefined) updates.turno_preferencia = turno_preferencia || null
-  if (horarios_atendimento !== undefined) updates.horarios_atendimento = horarios_atendimento
+  const pacienteUpdates: Record<string, any> = {}
+  if (nome !== undefined) pacienteUpdates.nome = nome
+  if (data_nascimento !== undefined) pacienteUpdates.data_nascimento = data_nascimento || null
+  if (sexo !== undefined) pacienteUpdates.sexo = sexo || null
+  if (frequencia_atendimento !== undefined) pacienteUpdates.frequencia_atendimento = frequencia_atendimento || null
+  if (turno_preferencia !== undefined) pacienteUpdates.turno_preferencia = turno_preferencia || null
 
-  if (Object.keys(updates).length === 0) {
+  const hasUpdates = Object.keys(pacienteUpdates).length > 0 || horarios_atendimento !== undefined
+  if (!hasUpdates) {
     return NextResponse.json({ error: 'Nenhum campo para atualizar' }, { status: 400 })
   }
 
   const dbPaciente = vinculo ? supabase : createAdminClient()
-  const { error } = await dbPaciente.from('pacientes').update(updates).eq('id', pacienteId)
-  if (error) return NextResponse.json({ error: 'Erro ao atualizar paciente' }, { status: 500 })
+
+  if (Object.keys(pacienteUpdates).length > 0) {
+    const { error } = await dbPaciente.from('pacientes').update(pacienteUpdates).eq('id', pacienteId)
+    if (error) return NextResponse.json({ error: 'Erro ao atualizar paciente' }, { status: 500 })
+  }
+
+  if (horarios_atendimento !== undefined && vinculo) {
+    const horarios = Array.isArray(horarios_atendimento) ? horarios_atendimento : []
+    const { error } = await supabase
+      .from('paciente_terapeutas')
+      .update({ horarios_atendimento: horarios })
+      .eq('paciente_id', pacienteId)
+      .eq('terapeuta_id', user.id)
+    if (error) return NextResponse.json({ error: 'Erro ao atualizar horários' }, { status: 500 })
+  }
+
   return NextResponse.json({ success: true })
 }

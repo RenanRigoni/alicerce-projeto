@@ -71,17 +71,32 @@ export async function PATCH(
   }
 
   if (body.terapeutas !== undefined) {
-    const terapeutas = Array.isArray(body.terapeutas)
-      ? Array.from(new Set(body.terapeutas.filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)))
-      : []
+    const terapeutasRaw: Array<{ id: string; horarios_atendimento: Array<{ dia: string; hora: string }> }> =
+      Array.isArray(body.terapeutas)
+        ? body.terapeutas.filter((t: unknown) => t && typeof (t as any).id === 'string' && (t as any).id.length > 0)
+        : []
 
     await adminClient.from('paciente_terapeutas').delete().eq('paciente_id', id)
-    if (terapeutas.length > 0) {
+    if (terapeutasRaw.length > 0) {
       const { error } = await adminClient
         .from('paciente_terapeutas')
-        .insert(terapeutas.map(terapeuta_id => ({ paciente_id: id, terapeuta_id })))
+        .insert(terapeutasRaw.map(t => ({
+          paciente_id: id,
+          terapeuta_id: t.id,
+          horarios_atendimento: Array.isArray(t.horarios_atendimento) ? t.horarios_atendimento : [],
+        })))
       if (error) return NextResponse.json({ error: 'Erro ao vincular profissionais' }, { status: 500 })
     }
+
+    // Mantém horarios_atendimento global como merge de todos os terapeutas (backwards compat)
+    const mergedHorarios = terapeutasRaw.flatMap(t =>
+      Array.isArray(t.horarios_atendimento) ? t.horarios_atendimento : []
+    )
+    await adminClient.from('pacientes').update({
+      horarios_atendimento: mergedHorarios,
+      frequencia_atendimento: mergedHorarios.length > 0 ? `${mergedHorarios.length}x por semana` : null,
+      atualizado_em: new Date().toISOString(),
+    }).eq('id', id)
   }
 
   return NextResponse.json({ success: true })

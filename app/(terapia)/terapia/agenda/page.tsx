@@ -19,7 +19,7 @@ export default async function AgendaPage() {
   ] = await Promise.all([
     supabase
       .from('paciente_terapeutas')
-      .select('pacientes(id, nome, status, horarios_atendimento)')
+      .select('horarios_atendimento, pacientes(id, nome, status)')
       .eq('terapeuta_id', user!.id),
     supabase
       .from('agendamentos')
@@ -44,7 +44,7 @@ export default async function AgendaPage() {
   ])
 
   const pacientes = (vinculos ?? [])
-    .map((v: any) => v.pacientes)
+    .map((v: any) => ({ ...v.pacientes, horarios_atendimento: v.horarios_atendimento ?? [] }))
     .filter((p: any) => p && p.status === 'ativo')
 
   const anoAtual = new Date().getFullYear()

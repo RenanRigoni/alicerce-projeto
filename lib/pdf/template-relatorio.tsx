@@ -45,14 +45,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   headerLogo: {
-    height: 36,
-    marginBottom: 4,
+    height: 52,
     objectFit: 'contain',
     objectPosition: 'left center',
-  },
-  clinicaSub: {
-    fontSize: 9,
-    color: '#888',
   },
   titulo: {
     fontSize: 13,
@@ -106,28 +101,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f0d0d5',
     paddingTop: 8,
+    alignItems: 'flex-end',
   },
   rodapeTexto: {
     fontSize: 8,
     color: '#999',
-  },
-  assinatura: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: '#f9f5ff',
-    borderRadius: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: '#c084fc',
-  },
-  assinaturaTitulo: {
-    fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
-    color: '#7e22ce',
-    marginBottom: 3,
-  },
-  assinaturaTexto: {
-    fontSize: 8,
-    color: '#555',
+    textAlign: 'right',
   },
 })
 
@@ -192,9 +171,8 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta, documentoTit
         <View style={styles.header}>
           {LOGO_SRC
             ? <Image src={LOGO_SRC} style={styles.headerLogo} />
-            : <Text style={{ fontSize: 16, fontFamily: 'Helvetica-Bold', color: '#e05a6e', marginBottom: 2 }}>Alicerce</Text>
+            : <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: '#e05a6e' }}>Alicerce — Espaço Terapêutico Infantil</Text>
           }
-          <Text style={styles.clinicaSub}>Espaço Terapêutico Infantil</Text>
         </View>
 
         <Text style={styles.titulo}>{documentoTitulo}</Text>
@@ -225,14 +203,6 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta, documentoTit
             <View style={styles.divisor} />
           </View>
         ) : null)}
-
-        {/* Assinatura digital */}
-        {relatorio.assinatura_digital && (
-          <View style={styles.assinatura}>
-            <Text style={styles.assinaturaTitulo}>Assinatura Digital</Text>
-            <Text style={styles.assinaturaTexto}>{relatorio.assinatura_digital}</Text>
-          </View>
-        )}
 
         {/* Rodapé */}
         <View style={styles.rodape} fixed>

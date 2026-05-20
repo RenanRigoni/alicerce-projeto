@@ -1,4 +1,6 @@
 import { PDFDocument, PDFPage, StandardFonts, rgb } from 'pdf-lib'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 const FOOTER_FONT_SIZE = 6
 const FOOTER_MARGIN_X = 36
@@ -9,6 +11,47 @@ export interface InfoAutenticacao {
   terapeuta?: string
   conselho?: string
   autenticacaoEm?: string
+}
+
+function lerLogoBytes(): Uint8Array | null {
+  try {
+    return new Uint8Array(readFileSync(join(process.cwd(), 'public', 'logo_hor.png')))
+  } catch {
+    return null
+  }
+}
+
+async function inserirLogoEMarcaDagua(pdfDoc: PDFDocument, pages: PDFPage[]) {
+  const logoBytes = lerLogoBytes()
+  if (!logoBytes) return
+
+  const logo = await pdfDoc.embedPng(logoBytes)
+
+  for (const page of pages) {
+    const { width, height } = page.getSize()
+
+    // Logo no cabeçalho (canto superior esquerdo)
+    const logoH = 28
+    const logoW = logo.width * (logoH / logo.height)
+    page.drawImage(logo, {
+      x: FOOTER_MARGIN_X,
+      y: height - FOOTER_MARGIN_X - logoH,
+      width: logoW,
+      height: logoH,
+      opacity: 1,
+    })
+
+    // Marca d'água centralizada (~5% opacidade)
+    const wmW = width * 0.65
+    const wmH = logo.height * (wmW / logo.width)
+    page.drawImage(logo, {
+      x: (width - wmW) / 2,
+      y: (height - wmH) / 2,
+      width: wmW,
+      height: wmH,
+      opacity: 0.05,
+    })
+  }
 }
 
 async function inserirRodapeHash(pdfDoc: PDFDocument, page: PDFPage, info: InfoAutenticacao) {
@@ -48,7 +91,10 @@ export async function inserirHashNoRodapePdf(
   info: InfoAutenticacao
 ): Promise<Buffer> {
   const pdfDoc = await PDFDocument.load(pdfBytes)
-  for (const page of pdfDoc.getPages()) {
+  const pages = pdfDoc.getPages()
+
+  await inserirLogoEMarcaDagua(pdfDoc, pages)
+  for (const page of pages) {
     await inserirRodapeHash(pdfDoc, page, info)
   }
 
@@ -83,6 +129,7 @@ export async function criarPdfAutenticadoDeImagem(
     height: scaled.height,
   })
 
+  await inserirLogoEMarcaDagua(pdfDoc, [page])
   await inserirRodapeHash(pdfDoc, page, info)
 
   const stampedBytes = await pdfDoc.save()

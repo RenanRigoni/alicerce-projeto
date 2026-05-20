@@ -3,9 +3,13 @@ import {
   Page,
   Text,
   View,
+  Image,
   StyleSheet,
 } from '@react-pdf/renderer'
+import { join } from 'path'
 import { formatarConselhoProfissional } from '@/lib/profissionais'
+
+const LOGO_PATH = join(process.cwd(), 'public', 'logo_hor.png')
 
 const styles = StyleSheet.create({
   page: {
@@ -17,17 +21,24 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     lineHeight: 1.5,
   },
+  watermark: {
+    position: 'absolute',
+    top: '28%',
+    left: '10%',
+    width: '80%',
+    opacity: 0.05,
+  },
   header: {
     marginBottom: 24,
     borderBottomWidth: 2,
     borderBottomColor: '#f9a8b4',
     paddingBottom: 12,
   },
-  clinicaNome: {
-    fontSize: 16,
-    fontFamily: 'Helvetica-Bold',
-    color: '#e05a6e',
-    marginBottom: 2,
+  headerLogo: {
+    height: 36,
+    marginBottom: 4,
+    objectFit: 'contain',
+    objectPosition: 'left center',
   },
   clinicaSub: {
     fontSize: 9,
@@ -164,9 +175,12 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta, documentoTit
     <Document>
       <Page size="A4" style={styles.page}>
 
+        {/* Marca d'água — fixa em todas as páginas */}
+        <Image src={LOGO_PATH} style={styles.watermark} fixed />
+
         {/* Cabeçalho */}
         <View style={styles.header}>
-          <Text style={styles.clinicaNome}>Alicerce</Text>
+          <Image src={LOGO_PATH} style={styles.headerLogo} />
           <Text style={styles.clinicaSub}>Espaço Terapêutico Infantil</Text>
         </View>
 

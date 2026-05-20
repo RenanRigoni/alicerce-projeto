@@ -182,7 +182,6 @@ export function TemplateRelatorio({ paciente, relatorio, terapeuta, documentoTit
           <Text style={styles.pacienteNome}>{paciente.nome}</Text>
           {idadeTexto && <Text style={styles.pacienteMeta}>Idade: {idadeTexto}</Text>}
           {paciente.diagnostico && <Text style={styles.pacienteMeta}>Diagnóstico: {paciente.diagnostico}</Text>}
-          {paciente.frequencia_atendimento && <Text style={styles.pacienteMeta}>Frequência: {paciente.frequencia_atendimento}</Text>}
           <Text style={styles.pacienteMeta}>
             Profissional: {terapeuta.nome}{conselhoProfissional ? ` — ${conselhoProfissional}` : ''}
           </Text>

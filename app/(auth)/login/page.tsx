@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -39,6 +39,22 @@ export default function LoginPage() {
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
   const [mostrarSenha, setMostrarSenha] = useState(false)
+
+  // Detecta sessão restaurada do localStorage (browser limpou cookies ao fechar)
+  useEffect(() => {
+    async function verificarSessaoExistente() {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data: profile } = await supabase
+        .from('profiles').select('role, ativo').eq('id', session.user.id).single()
+      if (!profile?.ativo) return
+      if (profile.role === 'pai') router.replace('/portal/dashboard')
+      else if (profile.role === 'terapeuta') router.replace('/terapia/dashboard')
+      else if (['admin', 'recepcao'].includes(profile.role)) router.replace('/admin/dashboard')
+    }
+    verificarSessaoExistente()
+  }, [])
 
   async function handleLogin(e?: React.FormEvent) {
     e?.preventDefault()

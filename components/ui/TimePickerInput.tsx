@@ -116,7 +116,7 @@ export function TimePickerInput({ value, onChange }: Props) {
       alignItems: 'center',
       justifyContent: 'center',
       cursor: 'pointer',
-      fontSize: 14,
+      fontSize: 16,
       fontWeight: selected ? 700 : 500,
       color: selected ? '#FFFFFF' : 'var(--color-ink-mid)',
       transition: 'color 0.12s, background 0.12s, box-shadow 0.12s',

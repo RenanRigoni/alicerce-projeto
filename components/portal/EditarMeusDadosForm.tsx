@@ -104,7 +104,7 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
     width: '100%',
     borderRadius: 10,
     padding: '8px 12px',
-    fontSize: 14,
+    fontSize: 16,
     border: '1.5px solid var(--color-border)',
     background: 'var(--color-warm-white)',
     color: 'var(--color-ink)',
@@ -113,7 +113,7 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
 
   const labelStyle: React.CSSProperties = {
     display: 'block',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 600,
     marginBottom: 4,
     color: 'var(--color-ink-soft)',

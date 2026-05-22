@@ -157,7 +157,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
             color: '#fff',
             borderRadius: 8,
             padding: '5px 11px',
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: 500,
             whiteSpace: 'nowrap',
             boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
@@ -341,7 +341,6 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}>
                 {fotoUrl
-                  // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
                   : initials(nome)}
               </div>
@@ -368,7 +367,6 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
               title={nome}
             >
               {fotoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
               ) : initials(nome)}
             </button>
@@ -518,7 +516,6 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
               <div className="flex items-center gap-3 px-1">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}>
                   {fotoUrl
-                    // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
                     : initials(nome)}
                 </div>

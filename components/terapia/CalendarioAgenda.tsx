@@ -293,7 +293,7 @@ function MiniCalendario({
 
       <div className="grid grid-cols-7 mb-0.5">
         {['S','T','Q','Q','S','S','D'].map((d, i) => (
-          <div key={i} className="text-center" style={{ fontSize: 10, color: 'var(--color-ink-faint)', height: 18, lineHeight: '18px' }}>
+          <div key={i} className="text-center" style={{ fontSize: 12, color: 'var(--color-ink-faint)', height: 20, lineHeight: '20px' }}>
             {d}
           </div>
         ))}
@@ -315,7 +315,7 @@ function MiniCalendario({
               className="flex flex-col items-center justify-center rounded-md transition-all"
               style={{
                 height: 26,
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: selecionado || hoje ? 700 : 400,
                 background: selecionado ? 'var(--color-rose-main)' : hoje ? 'var(--color-rose-blush)' : 'transparent',
                 color: selecionado ? '#fff' : hoje ? 'var(--color-rose-deep)' : 'var(--color-ink-mid)',
@@ -400,7 +400,7 @@ function ViewDia({
             <div
               key={i}
               className="absolute text-right"
-              style={{ top: i * PX_POR_HORA - 7, right: 6, fontSize: 10, color: 'var(--color-ink-faint)', userSelect: 'none' }}
+              style={{ top: i * PX_POR_HORA - 8, right: 6, fontSize: 12, color: 'var(--color-ink-faint)', userSelect: 'none' }}
             >
               {String(HORA_INICIO + i).padStart(2, '0')}:00
             </div>

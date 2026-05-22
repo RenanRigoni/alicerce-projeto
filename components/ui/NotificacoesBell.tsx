@@ -167,7 +167,7 @@ export function NotificacoesBell({ expanded = false }: { expanded?: boolean }) {
           <span className="flex-1 text-sm text-left whitespace-nowrap">Notificações</span>
           {naoLidas > 0 && (
             <span
-              className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white shrink-0"
+              className="text-[13px] font-bold px-2 py-0.5 rounded-full text-white shrink-0"
               style={{ background: 'var(--color-rose-main)' }}
             >
               {naoLidas > 9 ? '9+' : naoLidas}
@@ -187,7 +187,7 @@ export function NotificacoesBell({ expanded = false }: { expanded?: boolean }) {
           </svg>
           {naoLidas > 0 && (
             <span
-              className="absolute -top-0.5 -right-0.5 text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center text-white"
+              className="absolute -top-0.5 -right-0.5 text-[12px] font-bold w-5 h-5 rounded-full flex items-center justify-center text-white"
               style={{ background: 'var(--color-rose-main)' }}
             >
               {naoLidas > 9 ? '9+' : naoLidas}

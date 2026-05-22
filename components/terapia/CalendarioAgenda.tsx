@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useMemo, type FormEvent } from 'react'
+import { Trash2 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -99,6 +100,29 @@ function addDays(date: Date, n: number): Date {
   const d = new Date(date)
   d.setDate(d.getDate() + n)
   return d
+}
+
+function isWeekend(date: Date): boolean {
+  const day = date.getDay()
+  return day === 0 || day === 6
+}
+
+function getMonthGridDays(monthStart: Date, mostrarFimSemana: boolean): (Date | null)[] {
+  let start = getMondayOfWeek(monthStart)
+  if (!mostrarFimSemana && isWeekend(monthStart)) {
+    start = addDays(monthStart, monthStart.getDay() === 6 ? 2 : 1)
+  }
+  const lastDay = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0)
+  const lastWeekMonday = getMondayOfWeek(lastDay)
+  const end = addDays(lastWeekMonday, mostrarFimSemana ? 6 : 4)
+  const days: (Date | null)[] = []
+
+  for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 1)) {
+    if (!mostrarFimSemana && isWeekend(cursor)) continue
+    days.push(cursor.getMonth() === monthStart.getMonth() ? new Date(cursor) : null)
+  }
+
+  return days
 }
 
 function localDateStr(d: Date): string {
@@ -235,10 +259,6 @@ function MiniCalendario({
   const baseYear = dataBase.getFullYear()
   const baseMonth = dataBase.getMonth()
   const [mesNav, setMesNav] = useState(() => new Date(baseYear, baseMonth, 1))
-
-  useEffect(() => {
-    setMesNav(new Date(baseYear, baseMonth, 1))
-  }, [baseYear, baseMonth])
 
   const diasComEventos = useMemo(() => {
     const s = new Set<string>()
@@ -448,7 +468,7 @@ function ViewProgramacao({
   onEventClick: (e: EventoAgenda) => void
 }) {
   const monday = getMondayOfWeek(dataBase)
-  const days = Array.from({ length: mostrarFimSemana ? 7 : 6 }, (_, i) => addDays(monday, i))
+  const days = Array.from({ length: mostrarFimSemana ? 7 : 5 }, (_, i) => addDays(monday, i))
 
   return (
     <div className="space-y-5">
@@ -529,14 +549,20 @@ function ModalEvento({
   evento,
   onClose,
   onEnviarWhatsApp,
+  onRemoverBloqueio,
   waLoading,
   waConfirmacao,
+  removerBloqueioLoading,
+  removerBloqueioErro,
 }: {
   evento: EventoAgenda
   onClose: () => void
   onEnviarWhatsApp: () => void
+  onRemoverBloqueio?: () => void
   waLoading: boolean
   waConfirmacao: { token: string; status: string } | null
+  removerBloqueioLoading: boolean
+  removerBloqueioErro: string | null
 }) {
   const s = tipoStyle[evento.tipo] ?? tipoStyle.outro
   const confirmacaoStatus = waConfirmacao?.status ?? evento.confirmacao?.status ?? null
@@ -684,6 +710,26 @@ function ModalEvento({
               )}
             </div>
           )}
+
+          {evento.tipo === 'bloqueio' && onRemoverBloqueio && (
+            <div className="pt-1 space-y-2">
+              {removerBloqueioErro && (
+                <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+                  {removerBloqueioErro}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={onRemoverBloqueio}
+                disabled={removerBloqueioLoading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-85 disabled:opacity-50"
+                style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}
+              >
+                <Trash2 size={14} />
+                {removerBloqueioLoading ? 'Removendo...' : 'Remover bloqueio'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -709,6 +755,8 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
   const [diaAberto, setDiaAberto] = useState<{ dateStr: string; evs: EventoAgenda[] } | null>(null)
   const [waLoading, setWaLoading] = useState(false)
   const [waConfirmacao, setWaConfirmacao] = useState<{ token: string; status: string } | null>(null)
+  const [removerBloqueioLoading, setRemoverBloqueioLoading] = useState(false)
+  const [removerBloqueioErro, setRemoverBloqueioErro] = useState<string | null>(null)
 
   const [bloqueioAberto, setBloqueioAberto] = useState(false)
   const [bloqueioLoading, setBloqueioLoading] = useState(false)
@@ -730,6 +778,8 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
   useEffect(() => {
     setWaConfirmacao(null)
     setWaLoading(false)
+    setRemoverBloqueioErro(null)
+    setRemoverBloqueioLoading(false)
   }, [eventoAberto?.id])
 
   const pacientesLista = useMemo(() => {
@@ -767,7 +817,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
     }
     if (view === 'semana' || view === 'programacao') {
       const mon = getMondayOfWeek(dataBase)
-      const end = addDays(mon, mostrarFimSemana ? 6 : 5)
+      const end = addDays(mon, mostrarFimSemana ? 6 : 4)
       const opts: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short' }
       return `${mon.toLocaleDateString('pt-BR', opts)} – ${end.toLocaleDateString('pt-BR', { ...opts, year: 'numeric' })}`
     }
@@ -791,6 +841,31 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
       }
     } catch { /* silent */ } finally {
       setWaLoading(false)
+    }
+  }
+
+  async function handleRemoverBloqueio() {
+    if (!eventoAberto || eventoAberto.tipo !== 'bloqueio') return
+    const confirmado = window.confirm('Remover este bloqueio da agenda?')
+    if (!confirmado) return
+
+    setRemoverBloqueioLoading(true)
+    setRemoverBloqueioErro(null)
+    try {
+      const res = await fetch(`/api/terapeuta/bloqueio?id=${encodeURIComponent(eventoAberto.id)}`, {
+        method: 'DELETE',
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setRemoverBloqueioErro(json.error ?? 'Erro ao remover bloqueio.')
+        return
+      }
+      setEventoAberto(null)
+      router.refresh()
+    } catch {
+      setRemoverBloqueioErro('Erro de conexÃ£o ao remover bloqueio.')
+    } finally {
+      setRemoverBloqueioLoading(false)
     }
   }
 
@@ -868,21 +943,14 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
   }
 
   // Semana
-  const numDias = mostrarFimSemana ? 7 : 6
+  const numDias = mostrarFimSemana ? 7 : 5
   const monday = getMondayOfWeek(dataBase)
   const weekDays = Array.from({ length: numDias }, (_, i) => addDays(monday, i))
 
   // Mês
   const mesAno = new Date(dataBase.getFullYear(), dataBase.getMonth(), 1)
-  const firstDow = mesAno.getDay()
-  const daysInMonth = new Date(mesAno.getFullYear(), mesAno.getMonth() + 1, 0).getDate()
-  const offset = firstDow === 0 ? 6 : firstDow - 1
-  const totalCells = Math.ceil((offset + daysInMonth) / 7) * 7
-  const calDays: (Date | null)[] = Array.from({ length: totalCells }, (_, i) => {
-    const dayNum = i - offset + 1
-    if (dayNum < 1 || dayNum > daysInMonth) return null
-    return new Date(mesAno.getFullYear(), mesAno.getMonth(), dayNum)
-  })
+  const mesColunas = mostrarFimSemana ? 7 : 5
+  const calDays = getMonthGridDays(mesAno, mostrarFimSemana)
 
   const filtersActive = filtroStatus !== 'todos' || filtroPacienteId !== 'todos'
 
@@ -896,6 +964,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
           style={{ width: 208, borderRight: '1px solid var(--color-border-soft)', minHeight: '75vh' }}
         >
           <MiniCalendario
+            key={`${dataBase.getFullYear()}-${dataBase.getMonth()}`}
             dataBase={dataBase}
             eventos={eventosFiltrados}
             onDiaClick={d => { setDataBase(d); setView('dia') }}
@@ -1099,27 +1168,33 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
 
             {view === 'mes' && (
               <div>
-                <div className="grid grid-cols-7 mb-1">
-                  {['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(d => (
+                <div
+                  className="grid mb-1"
+                  style={{ gridTemplateColumns: `repeat(${mesColunas}, 1fr)` }}
+                >
+                  {['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].slice(0, mesColunas).map(d => (
                     <div key={d} className="text-center text-xs font-medium py-1" style={{ color: 'var(--color-ink-faint)' }}>{d}</div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 rounded-xl overflow-hidden" style={{ gap: '1px', background: 'var(--color-border-soft)' }}>
+                <div
+                  className="grid rounded-xl overflow-hidden"
+                  style={{ gridTemplateColumns: `repeat(${mesColunas}, 1fr)`, gap: '1px', background: 'var(--color-border-soft)' }}
+                >
                   {calDays.map((day, i) => {
                     if (!day) return <div key={i} className="h-20" style={{ background: 'var(--color-canvas)' }} />
                     const evs = getEventosForDate(day, eventosFiltrados)
                     const feriado = getFeriadoForDate(day, feriadosFiltrados)
                     const hoje = isToday(day)
-                    const isDomingo = day.getDay() === 0
+                    const fimDeSemana = isWeekend(day)
                     return (
                       <div
                         key={i}
                         className="p-1.5 min-h-[5rem]"
-                        style={{ background: hoje ? '#EFF6FF' : feriado ? '#FEF2F2' : isDomingo ? 'var(--color-canvas)' : 'var(--color-warm-white)' }}
+                        style={{ background: hoje ? '#EFF6FF' : feriado ? '#FEF2F2' : fimDeSemana ? 'var(--color-canvas)' : 'var(--color-warm-white)' }}
                       >
                         <div
                           className="text-xs font-bold mb-1"
-                          style={{ color: hoje ? '#1D4ED8' : feriado ? '#EF4444' : isDomingo ? 'var(--color-border)' : 'var(--color-ink-soft)' }}
+                          style={{ color: hoje ? '#1D4ED8' : feriado ? '#EF4444' : fimDeSemana ? 'var(--color-border)' : 'var(--color-ink-soft)' }}
                         >
                           {day.getDate()}
                           {feriado && <span className="ml-1" style={{ color: '#F87171' }}>•</span>}
@@ -1155,7 +1230,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                 {feriadosFiltrados
                   .filter(f => {
                     const d = new Date(f.data + 'T12:00:00')
-                    return d.getFullYear() === mesAno.getFullYear() && d.getMonth() === mesAno.getMonth()
+                    return d.getFullYear() === mesAno.getFullYear() && d.getMonth() === mesAno.getMonth() && (mostrarFimSemana || !isWeekend(d))
                   })
                   .map(f => (
                     <div key={f.data} className="mt-2 text-xs" style={{ color: '#EF4444' }}>
@@ -1244,8 +1319,11 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
           evento={eventoAberto}
           onClose={() => setEventoAberto(null)}
           onEnviarWhatsApp={handleEnviarWhatsApp}
+          onRemoverBloqueio={eventoAberto.tipo === 'bloqueio' ? handleRemoverBloqueio : undefined}
           waLoading={waLoading}
           waConfirmacao={waConfirmacao}
+          removerBloqueioLoading={removerBloqueioLoading}
+          removerBloqueioErro={removerBloqueioErro}
         />
       )}
 

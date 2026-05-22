@@ -256,3 +256,45 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true })
 }
+
+export async function DELETE(request: NextRequest) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return erro('Nao autorizado', 401)
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'terapeuta') {
+    return erro('Apenas profissionais podem remover bloqueios da propria agenda.', 403)
+  }
+
+  const id = request.nextUrl.searchParams.get('id') ?? ''
+  if (!id) return erro('Bloqueio invalido')
+
+  const adminClient = createAdminClient()
+  const { data: bloqueio, error: buscarError } = await adminClient
+    .from('agendamentos')
+    .select('id, tipo, terapeuta_id')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (buscarError) return erro('Erro ao buscar bloqueio.', 500)
+  if (!bloqueio || bloqueio.tipo !== 'bloqueio' || bloqueio.terapeuta_id !== user.id) {
+    return erro('Bloqueio nao encontrado.', 404)
+  }
+
+  const { error: deleteError } = await adminClient
+    .from('agendamentos')
+    .delete()
+    .eq('id', id)
+    .eq('tipo', 'bloqueio')
+    .eq('terapeuta_id', user.id)
+
+  if (deleteError) return erro('Erro ao remover bloqueio.', 500)
+
+  return NextResponse.json({ success: true })
+}

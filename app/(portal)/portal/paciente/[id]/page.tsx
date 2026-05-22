@@ -252,7 +252,7 @@ export default async function PacientePortalPage({
                         >
                           {t.fotoUrl
                             // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={t.fotoUrl} alt={t.nome} className="w-full h-full object-cover" />
+                            ? <img src={t.fotoUrl} alt={t.nome} loading="lazy" className="w-full h-full object-cover" />
                             : ini}
                         </div>
                         <span className="text-sm">{t.nome}</span>

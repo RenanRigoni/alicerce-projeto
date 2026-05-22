@@ -44,9 +44,9 @@ function IconeWA({ size = 14 }: { size?: number }) {
 
 function StatusBadge({ status }: { status: string }) {
   const configs: Record<string, { icon: string; color: string; label: string }> = {
-    pendente:   { icon: '⏳', color: '#b45309', label: 'Mensagem enviada — aguardando' },
-    confirmada: { icon: '✅', color: '#15803d', label: 'Confirmado pelo responsável' },
-    expirada:   { icon: '⚠️', color: '#6b7280', label: 'Expirado — confirmado para cobrança' },
+    pendente:   { icon: '⏳', color: 'var(--color-status-pendente-text)',   label: 'Mensagem enviada — aguardando' },
+    confirmada: { icon: '✅', color: 'var(--color-status-confirmada-text)', label: 'Confirmado pelo responsável' },
+    expirada:   { icon: '⚠️', color: 'var(--color-status-expirada-text)',   label: 'Expirado — confirmado para cobrança' },
   }
   const c = configs[status]
   if (!c) return null

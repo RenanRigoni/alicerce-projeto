@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -95,12 +95,31 @@ export function Navbar({ role, nome, permissoes = {} }: NavbarProps) {
   const [menuAberto, setMenuAberto] = useState(false)
   const [userMenuAberto, setUserMenuAberto] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    if (!userMenuAberto) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setUserMenuAberto(false) }
+      if (e.key === 'Tab' && dropdownRef.current) {
+        const focusable = Array.from(
+          dropdownRef.current.querySelectorAll<HTMLElement>('a,button,[tabindex]:not([tabindex="-1"])')
+        )
+        const first = focusable[0]; const last = focusable[focusable.length - 1]
+        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last?.focus() } }
+        else { if (document.activeElement === last) { e.preventDefault(); first?.focus() } }
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    dropdownRef.current?.querySelector<HTMLElement>('a,button')?.focus()
+    return () => document.removeEventListener('keydown', onKey)
+  }, [userMenuAberto])
 
   async function handleLogout() {
     const supabase = createClient()
@@ -147,7 +166,7 @@ export function Navbar({ role, nome, permissoes = {} }: NavbarProps) {
               <Link
                 key={link.href}
                 href={link.href}
-                className="relative px-3 py-1.5 text-sm rounded-lg transition-all duration-200"
+                className="relative px-3 py-2 text-sm rounded-lg transition-colors duration-200 min-h-[44px] flex items-center"
                 onClick={() => setUserMenuAberto(false)}
                 style={{
                   color: isActive(link.href)
@@ -174,10 +193,12 @@ export function Navbar({ role, nome, permissoes = {} }: NavbarProps) {
             <div className="relative hidden lg:block">
               <button
                 onClick={() => setUserMenuAberto(v => !v)}
-                className="flex items-center gap-2 px-2 py-1 rounded-xl transition-all duration-200 hover:bg-[var(--color-border-soft)]"
+                aria-haspopup="menu"
+                aria-expanded={userMenuAberto}
+                className="flex items-center gap-2 px-2 py-2 rounded-xl transition-colors duration-200 hover:bg-[var(--color-border-soft)] min-h-[44px]"
               >
                 <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${avatarColors[role]}`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${avatarColors[role]}`}
                 >
                   {initials(nome)}
                 </div>
@@ -196,6 +217,9 @@ export function Navbar({ role, nome, permissoes = {} }: NavbarProps) {
               {/* Dropdown */}
               {userMenuAberto && (
                 <div
+                  ref={dropdownRef}
+                  role="menu"
+                  aria-label="Menu do usuário"
                   className="absolute right-0 top-full mt-2 w-52 rounded-2xl py-1 z-50"
                   style={{
                     background: 'var(--color-warm-white)',
@@ -213,6 +237,7 @@ export function Navbar({ role, nome, permissoes = {} }: NavbarProps) {
                     <>
                       <Link
                         href="/privacidade"
+                        role="menuitem"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-[var(--color-border-soft)]"
@@ -240,6 +265,7 @@ export function Navbar({ role, nome, permissoes = {} }: NavbarProps) {
                     <PushNotificationSettings />
                   </div>
                   <button
+                    role="menuitem"
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-[var(--color-border-soft)]"
                     style={{ color: 'var(--color-ink-mid)' }}

@@ -242,9 +242,9 @@ export default async function TerapiaDashboard() {
           <Card>
             <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-ink)' }}>Agenda de hoje</p>
             {agendaHoje.length > 0 ? (
-              <div>
+              <ul role="list" aria-label="Agenda de hoje">
                 {agendaHoje.map((item, i) => (
-                  <div
+                  <li
                     key={i}
                     className="flex items-center gap-2 py-2"
                     style={{ borderBottom: i < agendaHoje.length - 1 ? '1px solid var(--color-border-soft)' : 'none' }}
@@ -261,20 +261,20 @@ export default async function TerapiaDashboard() {
                     {item.tipoTag ? (
                       <span
                         className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: '#EDE8E3', color: '#6B5E57' }}
+                        style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
                       >
                         {tipoLabel[item.tipoTag] ?? item.tipoTag}
                       </span>
                     ) : item.status === 'confirmada' || item.status === 'expirada' ? (
-                      <span className="text-xs flex-shrink-0" style={{ color: '#16A34A' }}>✅ confirmada</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-confirmada-text)' }}>✅ confirmada</span>
                     ) : item.status === 'pendente' ? (
-                      <span className="text-xs flex-shrink-0" style={{ color: '#D97706' }}>⏳ pendente</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-pendente-text)' }}>⏳ pendente</span>
                     ) : (
-                      <span className="text-xs flex-shrink-0" style={{ color: '#9CA3AF' }}>— sem envio</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-ink-faint)' }}>— sem envio</span>
                     )}
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhuma sessão hoje.</p>
             )}
@@ -286,30 +286,30 @@ export default async function TerapiaDashboard() {
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div
                 className="rounded-xl p-2.5 text-center"
-                style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
+                style={{ background: 'var(--color-status-confirmada-bg)', border: '1px solid var(--color-status-confirmada-border)' }}
               >
-                <div className="text-2xl font-bold" style={{ color: '#16A34A' }}>{confirmadasSemana}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Confirmadas</div>
+                <div className="text-2xl font-bold" style={{ color: 'var(--color-status-confirmada-text)' }}>{confirmadasSemana}</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>Confirmadas</div>
               </div>
               <div
                 className="rounded-xl p-2.5 text-center"
-                style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
+                style={{ background: 'var(--color-status-cancelada-bg)', border: '1px solid var(--color-status-cancelada-border)' }}
               >
-                <div className="text-2xl font-bold" style={{ color: '#DC2626' }}>{canceladasSemana}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Canceladas</div>
+                <div className="text-2xl font-bold" style={{ color: 'var(--color-status-cancelada-text)' }}>{canceladasSemana}</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>Canceladas</div>
               </div>
             </div>
-            <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: '#6B7280' }}>
+            <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>
               <span>Taxa — {nomeMes}</span>
-              <strong style={{ color: '#16A34A' }}>{taxaMes}%</strong>
+              <strong style={{ color: 'var(--color-status-confirmada-text)' }}>{taxaMes}%</strong>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#E5E7EB' }}>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-status-expirada-border)' }}>
               <div
                 className="h-full rounded-full"
-                style={{ width: `${taxaMes}%`, background: '#16A34A' }}
+                style={{ width: `${taxaMes}%`, background: 'var(--color-status-confirmada-text)' }}
               />
             </div>
-            <div className="text-xs mt-2" style={{ color: '#9CA3AF' }}>
+            <div className="text-xs mt-2" style={{ color: 'var(--color-ink-faint)' }}>
               {confirmadasMes} confirmadas · {canceladasMes} canceladas no mês
             </div>
           </Card>

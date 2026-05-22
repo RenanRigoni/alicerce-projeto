@@ -465,7 +465,7 @@ export default function NovoUsuarioPage() {
                     <input name="bairro" value={form.bairro} onChange={handleChange} placeholder="Bairro" className="input-base" />
                   </div>
 
-                  <div className="grid grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                     <div className="col-span-2">
                       <label className="block text-sm font-medium mb-1.5" style={L}>
                         Número <span style={{ color: 'var(--color-rose-main)' }}>*</span>

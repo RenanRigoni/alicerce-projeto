@@ -343,7 +343,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}>
                 {fotoUrl
-                  ? <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
+                  ? <img src={fotoUrl} alt={nome} loading="lazy" className="w-full h-full object-cover" />
                   : initials(nome)}
               </div>
               <div className="min-w-0 flex-1">
@@ -369,7 +369,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
               title={nome}
             >
               {fotoUrl ? (
-                <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
+                <img src={fotoUrl} alt={nome} loading="lazy" className="w-full h-full object-cover" />
               ) : initials(nome)}
             </button>
           </div>
@@ -519,7 +519,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
               <div className="flex items-center gap-3 px-1">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}>
                   {fotoUrl
-                    ? <img src={fotoUrl} alt={nome} className="w-full h-full object-cover" />
+                    ? <img src={fotoUrl} alt={nome} loading="lazy" className="w-full h-full object-cover" />
                     : initials(nome)}
                 </div>
                 <div className="min-w-0">

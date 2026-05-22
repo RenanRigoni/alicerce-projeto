@@ -282,30 +282,30 @@ export default async function AdminDashboard() {
       {altasPendentes && altasPendentes.length > 0 && (
         <div
           className="rounded-2xl px-5 py-4"
-          style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
+          style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)' }}
         >
           <div className="flex items-center gap-2.5 mb-3">
             <span
               className="w-5 h-5 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0"
-              style={{ background: '#F59E0B' }}
+              style={{ background: 'var(--color-amber-main)' }}
             >
               {altasPendentes.length}
             </span>
-            <span className="text-sm font-semibold" style={{ color: '#92400E' }}>
+            <span className="text-sm font-semibold" style={{ color: 'var(--color-amber-deep)' }}>
               {altasPendentes.length === 1 ? 'Solicitação de alta pendente' : 'Solicitações de alta pendentes'}
             </span>
           </div>
           <ul className="space-y-2">
             {altasPendentes.map((a: any) => (
               <li key={a.id} className="flex items-center justify-between gap-3">
-                <div className="text-sm" style={{ color: '#78350F' }}>
+                <div className="text-sm" style={{ color: 'var(--color-amber-deep)' }}>
                   <span className="font-medium">{a.pacientes?.nome}</span>
-                  <span style={{ color: '#B45309' }}> · por {a.profiles?.nome}</span>
+                  <span style={{ color: 'var(--color-amber-mid)' }}> · por {a.profiles?.nome}</span>
                 </div>
                 <Link
                   href="/admin/alta"
                   className="text-xs font-medium rounded-lg px-3 py-1 transition-colors flex-shrink-0"
-                  style={{ color: '#92400E', border: '1px solid #FCD34D', background: 'transparent' }}
+                  style={{ color: 'var(--color-amber-deep)', border: '1px solid var(--color-amber-main)', background: 'transparent' }}
                 >
                   Analisar
                 </Link>
@@ -316,7 +316,7 @@ export default async function AdminDashboard() {
       )}
 
       {/* Cards de totais */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {podeVerPacientes && (
         <Link href="/admin/pacientes">
           <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
@@ -373,9 +373,9 @@ export default async function AdminDashboard() {
           <Card>
             <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-ink)' }}>Agenda de hoje</p>
             {agendaHoje.length > 0 ? (
-              <div>
+              <ul role="list" aria-label="Agenda de hoje">
                 {agendaHoje.map((item, i) => (
-                  <div
+                  <li
                     key={i}
                     className="flex items-center gap-2 py-2"
                     style={{ borderBottom: i < agendaHoje.length - 1 ? '1px solid var(--color-border-soft)' : 'none' }}
@@ -392,20 +392,20 @@ export default async function AdminDashboard() {
                     {item.tipoTag ? (
                       <span
                         className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: '#EDE8E3', color: '#6B5E57' }}
+                        style={{ background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)' }}
                       >
                         {tipoLabel[item.tipoTag] ?? item.tipoTag}
                       </span>
                     ) : item.status === 'confirmada' || item.status === 'expirada' ? (
-                      <span className="text-xs flex-shrink-0" style={{ color: '#16A34A' }}>✅ confirmada</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-confirmada-text)' }}>✅ confirmada</span>
                     ) : item.status === 'pendente' ? (
-                      <span className="text-xs flex-shrink-0" style={{ color: '#D97706' }}>⏳ pendente</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-pendente-text)' }}>⏳ pendente</span>
                     ) : (
-                      <span className="text-xs flex-shrink-0" style={{ color: '#9CA3AF' }}>— sem envio</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-ink-faint)' }}>— sem envio</span>
                     )}
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhuma sessão hoje.</p>
             )}
@@ -417,30 +417,30 @@ export default async function AdminDashboard() {
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div
                 className="rounded-xl p-2.5 text-center"
-                style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
+                style={{ background: 'var(--color-status-confirmada-bg)', border: '1px solid var(--color-status-confirmada-border)' }}
               >
-                <div className="text-2xl font-bold" style={{ color: '#16A34A' }}>{confirmadasSemana}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Confirmadas</div>
+                <div className="text-2xl font-bold" style={{ color: 'var(--color-status-confirmada-text)' }}>{confirmadasSemana}</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>Confirmadas</div>
               </div>
               <div
                 className="rounded-xl p-2.5 text-center"
-                style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
+                style={{ background: 'var(--color-status-cancelada-bg)', border: '1px solid var(--color-status-cancelada-border)' }}
               >
-                <div className="text-2xl font-bold" style={{ color: '#DC2626' }}>{canceladasSemana}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Canceladas</div>
+                <div className="text-2xl font-bold" style={{ color: 'var(--color-status-cancelada-text)' }}>{canceladasSemana}</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>Canceladas</div>
               </div>
             </div>
-            <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: '#6B7280' }}>
+            <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>
               <span>Taxa — {nomeMes}</span>
-              <strong style={{ color: '#16A34A' }}>{taxaMes}%</strong>
+              <strong style={{ color: 'var(--color-status-confirmada-text)' }}>{taxaMes}%</strong>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#E5E7EB' }}>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-status-expirada-border)' }}>
               <div
                 className="h-full rounded-full"
-                style={{ width: `${taxaMes}%`, background: '#16A34A' }}
+                style={{ width: `${taxaMes}%`, background: 'var(--color-status-confirmada-text)' }}
               />
             </div>
-            <div className="text-xs mt-2" style={{ color: '#9CA3AF' }}>
+            <div className="text-xs mt-2" style={{ color: 'var(--color-ink-faint)' }}>
               {confirmadasMes} confirmadas · {canceladasMes} canceladas no mês
             </div>
           </Card>
@@ -523,7 +523,7 @@ export default async function AdminDashboard() {
                         className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 mt-0.5"
                         style={r.status === 'publicado'
                           ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
-                          : { background: '#FFFBEB', color: '#92400E' }
+                          : { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' }
                         }
                       >
                         {r.status}
@@ -614,7 +614,7 @@ export default async function AdminDashboard() {
                     >
                       {a.fotoUrl
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={a.fotoUrl} alt={a.nome} className="w-full h-full object-cover" />
+                        ? <img src={a.fotoUrl} alt={a.nome} loading="lazy" className="w-full h-full object-cover" />
                         : ini}
                     </div>
                     <div className="flex-1 min-w-0">

@@ -29,8 +29,8 @@ const tipoStyle: Record<string, { background: string; color: string }> = {
   sessao:     { background: 'var(--color-rose-blush)',     color: 'var(--color-rose-deep)' },
   devolutiva: { background: 'var(--color-lavender-light)', color: 'var(--color-lavender-main)' },
   reuniao:    { background: 'var(--color-sage-light)',     color: 'var(--color-sage-deep)' },
-  reposicao:  { background: '#ECFDF5',                     color: '#047857' },
-  bloqueio:   { background: '#F3F4F6',                     color: '#4B5563' },
+  reposicao:  { background: 'var(--color-agenda-reposicao-bg)', color: 'var(--color-agenda-reposicao-text)' },
+  bloqueio:   { background: 'var(--color-agenda-bloqueio-bg)', color: 'var(--color-agenda-bloqueio-text)' },
   outro:      { background: 'var(--color-border-soft)',    color: 'var(--color-ink-mid)' },
 }
 
@@ -57,10 +57,10 @@ function IconeWA({ size = 15 }: { size?: number }) {
 
 function StatusBadge({ status }: { status: string }) {
   const configs: Record<string, { icon: string; color: string; label: string }> = {
-    pendente:   { icon: '⏳', color: '#b45309', label: 'Mensagem enviada — aguardando' },
-    confirmada: { icon: '✅', color: '#15803d', label: 'Confirmado pelo responsável' },
-    cancelada:  { icon: '❌', color: '#dc2626', label: 'Cancelado pelo responsável' },
-    expirada:   { icon: '⚠️', color: '#6b7280', label: 'Expirado — confirmado para cobrança' },
+    pendente:   { icon: '⏳', color: 'var(--color-status-pendente-text)',   label: 'Mensagem enviada — aguardando' },
+    confirmada: { icon: '✅', color: 'var(--color-status-confirmada-text)', label: 'Confirmado pelo responsável' },
+    cancelada:  { icon: '❌', color: 'var(--color-status-cancelada-text)',  label: 'Cancelado pelo responsável' },
+    expirada:   { icon: '⚠️', color: 'var(--color-status-expirada-text)',   label: 'Expirado — confirmado para cobrança' },
   }
   const c = configs[status]
   if (!c) return null

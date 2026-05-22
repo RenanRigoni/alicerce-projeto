@@ -150,7 +150,7 @@ function AvatarPaciente({ nome, fotoUrl, status, large }: { nome: string; fotoUr
   const sz = large ? 'w-20 h-20 text-2xl' : 'w-14 h-14 text-xl'
   if (fotoUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={fotoUrl} alt={nome} className={`${sz} rounded-full object-cover flex-shrink-0`} />
+    return <img src={fotoUrl} alt={nome} loading="lazy" className={`${sz} rounded-full object-cover flex-shrink-0`} />
   }
   return (
     <div
@@ -1130,7 +1130,7 @@ export function PerfilPacienteTabs({
                       </>
                     ) : o.tipo === 'imagem' && o.url_midia ? (
                       <>
-                        <img src={o.url_midia} alt={o.titulo} className="rounded-xl max-w-full max-h-64 object-contain" />
+                        <img src={o.url_midia} alt={o.titulo} loading="lazy" className="rounded-xl max-w-full max-h-64 object-contain" />
                         {o.conteudo && <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>}
                       </>
                     ) : (
@@ -1383,7 +1383,7 @@ export function PerfilPacienteTabs({
                           </>
                         ) : o.tipo === 'imagem' && o.url_midia ? (
                           <>
-                            <img src={o.url_midia} alt={o.titulo} className="rounded-xl max-w-full max-h-48 object-contain" />
+                            <img src={o.url_midia} alt={o.titulo} loading="lazy" className="rounded-xl max-w-full max-h-48 object-contain" />
                             {o.conteudo && <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>}
                           </>
                         ) : (

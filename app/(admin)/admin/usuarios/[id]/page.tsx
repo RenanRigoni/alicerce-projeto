@@ -37,7 +37,7 @@ function AvatarUsuario({ nome, fotoUrl, role }: { nome: string; fotoUrl?: string
   const ini = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
   if (fotoUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={fotoUrl} alt={nome} className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
+    return <img src={fotoUrl} alt={nome} loading="lazy" className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
   }
   return (
     <div

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 import { OrientacaoCard } from '@/components/portal/OrientacaoCard'
@@ -163,7 +164,7 @@ export default async function PortalDashboard() {
       {vinculos && vinculos.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {vinculos.map((v: any) => (
-            <a key={v.paciente_id} href={`/portal/paciente/${v.paciente_id}`}>
+            <Link key={v.paciente_id} href={`/portal/paciente/${v.paciente_id}`}>
               <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
                 <div className="font-medium" style={{ color: 'var(--color-ink)' }}>{v.pacientes?.nome}</div>
                 {v.pacientes?.frequencia_atendimento && (
@@ -178,7 +179,7 @@ export default async function PortalDashboard() {
                   Ver acompanhamento →
                 </div>
               </Card>
-            </a>
+            </Link>
           ))}
         </div>
       ) : (

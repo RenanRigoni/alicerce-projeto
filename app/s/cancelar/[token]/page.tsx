@@ -85,49 +85,49 @@ function Resultado({
       emoji: '✅',
       titulo: 'Sessão confirmada',
       mensagem: 'Esta sessão já foi confirmada. Para cancelar, entre em contato com a clínica.',
-      cor: '#22c55e',
-      fundo: '#f0fdf4',
-      borda: '#bbf7d0',
+      cor: 'var(--color-status-confirmada-text)',
+      fundo: 'var(--color-status-confirmada-bg)',
+      borda: 'var(--color-status-confirmada-border)',
     },
     ja_confirmado: {
       emoji: '✅',
       titulo: 'Sessão já confirmada',
       mensagem: 'Esta sessão já foi confirmada anteriormente. Para cancelar, entre em contato com a clínica.',
-      cor: '#22c55e',
-      fundo: '#f0fdf4',
-      borda: '#bbf7d0',
+      cor: 'var(--color-status-confirmada-text)',
+      fundo: 'var(--color-status-confirmada-bg)',
+      borda: 'var(--color-status-confirmada-border)',
     },
     ja_cancelado: {
       emoji: '❌',
       titulo: 'Sessão já cancelada',
       mensagem: 'Esta sessão já foi cancelada. Se precisar remarcar, entre em contato com a clínica.',
-      cor: '#ef4444',
-      fundo: '#fef2f2',
-      borda: '#fecaca',
+      cor: 'var(--color-status-cancelada-text)',
+      fundo: 'var(--color-status-cancelada-bg)',
+      borda: 'var(--color-status-cancelada-border)',
     },
     cancelado: {
       emoji: '❌',
       titulo: 'Sessão cancelada',
       mensagem: 'Sessão cancelada com sucesso. O horário ficou vago. Entre em contato se precisar remarcar.',
-      cor: '#ef4444',
-      fundo: '#fef2f2',
-      borda: '#fecaca',
+      cor: 'var(--color-status-cancelada-text)',
+      fundo: 'var(--color-status-cancelada-bg)',
+      borda: 'var(--color-status-cancelada-border)',
     },
     expirado: {
       emoji: '⚠️',
       titulo: 'Link expirado',
       mensagem: 'O prazo para cancelamento encerrou. A sessão foi confirmada automaticamente e será cobrada normalmente.',
-      cor: '#f59e0b',
-      fundo: '#fffbeb',
-      borda: '#fde68a',
+      cor: 'var(--color-amber-main)',
+      fundo: 'var(--color-amber-light)',
+      borda: 'var(--color-amber-border)',
     },
     nao_encontrado: {
       emoji: '🔍',
       titulo: 'Link inválido',
       mensagem: 'Este link não existe ou já foi utilizado. Entre em contato com a clínica.',
-      cor: '#6b7280',
-      fundo: '#f9fafb',
-      borda: '#e5e7eb',
+      cor: 'var(--color-status-expirada-text)',
+      fundo: 'var(--color-status-expirada-bg)',
+      borda: 'var(--color-status-expirada-border)',
     },
   }
 
@@ -136,7 +136,7 @@ function Resultado({
   return (
     <div
       className="min-h-screen flex items-center justify-center p-6"
-      style={{ background: '#fdf8f6' }}
+      style={{ background: 'var(--color-cream)' }}
     >
       <div
         className="max-w-sm w-full rounded-2xl p-8 text-center space-y-4"
@@ -160,22 +160,22 @@ function Resultado({
         {paciente && data && hora && (
           <div
             className="rounded-xl p-4 text-sm space-y-1"
-            style={{ background: 'rgba(255,255,255,0.7)', color: '#374151' }}
+            style={{ background: 'rgba(255,255,255,0.7)', color: 'var(--color-ink-mid)' }}
           >
-            <div className="font-semibold" style={{ color: '#111827' }}>{paciente}</div>
+            <div className="font-semibold" style={{ color: 'var(--color-ink)' }}>{paciente}</div>
             <div className="capitalize">{data}</div>
             <div className="font-medium">{hora}</div>
           </div>
         )}
 
-        <p className="text-sm" style={{ color: '#6b7280' }}>
+        <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
           {c.mensagem}
         </p>
 
         <div className="pt-2">
           <div
             className="text-xs"
-            style={{ color: '#9ca3af' }}
+            style={{ color: 'var(--color-ink-faint)' }}
           >
             Alicerce — Espaço Terapêutico
           </div>

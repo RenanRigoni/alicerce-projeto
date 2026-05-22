@@ -84,7 +84,7 @@ export function OrientacaoCard({ o }: { o: Orientacao }) {
             </>
           ) : o.tipo === 'imagem' && o.url_midia ? (
             <>
-              <img src={o.url_midia} alt={o.titulo} className="rounded-xl max-w-full max-h-64 object-contain" />
+              <img src={o.url_midia} alt={o.titulo} loading="lazy" className="rounded-xl max-w-full max-h-64 object-contain" />
               {o.conteudo && <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{o.conteudo}</p>}
             </>
           ) : (

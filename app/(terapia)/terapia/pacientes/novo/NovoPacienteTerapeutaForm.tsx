@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { TimePickerInput } from '@/components/ui/TimePickerInput'
 
 interface Horario {
   dia: string
@@ -217,14 +218,9 @@ export function NovoPacienteTerapeutaForm() {
                   >
                     {dias.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                   </select>
-                  <input
-                    type="text"
+                  <TimePickerInput
                     value={h.hora}
-                    onChange={e => updateHorario(i, 'hora', e.target.value)}
-                    placeholder="HH:MM"
-                    maxLength={5}
-                    inputMode="numeric"
-                    className="input-base w-24 text-center"
+                    onChange={val => updateHorario(i, 'hora', val)}
                   />
                   {horarios.length > 1 && (
                     <button

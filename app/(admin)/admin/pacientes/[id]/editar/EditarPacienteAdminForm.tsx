@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { TimePickerInput } from '@/components/ui/TimePickerInput'
 
 interface Horario { dia: string; hora: string }
 const dias = [
@@ -66,14 +67,9 @@ function HorariosSection({
           >
             {dias.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
           </select>
-          <input
-            type="text"
+          <TimePickerInput
             value={h.hora}
-            onChange={e => update(i, 'hora', e.target.value)}
-            placeholder="13:10"
-            maxLength={5}
-            inputMode="numeric"
-            className="input-base w-24 text-center"
+            onChange={val => update(i, 'hora', val)}
           />
           {horarios.length > 1 && (
             <button

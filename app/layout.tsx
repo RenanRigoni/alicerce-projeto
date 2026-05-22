@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Lora, Barlow } from 'next/font/google'
 import Script from 'next/script'
+import { NotificationGate } from '@/components/ui/NotificationGate'
 import './globals.css'
 
 const lora = Lora({
@@ -67,6 +68,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png" />
       </head>
       <body className="min-h-full flex flex-col">
+        <NotificationGate />
         {children}
         <Script id="sw-register" strategy="afterInteractive">
           {`if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }) }`}

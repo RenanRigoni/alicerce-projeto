@@ -54,12 +54,12 @@ type ViewType = 'dia' | 'semana' | 'mes' | 'programacao'
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const tipoStyle: Record<string, { background: string; color: string; border: string }> = {
-  sessao:     { background: 'var(--color-rose-blush)',      color: 'var(--color-rose-deep)',     border: 'var(--color-rose-soft)' },
-  devolutiva: { background: 'var(--color-lavender-light)', color: 'var(--color-lavender-main)', border: 'var(--color-lavender-soft)' },
-  reuniao:    { background: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
-  reposicao:  { background: '#ECFDF5', color: '#047857', border: '#A7F3D0' },
-  bloqueio:   { background: '#F3F4F6', color: '#4B5563', border: '#D1D5DB' },
-  outro:      { background: 'var(--color-border-soft)', color: 'var(--color-ink-mid)', border: 'var(--color-border)' },
+  sessao:     { background: 'var(--color-rose-blush)',         color: 'var(--color-rose-deep)',         border: 'var(--color-rose-soft)' },
+  devolutiva: { background: 'var(--color-lavender-light)',     color: 'var(--color-lavender-main)',     border: 'var(--color-lavender-soft)' },
+  reuniao:    { background: 'var(--color-agenda-reuniao-bg)',  color: 'var(--color-agenda-reuniao-text)',  border: 'var(--color-agenda-reuniao-border)' },
+  reposicao:  { background: 'var(--color-agenda-reposicao-bg)', color: 'var(--color-agenda-reposicao-text)', border: 'var(--color-agenda-reposicao-border)' },
+  bloqueio:   { background: 'var(--color-agenda-bloqueio-bg)', color: 'var(--color-agenda-bloqueio-text)', border: 'var(--color-agenda-bloqueio-border)' },
+  outro:      { background: 'var(--color-border-soft)',        color: 'var(--color-ink-mid)',           border: 'var(--color-border)' },
 }
 
 const tipoLabel: Record<string, string> = {
@@ -68,10 +68,10 @@ const tipoLabel: Record<string, string> = {
 }
 
 const confirmacaoConfig: Record<string, { label: string; icon: string; bg: string; color: string; border: string }> = {
-  pendente:   { icon: '⏳', label: 'Aguardando confirmação',              bg: '#fffbeb', color: '#b45309', border: '#fde68a' },
-  confirmada: { icon: '✅', label: 'Confirmada pelo responsável',         bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-  cancelada:  { icon: '❌', label: 'Cancelada pelo responsável',          bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
-  expirada:   { icon: '⚠️', label: 'Expirada — confirmada para cobrança', bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' },
+  pendente:   { icon: '⏳', label: 'Aguardando confirmação',              bg: 'var(--color-status-pendente-bg)',   color: 'var(--color-status-pendente-text)',   border: 'var(--color-status-pendente-border)' },
+  confirmada: { icon: '✅', label: 'Confirmada pelo responsável',         bg: 'var(--color-status-confirmada-bg)', color: 'var(--color-status-confirmada-text)', border: 'var(--color-status-confirmada-border)' },
+  cancelada:  { icon: '❌', label: 'Cancelada pelo responsável',          bg: 'var(--color-status-cancelada-bg)',  color: 'var(--color-status-cancelada-text)',  border: 'var(--color-status-cancelada-border)' },
+  expirada:   { icon: '⚠️', label: 'Expirada — confirmada para cobrança', bg: 'var(--color-status-expirada-bg)',   color: 'var(--color-status-expirada-text)',   border: 'var(--color-status-expirada-border)' },
 }
 
 const VIEWS: Array<{ key: ViewType; label: string }> = [

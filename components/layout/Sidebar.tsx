@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { NotificacoesBell } from '@/components/ui/NotificacoesBell'
 import { PushNotificationSettings } from '@/components/ui/PushNotificationSettings'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 import {
   LayoutDashboard,
   Users,
@@ -108,6 +109,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
   const [userMenuPos, setUserMenuPos] = useState<{ left: number; bottom: number } | null>(null)
   const [tooltip, setTooltip] = useState<{ label: string; y: number } | null>(null)
   const avatarRef = useRef<HTMLButtonElement>(null)
+  const mobileTrapRef = useFocusTrap<HTMLDivElement>(mobileOpen)
 
   const profileUrl: Record<string, string> = {
     admin:     '/admin/meu-perfil',
@@ -363,7 +365,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
                 const rect = avatarRef.current?.getBoundingClientRect()
                 if (rect) setUserMenuPos({ left: rect.right + 12, bottom: window.innerHeight - rect.bottom })
               }}
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold transition-opacity hover:opacity-80 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}
+              className={`w-11 h-11 rounded-full flex items-center justify-center text-xs font-semibold transition-opacity hover:opacity-80 overflow-hidden ${fotoUrl ? '' : avatarColors[role]}`}
               title={nome}
             >
               {fotoUrl ? (
@@ -465,6 +467,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
             onClick={() => setMobileOpen(false)}
           />
           <div
+            ref={mobileTrapRef}
             className="fixed top-0 left-0 bottom-0 w-64 z-50 flex flex-col lg:hidden"
             style={{
               background: 'var(--color-warm-white)',

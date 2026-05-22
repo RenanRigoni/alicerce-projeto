@@ -268,12 +268,12 @@ export default async function PortalDashboard() {
               return (
                 <div
                   className="flex items-center gap-3 rounded-xl px-4 py-3"
-                  style={{ background: '#FEF9F0', border: '1px solid #FDEBD0' }}
+                  style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)' }}
                 >
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#F0A030' }} />
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-amber-main)' }} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium" style={{ color: '#92400E' }}>{proxFeriado.descricao}</div>
-                    <div className="text-xs" style={{ color: '#B45309' }}>
+                    <div className="text-sm font-medium" style={{ color: 'var(--color-amber-deep)' }}>{proxFeriado.descricao}</div>
+                    <div className="text-xs" style={{ color: 'var(--color-amber-mid)' }}>
                       {new Date(proxFeriado.data + 'T12:00:00').toLocaleDateString('pt-BR', {
                         weekday: 'long', day: '2-digit', month: 'long',
                       })} · Feriado

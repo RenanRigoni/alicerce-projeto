@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { subscribeToPush, isPushSupported } from '@/hooks/usePushNotifications'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 
 type GateState = 'checking' | 'hidden' | 'prompt' | 'blocked' | 'activating'
 
@@ -32,6 +33,7 @@ async function syncExistingSubscription() {
 export function NotificationGate() {
   const [state, setState] = useState<GateState>('checking')
   const [erro, setErro] = useState('')
+  const trapRef = useFocusTrap<HTMLDivElement>(state === 'prompt' || state === 'activating' || state === 'blocked')
 
   useEffect(() => {
     if (!isPWA()) { setState('hidden'); return }
@@ -103,6 +105,7 @@ export function NotificationGate() {
       aria-labelledby="notif-gate-title"
     >
       <div
+        ref={trapRef}
         style={{
           background: 'var(--color-surface, #fff)',
           borderRadius: '1rem',

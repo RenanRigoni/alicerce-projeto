@@ -186,6 +186,16 @@ export default function LoginPage() {
             inset 0 1.5px 0 rgba(255,255,255,0.90),
             inset 0 -1px 0 rgba(255,255,255,0.25);
         }
+        @supports not (backdrop-filter: blur(1px)) {
+          .glass-card {
+            background: rgba(255,255,255,0.96);
+            border: 1px solid rgba(44,32,24,0.10);
+          }
+          .glass-input {
+            background: #fff;
+            border: 1.5px solid rgba(44,32,24,0.18);
+          }
+        }
 
         .glass-input {
           backdrop-filter: blur(8px);
@@ -259,11 +269,11 @@ export default function LoginPage() {
           {/* Título */}
           <h1
             className="text-2xl font-semibold mb-1 text-center"
-            style={{ fontFamily: 'var(--font-lora)', color: '#2C2018' }}
+            style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
           >
             Bem-vindo de volta
           </h1>
-          <p className="text-sm text-center mb-8" style={{ color: '#A8978E' }}>
+          <p className="text-sm text-center mb-8" style={{ color: 'var(--color-ink-soft)' }}>
             Cuidando de cada passo com amor
           </p>
 
@@ -271,10 +281,11 @@ export default function LoginPage() {
 
             {/* E-mail ou CPF */}
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#6B5B4E' }}>
+              <label htmlFor="identificador" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-ink-mid)' }}>
                 E-mail ou CPF
               </label>
               <input
+                id="identificador"
                 type="text"
                 value={identificador}
                 onChange={e => setIdentificador(e.target.value)}
@@ -283,18 +294,19 @@ export default function LoginPage() {
                 autoComplete="username"
                 placeholder="seu@email.com ou 000.000.000-00"
                 className="glass-input w-full rounded-xl px-4 py-3 text-sm"
-                style={{ color: '#2C2018' }}
+                style={{ color: 'var(--color-ink)' }}
               />
-              <p className="text-xs mt-1" style={{ color: '#C8B8B0' }}>
+              <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
                 Responsáveis podem usar CPF para entrar
               </p>
             </div>
 
             {/* Senha */}
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#6B5B4E' }}>Senha</label>
+              <label htmlFor="senha" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-ink-mid)' }}>Senha</label>
               <div className="relative">
                 <input
+                  id="senha"
                   type={mostrarSenha ? 'text' : 'password'}
                   value={senha}
                   onChange={e => setSenha(e.target.value)}
@@ -303,7 +315,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   placeholder="••••••••"
                   className="glass-input w-full rounded-xl px-4 py-3 pr-12 text-sm"
-                  style={{ color: '#2C2018' }}
+                  style={{ color: 'var(--color-ink)' }}
                 />
                 <button
                   type="button"
@@ -330,7 +342,7 @@ export default function LoginPage() {
                 <a
                   href="/recuperar-senha"
                   className="text-xs transition-opacity hover:opacity-70 cursor-pointer"
-                  style={{ color: '#D4716A' }}
+                  style={{ color: 'var(--color-rose-main)' }}
                 >
                   Esqueci minha senha
                 </a>
@@ -340,6 +352,7 @@ export default function LoginPage() {
             {/* Erro */}
             {erro && (
               <div
+                role="alert"
                 className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm"
                 style={{
                   background: 'rgba(254,242,242,0.85)',
@@ -382,13 +395,13 @@ export default function LoginPage() {
 
           {/* Rodapé */}
           <div className="text-center mt-8 space-y-1.5">
-            <p className="text-xs" style={{ color: '#C8B8B0' }}>
+            <p className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
               Alicerce Espaço Terapêutico Infantil
             </p>
             <a
               href="/privacidade"
               className="text-xs transition-opacity hover:opacity-70"
-              style={{ color: '#D4716A' }}
+              style={{ color: 'var(--color-rose-main)' }}
             >
               Política de Privacidade
             </a>

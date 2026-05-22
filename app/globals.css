@@ -22,11 +22,44 @@
 
   /* Lavanda — acentos */
   --color-lavender-light: #F0EDF8;
+  --color-lavender-soft:  #CAC3E4;
   --color-lavender-main:  #9B8EC4;
 
   /* Pêssego — portal (pais) */
   --color-peach-light: #FEF0E8;
   --color-peach-main:  #E8A07A;
+
+  /* Âmbar — feriados e avisos */
+  --color-amber-light:  #FEF9F0;
+  --color-amber-border: #FDEBD0;
+  --color-amber-main:   #F0A030;
+  --color-amber-deep:   #92400E;
+  --color-amber-mid:    #B45309;
+
+  /* Agenda — tipos de evento */
+  --color-agenda-reuniao-bg:       #EFF6FF;
+  --color-agenda-reuniao-text:     #1D4ED8;
+  --color-agenda-reuniao-border:   #BFDBFE;
+  --color-agenda-reposicao-bg:     #ECFDF5;
+  --color-agenda-reposicao-text:   #047857;
+  --color-agenda-reposicao-border: #A7F3D0;
+  --color-agenda-bloqueio-bg:      #F3F4F6;
+  --color-agenda-bloqueio-text:    #4B5563;
+  --color-agenda-bloqueio-border:  #D1D5DB;
+
+  /* Status de confirmação */
+  --color-status-pendente-bg:       #FFFBEB;
+  --color-status-pendente-text:     #B45309;
+  --color-status-pendente-border:   #FDE68A;
+  --color-status-confirmada-bg:     #F0FDF4;
+  --color-status-confirmada-text:   #15803D;
+  --color-status-confirmada-border: #BBF7D0;
+  --color-status-cancelada-bg:      #FEF2F2;
+  --color-status-cancelada-text:    #DC2626;
+  --color-status-cancelada-border:  #FECACA;
+  --color-status-expirada-bg:       #F3F4F6;
+  --color-status-expirada-text:     #6B7280;
+  --color-status-expirada-border:   #E5E7EB;
 
   /* Texto */
   --color-ink:         #2C2018;
@@ -38,9 +71,11 @@
   --color-border:      #EAE0D8;
   --color-border-soft: #F2EBE5;
 
-  /* Fontes — Barlow única família, pesos diferenciam hierarquia */
-  --font-lora:    var(--font-barlow-var), 'Barlow', system-ui, sans-serif;
+  /* Fontes */
+  --font-lora:    var(--font-lora-var), 'Lora', Georgia, serif;
   --font-dm-sans: var(--font-barlow-var), 'Barlow', system-ui, sans-serif;
+  --font-heading: var(--font-lora-var), 'Lora', Georgia, serif;
+  --font-body:    var(--font-barlow-var), 'Barlow', system-ui, sans-serif;
 
   /* Escala de texto global: +2px sobre o padrao do Tailwind */
   --text-xs:   0.875rem;
@@ -91,6 +126,13 @@ body {
 h1, h2, h3, h4 {
   letter-spacing: 0;
   line-height: 1.25;
+}
+
+/* ─── Focus visible global ───────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-rose-main);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* ─── Inputs ─────────────────────────────────────────────────── */
@@ -187,7 +229,7 @@ h1, h2, h3, h4 {
 }
 
 .animate-fade-up {
-  animation: fadeUp 0.4s ease both;
+  animation: fadeUp 0.35s ease-out both;
 }
 
 .animate-fade-up-1 { animation-delay: 0.05s; }

@@ -253,8 +253,9 @@ export function Navbar({ role, nome, permissoes = {} }: NavbarProps) {
             {/* Hamburger mobile */}
             <button
               onClick={() => setMenuAberto(v => !v)}
-              className="lg:hidden flex flex-col gap-1.5 p-2 rounded-lg hover:bg-[var(--color-border-soft)] transition-colors"
+              className="lg:hidden flex flex-col gap-1.5 p-3 rounded-lg hover:bg-[var(--color-border-soft)] transition-colors"
               aria-label="Menu"
+              aria-expanded={menuAberto}
             >
               <span
                 className="block w-5 h-0.5 rounded-full transition-all duration-300"

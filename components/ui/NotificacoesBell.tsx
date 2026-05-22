@@ -199,6 +199,9 @@ export function NotificacoesBell({ expanded = false }: { expanded?: boolean }) {
       {aberto && pos && (
         <div
           ref={containerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Notificações"
           className="rounded-2xl shadow-xl overflow-hidden"
           style={{
             position: 'fixed',
@@ -221,13 +224,19 @@ export function NotificacoesBell({ expanded = false }: { expanded?: boolean }) {
             )}
           </div>
 
-          <div className="overflow-y-auto divide-y" style={{ maxHeight: pos.maxListHeight, borderColor: 'var(--color-border-soft)' }}>
+          <ul
+            role="list"
+            aria-live="polite"
+            aria-label="Lista de notificações"
+            className="overflow-y-auto divide-y"
+            style={{ maxHeight: pos.maxListHeight, borderColor: 'var(--color-border-soft)', listStyle: 'none', margin: 0, padding: 0 }}
+          >
             {carregando ? (
-              <div className="px-4 py-6 text-center text-sm" style={{ color: 'var(--color-ink-faint)' }}>Carregando...</div>
+              <li className="px-4 py-6 text-center text-sm" style={{ color: 'var(--color-ink-faint)' }}>Carregando...</li>
             ) : notificacoes.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhuma notificação.</div>
+              <li className="px-4 py-6 text-center text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhuma notificação.</li>
             ) : notificacoes.map(n => (
-              <div
+              <li
                 key={n.id}
                 className="px-4 py-3 transition-colors"
                 style={{ background: n.lida ? 'transparent' : 'var(--color-rose-blush)' }}
@@ -241,9 +250,9 @@ export function NotificacoesBell({ expanded = false }: { expanded?: boolean }) {
                     <NotificacaoItem n={n} />
                   </button>
                 )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
     </>

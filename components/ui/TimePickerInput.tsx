@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type CSSProperties, type RefObject } from 'react'
 
 const ITEM_H = 36
 const VISIBLE = 5
@@ -29,11 +29,11 @@ export function TimePickerInput({ value, onChange }: Props) {
   const selH = match ? parseInt(match[1]) : -1
   const selM = match ? parseInt(match[2]) : -1
 
-  function jumpTo(ref: React.RefObject<HTMLDivElement>, idx: number) {
+  function jumpTo(ref: RefObject<HTMLDivElement>, idx: number) {
     if (ref.current) ref.current.scrollTop = idx * ITEM_H
   }
 
-  function smoothTo(ref: React.RefObject<HTMLDivElement>, idx: number) {
+  function smoothTo(ref: RefObject<HTMLDivElement>, idx: number) {
     ref.current?.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
   }
 
@@ -99,7 +99,7 @@ export function TimePickerInput({ value, onChange }: Props) {
     smoothTo(minColRef, m)
   }
 
-  const colStyle: React.CSSProperties = {
+  const colStyle: CSSProperties = {
     height: ITEM_H * VISIBLE,
     scrollSnapType: 'y mandatory',
     overscrollBehavior: 'contain',

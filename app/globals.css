@@ -3,92 +3,94 @@
 /* ─── Design tokens ─────────────────────────────────────────── */
 @theme {
   /* Cores principais */
-  --color-cream:       #FDF8F3;
-  --color-warm-white:  #FFFCF9;
-  --color-sand:        #F5EDE0;
+  --color-cream:       oklch(98% 0.010 62);
+  --color-warm-white:  oklch(99% 0.006 62);
+  --color-sand:        oklch(93% 0.025 68);
+  --color-canvas:      oklch(98% 0.010 62);
 
   /* Rosa — paleta principal */
-  --color-rose-blush:  #FCECEA;
-  --color-rose-soft:   #F0B8B2;
-  --color-rose-main:   #D4716A;
-  --color-rose-deep:   #B55A54;
-  --color-rose-muted:  #E8C4C0;
+  --color-rose-blush:  oklch(95% 0.016 22);
+  --color-rose-soft:   oklch(81% 0.062 22);
+  --color-rose-main:   oklch(61% 0.116 22);
+  --color-rose-deep:   oklch(52% 0.108 22);
+  --color-rose-muted:  oklch(85% 0.040 22);
 
   /* Sage — terapeutas */
-  --color-sage-light:  #EBF3E8;
-  --color-sage-soft:   #C4DEC0;
-  --color-sage-main:   #6FA869;
-  --color-sage-deep:   #4E8A49;
+  --color-sage-light:  oklch(95% 0.020 143);
+  --color-sage-soft:   oklch(87% 0.050 143);
+  --color-sage-main:   oklch(67% 0.095 143);
+  --color-sage-deep:   oklch(57% 0.100 143);
 
   /* Lavanda — acentos */
-  --color-lavender-light: #F0EDF8;
-  --color-lavender-soft:  #CAC3E4;
-  --color-lavender-main:  #9B8EC4;
+  --color-lavender-light: oklch(95% 0.018 293);
+  --color-lavender-soft:  oklch(82% 0.058 293);
+  --color-lavender-main:  oklch(65% 0.088 293);
 
   /* Pêssego — portal (pais) */
-  --color-peach-light: #FEF0E8;
-  --color-peach-main:  #E8A07A;
+  --color-peach-light: oklch(95% 0.020 47);
+  --color-peach-soft:  oklch(83% 0.072 47);
+  --color-peach-main:  oklch(73% 0.095 47);
 
   /* Âmbar — feriados e avisos */
-  --color-amber-light:  #FEF9F0;
-  --color-amber-border: #FDEBD0;
-  --color-amber-main:   #F0A030;
-  --color-amber-deep:   #92400E;
-  --color-amber-mid:    #B45309;
+  --color-amber-light:  oklch(98% 0.012 82);
+  --color-amber-border: oklch(93% 0.030 80);
+  --color-amber-main:   oklch(73% 0.132 72);
+  --color-amber-deep:   oklch(40% 0.108 58);
+  --color-amber-mid:    oklch(50% 0.112 58);
 
   /* Agenda — tipos de evento */
-  --color-agenda-reuniao-bg:       #EFF6FF;
-  --color-agenda-reuniao-text:     #1D4ED8;
-  --color-agenda-reuniao-border:   #BFDBFE;
-  --color-agenda-reposicao-bg:     #ECFDF5;
-  --color-agenda-reposicao-text:   #047857;
-  --color-agenda-reposicao-border: #A7F3D0;
-  --color-agenda-bloqueio-bg:      #F3F4F6;
-  --color-agenda-bloqueio-text:    #4B5563;
-  --color-agenda-bloqueio-border:  #D1D5DB;
+  --color-agenda-reuniao-bg:       oklch(97% 0.018 254);
+  --color-agenda-reuniao-text:     oklch(45% 0.192 264);
+  --color-agenda-reuniao-border:   oklch(88% 0.062 254);
+  --color-agenda-reposicao-bg:     oklch(98% 0.016 162);
+  --color-agenda-reposicao-text:   oklch(52% 0.115 162);
+  --color-agenda-reposicao-border: oklch(93% 0.065 162);
+  --color-agenda-bloqueio-bg:      oklch(96% 0.004 264);
+  --color-agenda-bloqueio-text:    oklch(46% 0.018 264);
+  --color-agenda-bloqueio-border:  oklch(86% 0.008 264);
 
   /* Status de confirmação */
-  --color-status-pendente-bg:       #FFFBEB;
-  --color-status-pendente-text:     #B45309;
-  --color-status-pendente-border:   #FDE68A;
-  --color-status-confirmada-bg:     #F0FDF4;
-  --color-status-confirmada-text:   #15803D;
-  --color-status-confirmada-border: #BBF7D0;
-  --color-status-cancelada-bg:      #FEF2F2;
-  --color-status-cancelada-text:    #DC2626;
-  --color-status-cancelada-border:  #FECACA;
-  --color-status-expirada-bg:       #F3F4F6;
-  --color-status-expirada-text:     #6B7280;
-  --color-status-expirada-border:   #E5E7EB;
+  --color-status-pendente-bg:       oklch(99% 0.010 92);
+  --color-status-pendente-text:     oklch(50% 0.112 58);
+  --color-status-pendente-border:   oklch(92% 0.082 92);
+  --color-status-confirmada-bg:     oklch(99% 0.014 152);
+  --color-status-confirmada-text:   oklch(53% 0.112 152);
+  --color-status-confirmada-border: oklch(96% 0.055 152);
+  --color-status-cancelada-bg:      oklch(97% 0.014 22);
+  --color-status-cancelada-text:    oklch(51% 0.185 26);
+  --color-status-cancelada-border:  oklch(88% 0.060 22);
+  --color-status-expirada-bg:       oklch(96% 0.004 264);
+  --color-status-expirada-text:     oklch(54% 0.015 264);
+  --color-status-expirada-border:   oklch(92% 0.006 264);
 
   /* Texto */
-  --color-ink:         #2C2018;
-  --color-ink-mid:     #6B5B4E;
-  --color-ink-soft:    #A8978E;
-  --color-ink-faint:   #D4C8C3;
+  --color-ink:         oklch(19% 0.028 55);
+  --color-ink-mid:     oklch(44% 0.025 52);
+  --color-ink-soft:    oklch(65% 0.020 52);
+  --color-ink-faint:   oklch(83% 0.012 52);
 
   /* Hoje (calendário) */
-  --color-today-bg:     #EFF6FF;
-  --color-today-text:   #1D4ED8;
-  --color-today-border: #BFDBFE;
+  --color-today-bg:     oklch(97% 0.018 254);
+  --color-today-text:   oklch(45% 0.192 264);
+  --color-today-border: oklch(88% 0.062 254);
 
   /* Feriado (calendário) */
-  --color-feriado-bg:     #FEF2F2;
-  --color-feriado-text:   #EF4444;
-  --color-feriado-border: #FECACA;
-  --color-feriado-soft:   #F87171;
+  --color-feriado-bg:     oklch(97% 0.014 22);
+  --color-feriado-text:   oklch(62% 0.185 26);
+  --color-feriado-border: oklch(88% 0.060 22);
+  --color-feriado-soft:   oklch(71% 0.162 26);
 
   /* Info / Perigo — badge/botão */
-  --color-info-bg:       #EFF6FF;
-  --color-info-text:     #1D4ED8;
-  --color-info-border:   #BFDBFE;
-  --color-danger-bg:     #FEF2F2;
-  --color-danger-text:   #B91C1C;
-  --color-danger-border: #FECACA;
+  --color-info-bg:       oklch(97% 0.018 254);
+  --color-info-text:     oklch(45% 0.192 264);
+  --color-info-border:   oklch(88% 0.062 254);
+  --color-danger-bg:     oklch(97% 0.014 22);
+  --color-danger-text:   oklch(42% 0.168 26);
+  --color-danger-border: oklch(88% 0.060 22);
 
   /* Bordas */
-  --color-border:      #EAE0D8;
-  --color-border-soft: #F2EBE5;
+  --color-border:      oklch(90% 0.018 58);
+  --color-border-soft: oklch(94% 0.012 58);
 
   /* Fontes */
   --font-lora:    var(--font-lora-var), 'Lora', Georgia, serif;

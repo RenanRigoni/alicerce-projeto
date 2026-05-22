@@ -111,6 +111,7 @@ export function CalendarioMensalPortal({ eventos }: Props) {
               <button
                 key={i}
                 onClick={() => evs.length > 0 ? setSelecionado({ data: localStr(day), evs }) : undefined}
+                aria-label={`${day.getDate()} de ${mesesPT[mes]}${evs.length > 0 ? `, ${evs.length} evento${evs.length !== 1 ? 's' : ''}` : ''}`}
                 className="min-h-[3.5rem] p-1.5 text-left transition-all"
                 style={{
                   background: hoje
@@ -173,6 +174,9 @@ export function CalendarioMensalPortal({ eventos }: Props) {
       {/* Modal do dia */}
       {selecionado && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-dia-titulo"
           className="fixed inset-0 flex items-center justify-center z-50 p-4"
           style={{ background: 'rgba(44,32,24,0.35)' }}
           onClick={() => setSelecionado(null)}
@@ -183,12 +187,12 @@ export function CalendarioMensalPortal({ eventos }: Props) {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold" style={{ color: 'var(--color-ink)' }}>
+              <h3 id="modal-dia-titulo" className="font-semibold" style={{ color: 'var(--color-ink)' }}>
                 {new Date(selecionado.data + 'T12:00:00').toLocaleDateString('pt-BR', {
                   weekday: 'long', day: '2-digit', month: 'long',
                 })}
               </h3>
-              <button onClick={() => setSelecionado(null)} className="text-lg hover:opacity-60" style={{ color: 'var(--color-ink-faint)' }}>×</button>
+              <button onClick={() => setSelecionado(null)} aria-label="Fechar" className="text-lg hover:opacity-60" style={{ color: 'var(--color-ink-faint)' }}>×</button>
             </div>
             <div className="space-y-2">
               {selecionado.evs.map((ev, idx) => {

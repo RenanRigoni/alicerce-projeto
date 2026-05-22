@@ -40,8 +40,8 @@ export function Button({
       'focus-visible:ring-[var(--color-border)]',
     ].join(' '),
     danger: [
-      'bg-red-50 hover:bg-red-100 text-red-600',
-      'border border-red-200 focus-visible:ring-red-400',
+      'bg-[var(--color-danger-bg)] hover:bg-[var(--color-feriado-border)] text-[var(--color-danger-text)]',
+      'border border-[var(--color-danger-border)] focus-visible:ring-[var(--color-danger-border)]',
     ].join(' '),
   }
 

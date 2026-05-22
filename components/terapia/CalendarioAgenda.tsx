@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useMemo, type FormEvent } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Calendar, MessageCircle, Lock } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -230,7 +230,13 @@ function ViewIcon({ tipo }: { tipo: ViewType }) {
 
 function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button type="button" onClick={() => onChange(!value)} className="flex items-center justify-between w-full gap-2">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={value}
+      onClick={() => onChange(!value)}
+      className="flex items-center justify-between w-full gap-2"
+    >
       <span className="text-xs text-left" style={{ color: 'var(--color-ink-soft)' }}>{label}</span>
       <span
         className="relative inline-flex h-5 w-9 rounded-full transition-colors flex-shrink-0"
@@ -312,6 +318,8 @@ function MiniCalendario({
             <button
               key={i}
               onClick={() => onDiaClick(d)}
+              aria-label={`${dayNum} de ${d.toLocaleDateString('pt-BR', { month: 'long' })}${hoje ? ', hoje' : ''}${temEvento ? ', tem eventos' : ''}`}
+              aria-pressed={selecionado}
               className="flex flex-col items-center justify-center rounded-md transition-all"
               style={{
                 height: 26,
@@ -367,18 +375,18 @@ function ViewDia({
       <div
         className="mb-4 px-3 py-2.5 rounded-xl flex items-center gap-3"
         style={{
-          background: hoje ? '#EFF6FF' : feriado ? '#FEF2F2' : 'var(--color-warm-white)',
-          border: `1px solid ${hoje ? '#BFDBFE' : feriado ? '#FECACA' : 'var(--color-border-soft)'}`,
+          background: hoje ? 'var(--color-today-bg)' : feriado ? 'var(--color-feriado-bg)' : 'var(--color-warm-white)',
+          border: `1px solid ${hoje ? 'var(--color-today-border)' : feriado ? 'var(--color-feriado-border)' : 'var(--color-border-soft)'}`,
         }}
       >
         <div className="flex-1">
           <div
             className="font-semibold capitalize"
-            style={{ color: hoje ? '#1D4ED8' : feriado ? '#EF4444' : 'var(--color-ink)', fontFamily: 'var(--font-lora)' }}
+            style={{ color: hoje ? 'var(--color-today-text)' : feriado ? 'var(--color-feriado-text)' : 'var(--color-ink)', fontFamily: 'var(--font-lora)' }}
           >
             {dia.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
           </div>
-          {feriado && <div className="text-xs mt-0.5" style={{ color: '#EF4444' }}>{feriado.descricao}</div>}
+          {feriado && <div className="text-xs mt-0.5" style={{ color: 'var(--color-feriado-text)' }}>{feriado.descricao}</div>}
           {evs.length === 0 && (
             <div className="text-sm mt-0.5" style={{ color: 'var(--color-ink-faint)' }}>Nenhum agendamento neste dia</div>
           )}
@@ -483,13 +491,13 @@ function ViewProgramacao({
                 className="text-sm font-semibold capitalize px-2.5 py-0.5 rounded-full"
                 style={{
                   background: hoje ? 'var(--color-rose-main)' : 'transparent',
-                  color: hoje ? '#fff' : feriado ? '#EF4444' : 'var(--color-ink-mid)',
+                  color: hoje ? '#fff' : feriado ? 'var(--color-feriado-text)' : 'var(--color-ink-mid)',
                 }}
               >
                 {day.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
               </span>
               {feriado && !hoje && (
-                <span className="text-xs" style={{ color: '#EF4444' }}>• {feriado.descricao}</span>
+                <span className="text-xs" style={{ color: 'var(--color-feriado-text)' }}>• {feriado.descricao}</span>
               )}
               {evs.length > 0 && (
                 <span className="text-xs ml-auto" style={{ color: 'var(--color-ink-faint)' }}>
@@ -564,6 +572,7 @@ function ModalEvento({
   removerBloqueioLoading: boolean
   removerBloqueioErro: string | null
 }) {
+  const [confirmandoRemover, setConfirmandoRemover] = useState(false)
   const s = tipoStyle[evento.tipo] ?? tipoStyle.outro
   const confirmacaoStatus = waConfirmacao?.status ?? evento.confirmacao?.status ?? null
   const podaEnviarWA =
@@ -581,6 +590,9 @@ function ModalEvento({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-evento-titulo"
         className="rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl"
         style={{ background: 'var(--color-warm-white)' }}
         onClick={e => e.stopPropagation()}
@@ -598,6 +610,7 @@ function ModalEvento({
               {tipoLabel[evento.tipo] ?? evento.tipo}
             </span>
             <h3
+              id="modal-evento-titulo"
               className="mt-1.5 text-base font-semibold leading-snug"
               style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-lora)' }}
             >
@@ -606,6 +619,7 @@ function ModalEvento({
           </div>
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="ml-3 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full transition-opacity hover:opacity-60 text-lg"
             style={{ color: 'var(--color-ink-faint)', background: 'var(--color-border-soft)' }}
           >×</button>
@@ -618,7 +632,7 @@ function ModalEvento({
             className="rounded-xl px-3 py-2.5 flex items-center gap-3"
             style={{ background: 'var(--color-canvas)', border: '1px solid var(--color-border-soft)' }}
           >
-            <span className="text-base flex-shrink-0">📅</span>
+            <Calendar size={16} aria-hidden="true" className="flex-shrink-0" style={{ color: 'var(--color-ink-soft)' }} />
             <div>
               <div className="text-sm font-medium capitalize" style={{ color: 'var(--color-ink)' }}>
                 {new Date(evento.data_hora).toLocaleDateString('pt-BR', {
@@ -678,7 +692,7 @@ function ModalEvento({
               className="rounded-xl px-3 py-2.5 flex items-start gap-2"
               style={{ background: 'var(--color-canvas)', border: '1px solid var(--color-border-soft)' }}
             >
-              <span className="text-sm flex-shrink-0 mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>💬</span>
+              <MessageCircle size={14} aria-hidden="true" className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-ink-soft)' }} />
               <div>
                 <div className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--color-ink-faint)' }}>Observação</div>
                 <p className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>{evento.motivo}</p>
@@ -714,20 +728,41 @@ function ModalEvento({
           {evento.tipo === 'bloqueio' && onRemoverBloqueio && (
             <div className="pt-1 space-y-2">
               {removerBloqueioErro && (
-                <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+                <div className="text-xs rounded-xl px-3 py-2" style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: '1px solid var(--color-danger-border)' }}>
                   {removerBloqueioErro}
                 </div>
               )}
-              <button
-                type="button"
-                onClick={onRemoverBloqueio}
-                disabled={removerBloqueioLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-85 disabled:opacity-50"
-                style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}
-              >
-                <Trash2 size={14} />
-                {removerBloqueioLoading ? 'Removendo...' : 'Remover bloqueio'}
-              </button>
+              {confirmandoRemover ? (
+                <div className="rounded-xl px-3 py-2.5 space-y-2" style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)' }}>
+                  <p className="text-xs font-medium" style={{ color: 'var(--color-danger-text)' }}>Confirmar remoção deste bloqueio?</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmandoRemover(false)}
+                      className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
+                      style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
+                    >Cancelar</button>
+                    <button
+                      type="button"
+                      onClick={onRemoverBloqueio}
+                      disabled={removerBloqueioLoading}
+                      className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-85 disabled:opacity-50"
+                      style={{ background: 'var(--color-danger-text)', color: '#fff' }}
+                    >{removerBloqueioLoading ? 'Removendo...' : 'Confirmar'}</button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoRemover(true)}
+                  disabled={removerBloqueioLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-85 disabled:opacity-50"
+                  style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: '1px solid var(--color-danger-border)' }}
+                >
+                  <Trash2 size={14} />
+                  Remover bloqueio
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -846,9 +881,6 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
 
   async function handleRemoverBloqueio() {
     if (!eventoAberto || eventoAberto.tipo !== 'bloqueio') return
-    const confirmado = window.confirm('Remover este bloqueio da agenda?')
-    if (!confirmado) return
-
     setRemoverBloqueioLoading(true)
     setRemoverBloqueioErro(null)
     try {
@@ -956,11 +988,11 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
 
   return (
     <>
-      <div className="flex items-start" style={{ minHeight: '75vh' }}>
+      <div className="flex flex-col lg:flex-row items-start" style={{ minHeight: '75vh' }}>
 
-        {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+        {/* ── Sidebar — hidden on mobile ────────────────────────────────── */}
         <div
-          className="flex-shrink-0 flex flex-col"
+          className="hidden lg:flex flex-shrink-0 flex-col"
           style={{ width: 208, borderRight: '1px solid var(--color-border-soft)', minHeight: '75vh' }}
         >
           <MiniCalendario
@@ -979,11 +1011,11 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                 <button
                   key={v.key}
                   onClick={() => setView(v.key)}
-                  className="w-full text-left px-3 py-2 text-sm font-medium flex items-center gap-2.5 transition-all"
+                  className="w-full text-left px-3 py-2 mx-1 text-sm font-medium flex items-center gap-2.5 transition-all rounded-lg"
                   style={{
                     background: ativa ? 'var(--color-rose-blush)' : 'transparent',
                     color: ativa ? 'var(--color-rose-deep)' : 'var(--color-ink-mid)',
-                    borderLeft: ativa ? '3px solid var(--color-rose-main)' : '3px solid transparent',
+                    fontWeight: ativa ? 600 : 400,
                   }}
                 >
                   <ViewIcon tipo={v.key} />
@@ -1069,7 +1101,29 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
         </div>
 
         {/* ── Content ──────────────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0 flex flex-col" style={{ paddingLeft: 16 }}>
+        <div className="flex-1 min-w-0 flex flex-col lg:pl-4">
+
+          {/* Mobile view tabs */}
+          <div className="flex lg:hidden items-center gap-1.5 py-2 mb-1 overflow-x-auto" style={{ borderBottom: '1px solid var(--color-border-soft)' }}>
+            {VIEWS.map(v => {
+              const ativa = view === v.key
+              return (
+                <button
+                  key={v.key}
+                  onClick={() => setView(v.key)}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    background: ativa ? 'var(--color-rose-blush)' : 'transparent',
+                    color: ativa ? 'var(--color-rose-deep)' : 'var(--color-ink-soft)',
+                    border: `1px solid ${ativa ? 'var(--color-rose-soft)' : 'var(--color-border)'}`,
+                  }}
+                >
+                  <ViewIcon tipo={v.key} />
+                  {v.label}
+                </button>
+              )
+            })}
+          </div>
 
           {/* Header */}
           <div
@@ -1129,20 +1183,20 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                       className="rounded-xl p-2 min-h-[140px]"
                       style={{
                         border: hoje ? '1px solid #BFDBFE' : feriado ? '1px solid #FECACA' : '1px solid var(--color-border-soft)',
-                        background: hoje ? '#EFF6FF' : feriado ? '#FEF2F2' : 'var(--color-warm-white)',
+                        background: hoje ? 'var(--color-today-bg)' : feriado ? 'var(--color-feriado-bg)' : 'var(--color-warm-white)',
                       }}
                     >
-                      <div className="text-xs font-semibold mb-0.5" style={{ color: hoje ? '#1D4ED8' : feriado ? '#EF4444' : 'var(--color-ink-faint)' }}>
+                      <div className="text-xs font-semibold mb-0.5" style={{ color: hoje ? 'var(--color-today-text)' : feriado ? 'var(--color-feriado-text)' : 'var(--color-ink-faint)' }}>
                         {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][day.getDay()]}
                       </div>
                       <div
                         className="text-lg font-bold mb-1 w-7 h-7 flex items-center justify-center rounded-full"
-                        style={{ color: hoje ? '#fff' : feriado ? '#F87171' : 'var(--color-ink)', background: hoje ? '#1D4ED8' : 'transparent' }}
+                        style={{ color: hoje ? '#fff' : feriado ? 'var(--color-feriado-soft)' : 'var(--color-ink)', background: hoje ? 'var(--color-today-text)' : 'transparent' }}
                       >
                         {day.getDate()}
                       </div>
                       {feriado && (
-                        <div className="text-xs mb-1 leading-tight" style={{ color: '#EF4444' }}>{feriado.descricao}</div>
+                        <div className="text-xs mb-1 leading-tight" style={{ color: 'var(--color-feriado-text)' }}>{feriado.descricao}</div>
                       )}
                       <div className="space-y-1">
                         {evs.map(ev => {
@@ -1190,14 +1244,14 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                       <div
                         key={i}
                         className="p-1.5 min-h-[5rem]"
-                        style={{ background: hoje ? '#EFF6FF' : feriado ? '#FEF2F2' : fimDeSemana ? 'var(--color-canvas)' : 'var(--color-warm-white)' }}
+                        style={{ background: hoje ? 'var(--color-today-bg)' : feriado ? 'var(--color-feriado-bg)' : fimDeSemana ? 'var(--color-canvas)' : 'var(--color-warm-white)' }}
                       >
                         <div
                           className="text-xs font-bold mb-1"
-                          style={{ color: hoje ? '#1D4ED8' : feriado ? '#EF4444' : fimDeSemana ? 'var(--color-border)' : 'var(--color-ink-soft)' }}
+                          style={{ color: hoje ? 'var(--color-today-text)' : feriado ? 'var(--color-feriado-text)' : fimDeSemana ? 'var(--color-border)' : 'var(--color-ink-soft)' }}
                         >
                           {day.getDate()}
-                          {feriado && <span className="ml-1" style={{ color: '#F87171' }}>•</span>}
+                          {feriado && <span className="ml-1" style={{ color: 'var(--color-feriado-soft)' }}>•</span>}
                         </div>
                         <div className="space-y-0.5">
                           {evs.slice(0, 2).map(ev => {
@@ -1233,7 +1287,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                     return d.getFullYear() === mesAno.getFullYear() && d.getMonth() === mesAno.getMonth() && (mostrarFimSemana || !isWeekend(d))
                   })
                   .map(f => (
-                    <div key={f.data} className="mt-2 text-xs" style={{ color: '#EF4444' }}>
+                    <div key={f.data} className="mt-2 text-xs" style={{ color: 'var(--color-feriado-text)' }}>
                       • {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })} — {f.descricao}
                     </div>
                   ))}
@@ -1262,12 +1316,15 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium shadow-lg transition-all hover:opacity-90 whitespace-nowrap"
               style={{ background: 'var(--color-warm-white)', color: 'var(--color-ink)', border: '1px solid var(--color-border)' }}
             >
-              🔒 Bloquear horário
+              <Lock size={14} aria-hidden="true" />
+              Bloquear horário
             </button>
           </div>
         )}
         <button
           onClick={() => setFabAberto(v => !v)}
+          aria-label={fabAberto ? 'Fechar menu de ações' : 'Abrir menu de ações'}
+          aria-expanded={fabAberto}
           className="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl shadow-lg transition-all hover:opacity-90 hover:scale-105"
           style={{ background: 'var(--color-rose-main)' }}
         >
@@ -1283,15 +1340,18 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
           onClick={() => setDiaAberto(null)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-dia-titulo"
             className="rounded-2xl p-5 max-w-sm w-full space-y-3 max-h-[80vh] overflow-y-auto"
             style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold" style={{ color: 'var(--color-ink)' }}>
+              <h3 id="modal-dia-titulo" className="font-semibold" style={{ color: 'var(--color-ink)' }}>
                 {new Date(diaAberto.dateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
               </h3>
-              <button onClick={() => setDiaAberto(null)} className="text-lg leading-none hover:opacity-60" style={{ color: 'var(--color-ink-faint)' }}>×</button>
+              <button onClick={() => setDiaAberto(null)} aria-label="Fechar" className="text-lg leading-none hover:opacity-60" style={{ color: 'var(--color-ink-faint)' }}>×</button>
             </div>
             <div className="space-y-2">
               {diaAberto.evs.map(ev => {
@@ -1335,6 +1395,9 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
           onClick={limparBloqueio}
         >
           <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-bloqueio-titulo"
             onSubmit={handleVerificarBloqueio}
             className="rounded-2xl p-5 max-w-sm w-full space-y-4"
             style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
@@ -1342,12 +1405,12 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="font-semibold" style={{ color: 'var(--color-ink)' }}>Bloquear horário</h3>
+                <h3 id="modal-bloqueio-titulo" className="font-semibold" style={{ color: 'var(--color-ink)' }}>Bloquear horário</h3>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                   {formatarDataHora(toIsoBRT(bloqueioForm.data, bloqueioForm.hora))}
                 </p>
               </div>
-              <button type="button" onClick={limparBloqueio} className="text-lg leading-none transition-opacity hover:opacity-60" style={{ color: 'var(--color-ink-faint)' }}>×</button>
+              <button type="button" onClick={limparBloqueio} aria-label="Fechar" className="text-lg leading-none transition-opacity hover:opacity-60" style={{ color: 'var(--color-ink-faint)' }}>×</button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -1406,7 +1469,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
             </label>
 
             {bloqueioErro && (
-              <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+              <div className="text-xs rounded-xl px-3 py-2" style={{ background: 'var(--color-feriado-bg)', color: 'var(--color-danger-text)', border: '1px solid #FECACA' }}>
                 {bloqueioErro}
               </div>
             )}
@@ -1437,28 +1500,31 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
           onClick={limparBloqueio}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-conflito-titulo"
             className="rounded-2xl p-5 max-w-md w-full space-y-4 max-h-[85vh] overflow-y-auto"
             style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="font-semibold" style={{ color: 'var(--color-ink)' }}>Horário ocupado</h3>
+                <h3 id="modal-conflito-titulo" className="font-semibold" style={{ color: 'var(--color-ink)' }}>Horário ocupado</h3>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                   {formatarDataHora(bloqueioPendente.payload.data_hora)}
                 </p>
               </div>
-              <button onClick={limparBloqueio} className="text-lg leading-none transition-opacity hover:opacity-60" style={{ color: 'var(--color-ink-faint)' }}>×</button>
+              <button onClick={limparBloqueio} aria-label="Fechar" className="text-lg leading-none transition-opacity hover:opacity-60" style={{ color: 'var(--color-ink-faint)' }}>×</button>
             </div>
 
             <div className="space-y-2">
               {bloqueioPendente.conflitos.map(conf => (
-                <div key={conf.id} className="rounded-xl px-3 py-2" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-                  <div className="text-xs font-medium" style={{ color: '#92400E' }}>
+                <div key={conf.id} className="rounded-xl px-3 py-2" style={{ background: 'var(--color-status-pendente-bg)', border: '1px solid var(--color-status-pendente-border)' }}>
+                  <div className="text-xs font-medium" style={{ color: 'var(--color-amber-deep)' }}>
                     {formatarDataHora(conf.data_hora)} · {tipoLabel[conf.tipo] ?? conf.tipo}
                   </div>
                   <div className="text-sm" style={{ color: 'var(--color-ink)' }}>{conf.pacienteNome ?? conf.titulo}</div>
-                  <div className="text-xs" style={{ color: '#B45309' }}>{conf.duracao_minutos} minutos</div>
+                  <div className="text-xs" style={{ color: 'var(--color-amber-mid)' }}>{conf.duracao_minutos} minutos</div>
                 </div>
               ))}
             </div>
@@ -1490,12 +1556,12 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                     })}
                   </div>
                 ) : (
-                  <div className="text-sm rounded-xl px-3 py-2" style={{ background: '#F3F4F6', color: '#6B7280' }}>
+                  <div className="text-sm rounded-xl px-3 py-2" style={{ background: 'var(--color-status-expirada-bg)', color: 'var(--color-status-expirada-text)' }}>
                     Nenhum horário disponível nos próximos dias.
                   </div>
                 )}
                 {bloqueioErro && (
-                  <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+                  <div className="text-xs rounded-xl px-3 py-2" style={{ background: 'var(--color-feriado-bg)', color: 'var(--color-danger-text)', border: '1px solid #FECACA' }}>
                     {bloqueioErro}
                   </div>
                 )}
@@ -1518,12 +1584,12 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
             ) : (
               <div className="space-y-3">
                 {bloqueioPendente.conflitos.length !== 1 && (
-                  <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#F3F4F6', color: '#6B7280' }}>
+                  <div className="text-xs rounded-xl px-3 py-2" style={{ background: 'var(--color-status-expirada-bg)', color: 'var(--color-status-expirada-text)' }}>
                     Reposição automática disponível apenas para um atendimento por vez.
                   </div>
                 )}
                 {bloqueioErro && (
-                  <div className="text-xs rounded-xl px-3 py-2" style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+                  <div className="text-xs rounded-xl px-3 py-2" style={{ background: 'var(--color-feriado-bg)', color: 'var(--color-danger-text)', border: '1px solid #FECACA' }}>
                     {bloqueioErro}
                   </div>
                 )}

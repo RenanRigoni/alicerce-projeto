@@ -67,6 +67,25 @@
   --color-ink-soft:    #A8978E;
   --color-ink-faint:   #D4C8C3;
 
+  /* Hoje (calendário) */
+  --color-today-bg:     #EFF6FF;
+  --color-today-text:   #1D4ED8;
+  --color-today-border: #BFDBFE;
+
+  /* Feriado (calendário) */
+  --color-feriado-bg:     #FEF2F2;
+  --color-feriado-text:   #EF4444;
+  --color-feriado-border: #FECACA;
+  --color-feriado-soft:   #F87171;
+
+  /* Info / Perigo — badge/botão */
+  --color-info-bg:       #EFF6FF;
+  --color-info-text:     #1D4ED8;
+  --color-info-border:   #BFDBFE;
+  --color-danger-bg:     #FEF2F2;
+  --color-danger-text:   #B91C1C;
+  --color-danger-border: #FECACA;
+
   /* Bordas */
   --color-border:      #EAE0D8;
   --color-border-soft: #F2EBE5;
@@ -237,3 +256,17 @@ h1, h2, h3, h4 {
 .animate-fade-up-3 { animation-delay: 0.15s; }
 .animate-fade-up-4 { animation-delay: 0.20s; }
 .animate-fade-up-5 { animation-delay: 0.25s; }
+
+/* ─── Reduced motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-up-1,
+  .animate-fade-up-2,
+  .animate-fade-up-3,
+  .animate-fade-up-4,
+  .animate-fade-up-5 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

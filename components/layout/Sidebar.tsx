@@ -258,28 +258,13 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
                   key={item.href}
                   href={item.href}
                   onClick={closeExpanded}
-                  className="mx-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all"
-                  style={{
-                    color: active ? 'var(--color-rose-main)' : 'var(--color-ink-mid)',
-                    background: active ? 'var(--color-rose-blush)' : 'transparent',
-                    fontWeight: active ? 500 : 400,
-                    textDecoration: 'none',
-                    whiteSpace: 'nowrap',
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) {
-                      const el = e.currentTarget as HTMLElement
-                      el.style.background = 'var(--color-border-soft)'
-                      el.style.color = 'var(--color-ink)'
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) {
-                      const el = e.currentTarget as HTMLElement
-                      el.style.background = 'transparent'
-                      el.style.color = 'var(--color-ink-mid)'
-                    }
-                  }}
+                  className={[
+                    'mx-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all',
+                    active
+                      ? 'text-[var(--color-rose-main)] bg-[var(--color-rose-blush)] font-medium'
+                      : 'text-[var(--color-ink-mid)] hover:bg-[var(--color-border-soft)] hover:text-[var(--color-ink)]',
+                  ].join(' ')}
+                  style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
                 >
                   <Icon size={18} strokeWidth={active ? 2.5 : 1.75} />
                   {item.label}
@@ -296,25 +281,14 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
               >
                 <Link
                   href={item.href}
-                  className="w-16 h-11 flex items-center justify-center rounded-xl transition-all duration-150"
-                  style={{
-                    color: active ? 'var(--color-rose-main)' : 'var(--color-ink-soft)',
-                    background: active ? 'var(--color-rose-blush)' : 'transparent',
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) {
-                      const el = e.currentTarget as HTMLElement
-                      el.style.background = 'var(--color-border-soft)'
-                      el.style.color = 'var(--color-ink)'
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) {
-                      const el = e.currentTarget as HTMLElement
-                      el.style.background = 'transparent'
-                      el.style.color = 'var(--color-ink-soft)'
-                    }
-                  }}
+                  title={item.label}
+                  aria-label={item.label}
+                  className={[
+                    'w-16 h-11 flex items-center justify-center rounded-xl transition-all duration-150',
+                    active
+                      ? 'text-[var(--color-rose-main)] bg-[var(--color-rose-blush)]'
+                      : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-border-soft)] hover:text-[var(--color-ink)]',
+                  ].join(' ')}
                 >
                   <Icon size={19} strokeWidth={active ? 2.5 : 1.75} />
                 </Link>

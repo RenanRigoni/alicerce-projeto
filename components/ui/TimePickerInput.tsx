@@ -29,11 +29,11 @@ export function TimePickerInput({ value, onChange }: Props) {
   const selH = match ? parseInt(match[1]) : -1
   const selM = match ? parseInt(match[2]) : -1
 
-  function jumpTo(ref: RefObject<HTMLDivElement>, idx: number) {
+  function jumpTo(ref: RefObject<HTMLDivElement | null>, idx: number) {
     if (ref.current) ref.current.scrollTop = idx * ITEM_H
   }
 
-  function smoothTo(ref: RefObject<HTMLDivElement>, idx: number) {
+  function smoothTo(ref: RefObject<HTMLDivElement | null>, idx: number) {
     ref.current?.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
   }
 

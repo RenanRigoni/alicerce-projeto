@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { TimePickerInput } from '@/components/ui/TimePickerInput'
+import { mascaraCpf } from '@/lib/masks'
 
 interface Horario {
   dia: string
@@ -164,8 +165,10 @@ export function NovoPacienteTerapeutaForm() {
             <input
               name="cpf"
               value={form.cpf}
-              onChange={handle}
+              onChange={e => setForm(prev => ({ ...prev, cpf: mascaraCpf(e.target.value) }))}
               placeholder="000.000.000-00"
+              inputMode="numeric"
+              maxLength={14}
               className="input-base"
             />
           </div>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { TimePickerInput } from '@/components/ui/TimePickerInput'
+import { mascaraCpf } from '@/lib/masks'
 
 interface Horario { dia: string; hora: string }
 const dias = [
@@ -104,7 +105,7 @@ export function EditarPacienteAdminForm({
     nome:                    paciente.nome ?? '',
     data_nascimento:         paciente.data_nascimento ?? '',
     sexo:                    paciente.sexo ?? '',
-    cpf:                     paciente.cpf ?? '',
+    cpf:                     mascaraCpf(paciente.cpf ?? ''),
     turno_preferencia:       paciente.turno_preferencia ?? '',
     convenio_ou_particular:  paciente.convenio_ou_particular ?? '',
   })
@@ -224,7 +225,15 @@ export function EditarPacienteAdminForm({
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>CPF ou documento</label>
-            <input name="cpf" value={form.cpf} onChange={handle} placeholder="000.000.000-00" className="input-base" />
+            <input
+              name="cpf"
+              value={form.cpf}
+              onChange={e => setForm(prev => ({ ...prev, cpf: mascaraCpf(e.target.value) }))}
+              placeholder="000.000.000-00"
+              inputMode="numeric"
+              maxLength={14}
+              className="input-base"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

@@ -30,6 +30,7 @@ interface Props {
   pacienteHref?: string
   hideFab?: boolean
   terapeutasFiltro?: Array<{ id: string; nome: string }>
+  onFiltroChange?: (terapeutaId: string, pacienteId: string) => void
 }
 
 interface ConflitoBloqueio {
@@ -780,7 +781,7 @@ function ModalEvento({
 
 // ── Main: CalendarioAgenda ────────────────────────────────────────────────────
 
-export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/paciente', hideFab = false, terapeutasFiltro }: Props) {
+export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/paciente', hideFab = false, terapeutasFiltro, onFiltroChange }: Props) {
   const router = useRouter()
 
   const [view, setView] = useState<ViewType>('semana')
@@ -850,6 +851,10 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
   }, [eventos, filtroStatus, filtroPacienteId, filtroTerapeutaId])
 
   const feriadosFiltrados = mostrarFeriados ? feriados : []
+
+  useEffect(() => {
+    onFiltroChange?.(filtroTerapeutaId, filtroPacienteId)
+  }, [filtroTerapeutaId, filtroPacienteId, onFiltroChange])
 
   function navAnterior() {
     if (view === 'dia') setDataBase(d => addDays(d, -1))

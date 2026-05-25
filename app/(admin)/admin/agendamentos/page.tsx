@@ -1,11 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
-import { Card } from '@/components/ui/Card'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
 import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
-import { AgendamentosLista, type AgendamentoItem } from '@/components/admin/AgendamentosLista'
-import { CalendarioAgenda, type EventoAgenda } from '@/components/terapia/CalendarioAgenda'
+import { type AgendamentoItem } from '@/components/admin/AgendamentosLista'
+import { type EventoAgenda } from '@/components/terapia/CalendarioAgenda'
 import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 import { notFound } from 'next/navigation'
+import { AgendaAdminClient } from './AgendaAdminClient'
 
 export default async function AgendamentosPage() {
   const perfil = await getPerfilPermissoesAtual()
@@ -179,6 +179,7 @@ export default async function AgendamentosPage() {
         duracao_minutos: s.duracao_minutos,
         pacienteId: s.paciente?.id ?? null,
         pacienteNome: s.paciente?.nome ?? null,
+        terapeutaId: s.paciente ? (terapeutaByPaciente[s.paciente.id]?.id ?? null) : null,
         terapeutaNome: s.paciente ? (terapeutaByPaciente[s.paciente.id]?.nome ?? null) : null,
         visivel_responsavel: true,
         confirmacao,
@@ -195,25 +196,21 @@ export default async function AgendamentosPage() {
         duracao_minutos: a.duracao_minutos,
         pacienteId: a.pacientes?.id ?? null,
         pacienteNome: a.pacientes?.nome ?? null,
+        terapeutaId: (a.profiles as any)?.id ?? null,
         terapeutaNome: (a.profiles as any)?.nome ?? null,
         visivel_responsavel: a.visivel_responsavel,
         confirmacao: null,
       })),
   ].sort((a, b) => a.data_hora.localeCompare(b.data_hora))
 
-  const porDia: Record<string, AgendamentoItem[]> = {}
-  for (const a of proximos) {
-    const dia = a.data_hora.slice(0, 10)
-    if (!porDia[dia]) porDia[dia] = []
-    porDia[dia].push(a)
-  }
-  const diasOrdenados = Object.keys(porDia).sort()
-
-  function formatarDataHora(iso: string) {
-    const d = new Date(iso)
-    return d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })
-      + ' · ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  }
+  const terapeutasFiltroList = (terapeutasAtivos ?? []).map((t: any) => ({ id: t.id as string, nome: t.nome as string }))
+  const passadosList = (passados ?? []).map((a: any) => ({
+    id: a.id as string,
+    titulo: a.titulo as string,
+    data_hora: a.data_hora as string,
+    pacientes: a.pacientes ? { nome: a.pacientes.nome as string } : null,
+    profiles: (a.profiles as any) ? { nome: (a.profiles as any).nome as string } : null,
+  }))
 
   return (
     <div className="space-y-8">
@@ -239,83 +236,13 @@ export default async function AgendamentosPage() {
         </a>
       </div>
 
-      {/* Calendário geral */}
-      <CalendarioAgenda
+      <AgendaAdminClient
         eventos={eventosList}
         feriados={feriadosList}
-        pacienteHref="/admin/pacientes"
-        hideFab
-        terapeutasFiltro={(terapeutasAtivos ?? []).map((t: any) => ({ id: t.id, nome: t.nome }))}
+        proximos={proximos}
+        terapeutasFiltro={terapeutasFiltroList}
+        passados={passadosList}
       />
-
-      {/* Lista próximos 14 dias */}
-      <div
-        className="pt-6"
-        style={{ borderTop: '1px solid var(--color-border-soft)' }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2
-              className="text-lg font-semibold"
-              style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
-            >
-              Agendamentos
-            </h2>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
-              Sessões e compromissos — próximos 14 dias
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4 max-w-3xl">
-          <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-ink-soft)' }}>
-            Próximos (14 dias)
-          </h3>
-          {diasOrdenados.length > 0 ? (
-            <AgendamentosLista porDia={porDia} diasOrdenados={diasOrdenados} />
-          ) : (
-            <Card>
-              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                Nenhum agendamento nos próximos 14 dias.
-              </p>
-            </Card>
-          )}
-        </div>
-
-        {/* Histórico recente */}
-        {passados && passados.length > 0 && (
-          <div className="space-y-3 mt-6 max-w-3xl">
-            <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-ink-soft)' }}>
-              Histórico recente
-            </h3>
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ background: 'var(--color-warm-white)', border: '1px solid var(--color-border)' }}
-            >
-              {passados.map((a: any, i: number) => (
-                <div
-                  key={a.id}
-                  className="px-4 py-2.5 flex items-center justify-between gap-3"
-                  style={{ borderTop: i > 0 ? '1px solid var(--color-border-soft)' : 'none' }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm truncate" style={{ color: 'var(--color-ink-mid)' }}>
-                      {a.pacientes?.nome && `${a.pacientes.nome} — `}
-                      {a.titulo}
-                    </span>
-                    <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-                      {(a.profiles as any)?.nome}
-                    </div>
-                  </div>
-                  <div className="text-xs flex-shrink-0" style={{ color: 'var(--color-ink-faint)' }}>
-                    {formatarDataHora(a.data_hora)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

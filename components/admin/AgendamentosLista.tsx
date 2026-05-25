@@ -11,6 +11,7 @@ export interface AgendamentoItem {
   duracao_minutos: number
   pacienteId: string | null
   pacienteNome: string | null
+  terapeutaId?: string | null
   terapeutaNome: string | null
   visivel_responsavel: boolean
   confirmacao: { token: string; status: string } | null

@@ -232,6 +232,13 @@ export default function LoginPage() {
         .btn-entrar:active:not(:disabled) {
           transform: scale(0.985);
         }
+
+        @media (max-height: 720px) {
+          .login-logo-wrap { width: 90px !important; height: 90px !important; margin-bottom: 12px !important; }
+          .login-card { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+          .login-subtitle { margin-bottom: 1.25rem !important; }
+          .login-title { margin-bottom: 0 !important; }
+        }
       `}</style>
 
       {/* Fundo pastel animado */}
@@ -251,11 +258,11 @@ export default function LoginPage() {
       </div>
 
       {/* Layout */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 sm:p-6">
-        <div className="glass-card w-full max-w-sm rounded-3xl px-8 py-10 flex flex-col items-center">
+      <div className="relative z-10 min-h-screen flex items-center justify-center py-6 px-4 sm:px-6" style={{ overflowY: 'auto' }}>
+        <div className="login-card glass-card w-full max-w-sm rounded-3xl px-8 py-10 flex flex-col items-center">
 
           {/* Logo ícone */}
-          <div className="logo-wrap rounded-3xl mb-6" style={{ width: 130, height: 130 }}>
+          <div className="login-logo-wrap logo-wrap rounded-3xl mb-6" style={{ width: 130, height: 130 }}>
             <Image
               src="/logo_ico.png"
               alt="Alicerce"
@@ -268,12 +275,12 @@ export default function LoginPage() {
 
           {/* Título */}
           <h1
-            className="text-2xl font-semibold mb-1 text-center"
+            className="login-title text-2xl font-semibold mb-1 text-center"
             style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}
           >
             Bem-vindo de volta
           </h1>
-          <p className="text-sm text-center mb-8" style={{ color: 'var(--color-ink-soft)' }}>
+          <p className="login-subtitle text-sm text-center mb-8" style={{ color: 'var(--color-ink-soft)' }}>
             Cuidando de cada passo com amor
           </p>
 

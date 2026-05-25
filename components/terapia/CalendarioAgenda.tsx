@@ -29,6 +29,7 @@ interface Props {
   feriados: Feriado[]
   pacienteHref?: string
   hideFab?: boolean
+  terapeutasFiltro?: Array<{ id: string; nome: string }>
 }
 
 interface ConflitoBloqueio {
@@ -779,7 +780,7 @@ function ModalEvento({
 
 // ── Main: CalendarioAgenda ────────────────────────────────────────────────────
 
-export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/paciente', hideFab = false }: Props) {
+export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/paciente', hideFab = false, terapeutasFiltro }: Props) {
   const router = useRouter()
 
   const [view, setView] = useState<ViewType>('semana')
@@ -831,10 +832,13 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
   }, [eventos])
 
   const terapeutasLista = useMemo(() => {
+    if (terapeutasFiltro && terapeutasFiltro.length > 0) {
+      return terapeutasFiltro.map(t => [t.id, t.nome] as [string, string]).sort((a, b) => a[1].localeCompare(b[1]))
+    }
     const map = new Map<string, string>()
     eventos.forEach(e => { if (e.terapeutaId && e.terapeutaNome) map.set(e.terapeutaId, e.terapeutaNome) })
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]))
-  }, [eventos])
+  }, [eventos, terapeutasFiltro])
 
   const eventosFiltrados = useMemo(() => {
     return eventos.filter(e => {
@@ -1092,7 +1096,7 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
               </div>
             )}
 
-            {terapeutasLista.length > 1 && (
+            {terapeutasLista.length > 0 && (
               <div>
                 <label className="text-xs block mb-1" style={{ color: 'var(--color-ink-soft)' }}>Profissional</label>
                 <select

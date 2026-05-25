@@ -32,6 +32,7 @@ export default async function AgendamentosPage() {
     { data: feriados },
     { data: configAgenda },
     { data: confirmacoes },
+    { data: terapeutasAtivos },
   ] = await Promise.all([
     supabase
       .from('pacientes')
@@ -70,6 +71,12 @@ export default async function AgendamentosPage() {
       .select('paciente_id, data_hora, token, status')
       .gte('data_hora', inicio.toISOString())
       .lte('data_hora', fim.toISOString()),
+    supabase
+      .from('profiles')
+      .select('id, nome')
+      .eq('role', 'terapeuta')
+      .eq('ativo', true)
+      .order('nome'),
   ])
 
   const anoAtual = new Date().getFullYear()
@@ -238,6 +245,7 @@ export default async function AgendamentosPage() {
         feriados={feriadosList}
         pacienteHref="/admin/pacientes"
         hideFab
+        terapeutasFiltro={(terapeutasAtivos ?? []).map((t: any) => ({ id: t.id, nome: t.nome }))}
       />
 
       {/* Lista próximos 14 dias */}

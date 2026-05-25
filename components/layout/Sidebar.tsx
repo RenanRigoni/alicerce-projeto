@@ -247,7 +247,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
         </div>
 
         {/* ── Nav ── */}
-        <nav className="flex-1 py-2 flex flex-col gap-0.5 overflow-hidden">
+        <nav className="flex-1 py-1 flex flex-col gap-0.5 overflow-y-auto scrollbar-none">
           {items.map(item => {
             const Icon = item.icon
             const active = isActive(item.href)

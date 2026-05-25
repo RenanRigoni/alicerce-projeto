@@ -242,6 +242,8 @@ h1, h2, h3, h4 {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-rose-muted);
 }
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
 
 /* ─── Animações ──────────────────────────────────────────────── */
 @keyframes fadeUp {

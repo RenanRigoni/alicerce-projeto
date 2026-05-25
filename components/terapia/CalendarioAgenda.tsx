@@ -15,6 +15,8 @@ export interface EventoAgenda {
   duracao_minutos: number
   paciente: { id: string; nome: string } | null
   confirmacao?: { token: string; status: string } | null
+  terapeutaId?: string | null
+  terapeutaNome?: string | null
 }
 
 interface Feriado {
@@ -25,6 +27,8 @@ interface Feriado {
 interface Props {
   eventos: EventoAgenda[]
   feriados: Feriado[]
+  pacienteHref?: string
+  hideFab?: boolean
 }
 
 interface ConflitoBloqueio {
@@ -660,7 +664,7 @@ function ModalEvento({
                 <div className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>{evento.paciente.nome}</div>
               </div>
               <a
-                href={`/terapia/paciente/${evento.paciente.id}`}
+                href={`${pacienteHref}/${evento.paciente.id}`}
                 className="text-xs px-2 py-1 rounded-lg flex-shrink-0 transition-opacity hover:opacity-70"
                 style={{ color: 'var(--color-rose-main)', border: '1px solid var(--color-rose-soft)' }}
                 onClick={e => e.stopPropagation()}
@@ -773,7 +777,7 @@ function ModalEvento({
 
 // ── Main: CalendarioAgenda ────────────────────────────────────────────────────
 
-export function CalendarioAgenda({ eventos, feriados }: Props) {
+export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/paciente', hideFab = false }: Props) {
   const router = useRouter()
 
   const [view, setView] = useState<ViewType>('semana')
@@ -781,6 +785,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
 
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [filtroPacienteId, setFiltroPacienteId] = useState('todos')
+  const [filtroTerapeutaId, setFiltroTerapeutaId] = useState('todos')
   const [mostrarFimSemana, setMostrarFimSemana] = useState(false)
   const [mostrarFeriados, setMostrarFeriados] = useState(true)
   const [opcAvancadas, setOpcAvancadas] = useState(false)
@@ -823,13 +828,20 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]))
   }, [eventos])
 
+  const terapeutasLista = useMemo(() => {
+    const map = new Map<string, string>()
+    eventos.forEach(e => { if (e.terapeutaId && e.terapeutaNome) map.set(e.terapeutaId, e.terapeutaNome) })
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]))
+  }, [eventos])
+
   const eventosFiltrados = useMemo(() => {
     return eventos.filter(e => {
       if (filtroStatus !== 'todos' && e.tipo !== filtroStatus) return false
       if (filtroPacienteId !== 'todos' && e.paciente?.id !== filtroPacienteId) return false
+      if (filtroTerapeutaId !== 'todos' && e.terapeutaId !== filtroTerapeutaId) return false
       return true
     })
-  }, [eventos, filtroStatus, filtroPacienteId])
+  }, [eventos, filtroStatus, filtroPacienteId, filtroTerapeutaId])
 
   const feriadosFiltrados = mostrarFeriados ? feriados : []
 
@@ -984,7 +996,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
   const mesColunas = mostrarFimSemana ? 7 : 5
   const calDays = getMonthGridDays(mesAno, mostrarFimSemana)
 
-  const filtersActive = filtroStatus !== 'todos' || filtroPacienteId !== 'todos'
+  const filtersActive = filtroStatus !== 'todos' || filtroPacienteId !== 'todos' || filtroTerapeutaId !== 'todos'
 
   return (
     <>
@@ -1034,7 +1046,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
               </span>
               {filtersActive && (
                 <button
-                  onClick={() => { setFiltroStatus('todos'); setFiltroPacienteId('todos') }}
+                  onClick={() => { setFiltroStatus('todos'); setFiltroPacienteId('todos'); setFiltroTerapeutaId('todos') }}
                   className="text-xs transition-opacity hover:opacity-70"
                   style={{ color: 'var(--color-rose-main)' }}
                 >
@@ -1072,6 +1084,23 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
                 >
                   <option value="todos">Todos</option>
                   {pacientesLista.map(([id, nome]) => (
+                    <option key={id} value={id}>{nome.split(' ')[0]}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {terapeutasLista.length > 1 && (
+              <div>
+                <label className="text-xs block mb-1" style={{ color: 'var(--color-ink-soft)' }}>Profissional</label>
+                <select
+                  value={filtroTerapeutaId}
+                  onChange={e => setFiltroTerapeutaId(e.target.value)}
+                  className="w-full rounded-lg px-2 py-1.5 text-xs outline-none"
+                  style={{ border: '1px solid var(--color-border)', background: 'var(--color-warm-white)', color: 'var(--color-ink)' }}
+                >
+                  <option value="todos">Todos</option>
+                  {terapeutasLista.map(([id, nome]) => (
                     <option key={id} value={id}>{nome.split(' ')[0]}</option>
                   ))}
                 </select>
@@ -1308,7 +1337,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
       </div>
 
       {/* ── FAB ──────────────────────────────────────────────────────────────── */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+      {!hideFab && <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
         {fabAberto && (
           <div className="flex flex-col items-end gap-2 mb-1 animate-in fade-in slide-in-from-bottom-2">
             <button
@@ -1330,7 +1359,7 @@ export function CalendarioAgenda({ eventos, feriados }: Props) {
         >
           {fabAberto ? '×' : '+'}
         </button>
-      </div>
+      </div>}
 
       {/* ── Modal: todos eventos do dia ───────────────────────────────────────── */}
       {diaAberto && (

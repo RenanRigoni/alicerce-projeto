@@ -247,7 +247,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
         </div>
 
         {/* ── Nav ── */}
-        <nav className="flex-1 py-1 flex flex-col gap-0.5 overflow-y-auto scrollbar-none">
+        <nav className="flex-1 py-1 flex flex-col gap-0.5 overflow-hidden min-h-0">
           {items.map(item => {
             const Icon = item.icon
             const active = isActive(item.href)
@@ -259,7 +259,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
                   href={item.href}
                   onClick={closeExpanded}
                   className={[
-                    'mx-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all',
+                    'mx-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all shrink-0',
                     active
                       ? 'text-[var(--color-rose-main)] bg-[var(--color-rose-blush)] font-medium'
                       : 'text-[var(--color-ink-mid)] hover:bg-[var(--color-border-soft)] hover:text-[var(--color-ink)]',
@@ -272,10 +272,11 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
               )
             }
 
-            /* Collapsed: só ícone + tooltip */
+            /* Collapsed: só ícone + tooltip — flex-1 distribui altura automaticamente */
             return (
               <div
                 key={item.href}
+                className="flex-1 min-h-[28px] max-h-11"
                 onMouseEnter={e => showTooltip(e, item.label)}
                 onMouseLeave={() => setTooltip(null)}
               >
@@ -284,7 +285,7 @@ export function Sidebar({ role, nome, fotoUrl, permissoes = {} }: SidebarProps) 
                   title={item.label}
                   aria-label={item.label}
                   className={[
-                    'w-16 h-11 flex items-center justify-center rounded-xl transition-all duration-150',
+                    'w-16 h-full flex items-center justify-center rounded-xl transition-all duration-150',
                     active
                       ? 'text-[var(--color-rose-main)] bg-[var(--color-rose-blush)]'
                       : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-border-soft)] hover:text-[var(--color-ink)]',

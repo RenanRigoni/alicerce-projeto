@@ -70,7 +70,7 @@ export default async function UsuarioDetalhePage({
 
   const { data: usuario } = await supabase
     .from('profiles')
-    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, permissoes, foto_url, data_nascimento, rg, sexo, especialidade, biografia')
+    .select('id, nome, role, ativo, criado_em, telefone, crefito, cpf_cnpj, tipo_profissional, conselho_tipo, conselho_numero, conselho_uf, cbo_codigo, permissoes, foto_url, data_nascimento, sexo, especialidade, biografia')
     .eq('id', id)
     .single()
   if (!usuario) notFound()
@@ -210,7 +210,6 @@ export default async function UsuarioDetalhePage({
           <Campo label="E-mail" valor={email} />
           <Campo label="Telefone" valor={detalhesResponsavel?.telefone_principal ?? usuario.telefone} />
           <Campo label="Data de nascimento" valor={usuario.data_nascimento ? new Date(usuario.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : null} />
-          <Campo label="RG" valor={usuario.rg} />
           <Campo label="CPF/CNPJ" valor={formatarCpfCnpj(usuario.cpf_cnpj)} />
           <Campo label="Sexo" valor={usuario.sexo === 'masculino' ? 'Masculino' : usuario.sexo === 'feminino' ? 'Feminino' : usuario.sexo === 'outro' ? 'Outro' : null} />
           {tipoProfissional && <Campo label="Tipo profissional" valor={tipoProfissional.label} />}

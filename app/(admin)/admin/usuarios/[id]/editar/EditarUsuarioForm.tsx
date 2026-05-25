@@ -48,7 +48,6 @@ interface Props {
     conselho_uf?: string | null
     cbo_codigo?: string | null
     data_nascimento?: string | null
-    rg?: string | null
     sexo?: string | null
     especialidade?: string | null
     biografia?: string | null
@@ -108,7 +107,6 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     telefone:          mascaraTelefone(usuario.telefone ?? ''),
     cpf_cnpj:          mascaraCpfCnpj(usuario.cpf_cnpj ?? ''),
     data_nascimento:   usuario.data_nascimento ?? '',
-    rg:                usuario.rg ?? '',
     sexo:              usuario.sexo ?? '',
     // terapeuta
     tipo_profissional: usuario.tipo_profissional ?? 'terapeuta_ocupacional',
@@ -165,7 +163,6 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
         email:          form.email,
         telefone:       form.telefone,
         data_nascimento: form.data_nascimento || null,
-        rg:             form.rg || null,
         sexo:           form.sexo || null,
         ...(usuario.role === 'terapeuta' ? {
           tipo_profissional: form.tipo_profissional,
@@ -266,11 +263,6 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
               className={inputCls}
               style={inputStyle}
             />
-          </div>
-
-          <div>
-            <Label>RG</Label>
-            <input name="rg" value={form.rg} onChange={handle} placeholder="Digite" className={inputCls} style={inputStyle} />
           </div>
 
           <div>

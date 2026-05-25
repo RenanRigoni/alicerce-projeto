@@ -566,6 +566,7 @@ function ModalEvento({
   waConfirmacao,
   removerBloqueioLoading,
   removerBloqueioErro,
+  pacienteHref = '/terapia/paciente',
 }: {
   evento: EventoAgenda
   onClose: () => void
@@ -575,6 +576,7 @@ function ModalEvento({
   waConfirmacao: { token: string; status: string } | null
   removerBloqueioLoading: boolean
   removerBloqueioErro: string | null
+  pacienteHref?: string
 }) {
   const [confirmandoRemover, setConfirmandoRemover] = useState(false)
   const s = tipoStyle[evento.tipo] ?? tipoStyle.outro
@@ -1413,6 +1415,7 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
           waConfirmacao={waConfirmacao}
           removerBloqueioLoading={removerBloqueioLoading}
           removerBloqueioErro={removerBloqueioErro}
+          pacienteHref={pacienteHref}
         />
       )}
 

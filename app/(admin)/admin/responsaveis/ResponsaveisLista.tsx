@@ -87,7 +87,7 @@ export function ResponsaveisLista({ todos, podeVerPacientes }: { todos: Responsa
                   <div className="flex items-center gap-2 flex-wrap">
                     <Link
                       href={`/admin/usuarios/${r.id}`}
-                      className="font-medium transition-opacity hover:opacity-70"
+                      className="font-medium hover:underline"
                       style={{ color: 'var(--color-ink)' }}
                     >
                       {r.nome}

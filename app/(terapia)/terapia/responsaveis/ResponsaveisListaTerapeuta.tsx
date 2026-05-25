@@ -76,7 +76,7 @@ export function ResponsaveisListaTerapeuta({ todos }: { todos: Responsavel[] }) 
                 <div className="flex-1 min-w-0">
                   <a
                     href={`/terapia/responsavel/${r.id}`}
-                    className="font-medium transition-opacity hover:opacity-70"
+                    className="font-medium hover:underline"
                     style={{ color: 'var(--color-ink)' }}
                   >
                     {r.nome}

@@ -34,14 +34,14 @@ const roleLabel: Record<string, string> = {
 
 const roleBadgeStyle: Record<string, { background: string; color: string }> = {
   admin:     { background: 'var(--color-rose-blush)',  color: 'var(--color-rose-deep)' },
-  recepcao:  { background: '#FEF3C7',                  color: '#92400E' },
+  recepcao:  { background: 'var(--color-amber-light)',  color: 'var(--color-amber-deep)' },
   terapeuta: { background: 'var(--color-sage-light)',  color: 'var(--color-sage-deep)' },
   pai:       { background: 'var(--color-peach-light)', color: 'var(--color-peach-main)' },
 }
 
 const avatarColors: Record<string, string> = {
   admin:     'bg-[var(--color-rose-blush)] text-[var(--color-rose-deep)]',
-  recepcao:  'bg-amber-50 text-amber-700',
+  recepcao:  'bg-[var(--color-amber-light)] text-[var(--color-amber-deep)]',
   terapeuta: 'bg-[var(--color-sage-light)] text-[var(--color-sage-deep)]',
   pai:       'bg-[var(--color-peach-light)] text-[var(--color-peach-main)]',
 }

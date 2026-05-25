@@ -38,9 +38,9 @@ export default async function AltaDetalheTerapeutaPage({
 
   const statusStyle: Record<string, React.CSSProperties> = {
     registrada:           { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
-    pendente_confirmacao: { background: '#FFFBEB', color: '#92400E' },
+    pendente_confirmacao: { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' },
     confirmada:           { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
-    pendente:             { background: '#FFFBEB', color: '#92400E' },
+    pendente:             { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' },
     aprovada:             { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
     recusada:             { background: '#FEF2F2', color: '#B91C1C' },
   }
@@ -147,7 +147,7 @@ export default async function AltaDetalheTerapeutaPage({
         <Card>
           <div
             className="text-xs font-bold uppercase tracking-wide mb-2"
-            style={{ color: '#92400E' }}
+            style={{ color: 'var(--color-amber-deep)' }}
           >
             Aguardando confirmação
           </div>

@@ -309,7 +309,7 @@ export default async function PacientePortalPage({
           {altaPendente && (
             <div
               className="rounded-xl px-4 py-3 text-sm"
-              style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E' }}
+              style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)', color: 'var(--color-amber-deep)' }}
             >
               Sua solicitação de alta foi enviada e aguarda confirmação da profissional.
             </div>
@@ -485,11 +485,11 @@ export default async function PacientePortalPage({
               </h3>
               {feriados.map(f => (
                 <div key={f.data} className="flex items-center gap-3 rounded-xl px-4 py-3"
-                  style={{ background: '#FEF9F0', border: '1px solid #FDEBD0' }}>
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#F0A030' }} />
+                  style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)' }}>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-amber-main)' }} />
                   <div>
-                    <div className="text-sm font-medium" style={{ color: '#92400E' }}>{f.descricao}</div>
-                    <div className="text-xs" style={{ color: '#B45309' }}>
+                    <div className="text-sm font-medium" style={{ color: 'var(--color-amber-deep)' }}>{f.descricao}</div>
+                    <div className="text-xs" style={{ color: 'var(--color-amber-mid)' }}>
                       {new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
                     </div>
                   </div>

@@ -1162,8 +1162,8 @@ export function PerfilPacienteTabs({
               registrada:           { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
               confirmada:           { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
               aprovada:             { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
-              pendente_confirmacao: { background: '#FFFBEB', color: '#92400E' },
-              pendente:             { background: '#FFFBEB', color: '#92400E' },
+              pendente_confirmacao: { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' },
+              pendente:             { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' },
               recusada:             { background: '#FEF2F2', color: '#B91C1C' },
             }
             const statusLabels: Record<string, string> = {
@@ -1245,13 +1245,13 @@ export function PerfilPacienteTabs({
                 const a = item.data as SolicitacaoAlta
                 return (
                   <div key={`alta-${a.id}`} className="flex gap-3 items-start">
-                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: '#D97706' }} />
+                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'var(--color-amber-action)' }} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
                         <span className="font-medium" style={{ color: 'var(--color-ink)' }}>Solicitação de alta</span>
                         {a.solicitado_por_nome && ` · ${a.solicitado_por_nome}`}
                         <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full"
-                          style={a.status === 'pendente' ? { background: '#FFFBEB', color: '#92400E' }
+                          style={a.status === 'pendente' ? { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' }
                             : a.status === 'aprovada' ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
                             : { background: '#FEF2F2', color: '#B91C1C' }}
                         >{a.status}</span>
@@ -1261,7 +1261,7 @@ export function PerfilPacienteTabs({
                     <button
                       onClick={() => setAbaAtiva('Alta')}
                       className="text-xs opacity-60 hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5"
-                      style={{ color: '#D97706' }}
+                      style={{ color: 'var(--color-amber-action)' }}
                     >
                       Ver →
                     </button>

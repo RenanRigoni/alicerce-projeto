@@ -32,8 +32,8 @@ function Campo({ label, valor }: { label: string; valor?: string | null }) {
 }
 
 function AvatarUsuario({ nome, fotoUrl, role }: { nome: string; fotoUrl?: string | null; role: string }) {
-  const bg: Record<string, string> = { admin: 'var(--color-rose-blush)', recepcao: '#FEF3C7', terapeuta: 'var(--color-sage-light)', pai: 'var(--color-peach-light)' }
-  const cl: Record<string, string> = { admin: 'var(--color-rose-deep)', recepcao: '#92400E', terapeuta: 'var(--color-sage-deep)', pai: 'var(--color-peach-main)' }
+  const bg: Record<string, string> = { admin: 'var(--color-rose-blush)', recepcao: 'var(--color-amber-light)', terapeuta: 'var(--color-sage-light)', pai: 'var(--color-peach-light)' }
+  const cl: Record<string, string> = { admin: 'var(--color-rose-deep)', recepcao: 'var(--color-amber-deep)', terapeuta: 'var(--color-sage-deep)', pai: 'var(--color-peach-main)' }
   const ini = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
   if (fotoUrl) {
     // eslint-disable-next-line @next/next/no-img-element

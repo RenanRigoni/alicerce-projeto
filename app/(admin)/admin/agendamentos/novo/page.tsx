@@ -205,7 +205,7 @@ export default function NovoAgendamentoPage() {
               <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Data {asterisk}</label>
               <input type="date" name="data" value={form.data} onChange={handle} required className="input-base" />
               {feriadoAviso && (
-                <p className="text-xs mt-1 font-medium" style={{ color: '#92400E' }}>
+                <p className="text-xs mt-1 font-medium" style={{ color: 'var(--color-amber-deep)' }}>
                   ⚠ Feriado: {feriadoAviso}
                 </p>
               )}
@@ -256,7 +256,7 @@ export default function NovoAgendamentoPage() {
             className="rounded-2xl p-5 max-w-sm w-full space-y-4"
             style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
           >
-            <h3 className="font-semibold" style={{ color: '#92400E' }}>⚠ Atenção — Feriado na data selecionada</h3>
+            <h3 className="font-semibold" style={{ color: 'var(--color-amber-deep)' }}>⚠ Atenção — Feriado na data selecionada</h3>
             <p className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
               Existe um feriado cadastrado nesta data: <strong>{feriadoAviso}</strong>.<br />
               Deseja confirmar o agendamento mesmo assim?

@@ -59,6 +59,7 @@ export function OrientacaoCard({ o }: { o: Orientacao }) {
                 <div className="aspect-video rounded-xl overflow-hidden" style={{ background: 'var(--color-border-soft)' }}>
                   <iframe
                     src={o.url_midia.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                    title={o.titulo}
                     className="w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen

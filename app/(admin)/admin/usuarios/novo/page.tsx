@@ -263,23 +263,27 @@ export default function NovoUsuarioPage() {
         </div>
 
         {linkRecuperacao && (
-          <div className="rounded-xl p-4 space-y-3" style={{ background: '#FFFBEB', border: '1px solid #FCD34D' }}>
-            <p className="text-sm font-medium" style={{ color: '#92400E' }}>
+          <div className="rounded-xl p-4 space-y-3" style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--color-amber-deep)' }}>
               E-mail não enviado automaticamente. Compartilhe este link diretamente com o usuário para ele definir a senha:
             </p>
             <div className="flex gap-2 items-start">
-              <code className="text-xs break-all flex-1 bg-white rounded-lg p-2 border border-yellow-200" style={{ color: '#78350F' }}>
+              <code className="text-xs break-all flex-1 bg-white rounded-lg p-2 border" style={{ borderColor: 'var(--color-amber-border)', color: 'var(--color-amber-deep)' }}>
                 {linkRecuperacao}
               </code>
               <button
                 onClick={copiarLink}
                 className="shrink-0 text-xs font-medium px-3 py-2 rounded-lg transition-all"
-                style={{ background: linkCopiado ? '#D1FAE5' : '#FEF3C7', color: linkCopiado ? '#065F46' : '#92400E' }}
+                style={{
+                  background: linkCopiado ? 'var(--color-status-confirmada-bg)' : 'var(--color-amber-light)',
+                  color: linkCopiado ? 'var(--color-status-confirmada-text)' : 'var(--color-amber-deep)',
+                  border: `1px solid ${linkCopiado ? 'var(--color-status-confirmada-border)' : 'var(--color-amber-border)'}`,
+                }}
               >
                 {linkCopiado ? 'Copiado!' : 'Copiar'}
               </button>
             </div>
-            <p className="text-xs" style={{ color: '#B45309' }}>
+            <p className="text-xs" style={{ color: 'var(--color-amber-mid)' }}>
               Link válido por 24 horas. Instrua o usuário a abrir no navegador para definir a senha.
             </p>
           </div>

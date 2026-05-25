@@ -69,7 +69,7 @@ export function SolicitarAltaPortal({ pacienteId, pacienteNome }: Props) {
       <button
         onClick={() => setModalAberto(true)}
         className="text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200"
-        style={{ border: '1px solid #FDE68A', color: '#92400E', background: '#FFFBEB' }}
+        style={{ border: '1px solid var(--color-amber-border)', color: 'var(--color-amber-deep)', background: 'var(--color-amber-light)' }}
       >
         Solicitar alta
       </button>
@@ -140,7 +140,7 @@ export function SolicitarAltaPortal({ pacienteId, pacienteNome }: Props) {
                 onClick={handleSolicitar}
                 disabled={enviando}
                 className="flex-1 text-sm font-medium px-4 py-2 rounded-xl text-white transition-colors disabled:opacity-50"
-                style={{ background: '#D97706' }}
+                style={{ background: 'var(--color-amber-action)' }}
               >
                 {enviando ? 'Enviando...' : 'Enviar solicitação'}
               </button>

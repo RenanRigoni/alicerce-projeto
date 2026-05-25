@@ -14,11 +14,11 @@ const statusLabel: Record<string, string> = {
 
 const statusStyle: Record<string, React.CSSProperties> = {
   registrada:           { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
-  pendente_confirmacao: { background: '#FFFBEB', color: '#92400E' },
+  pendente_confirmacao: { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' },
   confirmada:           { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
   aprovada:             { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' },
   recusada:             { background: '#FEF2F2', color: '#B91C1C' },
-  pendente:             { background: '#FFFBEB', color: '#92400E' },
+  pendente:             { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' },
 }
 
 export default async function AltaPage() {
@@ -65,7 +65,7 @@ export default async function AltaPage() {
             Aguardando confirmação da profissional
             <span
               className="text-xs px-2 py-0.5 rounded-full font-semibold"
-              style={{ background: '#FFFBEB', color: '#92400E' }}
+              style={{ background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' }}
             >
               {aguardando.length}
             </span>

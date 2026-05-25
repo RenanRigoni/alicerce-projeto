@@ -24,7 +24,7 @@ const acaoLabel: Record<string, string> = {
 const acaoStyle: Record<string, { background: string; color: string }> = {
   visualizou: { background: 'var(--color-lavender-light)', color: 'var(--color-lavender-main)' },
   enviou:     { background: 'var(--color-sage-light)',     color: 'var(--color-sage-deep)' },
-  alterou:    { background: '#FFFBEB', color: '#92400E' },
+  alterou:    { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' },
   assinou:    { background: 'var(--color-lavender-light)', color: 'var(--color-lavender-main)' },
   baixou:     { background: 'var(--color-rose-blush)',     color: 'var(--color-rose-deep)' },
   criou:      { background: 'var(--color-sage-light)',     color: 'var(--color-sage-deep)' },
@@ -32,7 +32,7 @@ const acaoStyle: Record<string, { background: string; color: string }> = {
   desativou:  { background: '#FEF2F2', color: '#B91C1C' },
   reativou:   { background: 'var(--color-sage-light)',     color: 'var(--color-sage-deep)' },
   bloqueou:   { background: '#FEF2F2', color: '#B91C1C' },
-  solicitou:  { background: '#FFFBEB', color: '#92400E' },
+  solicitou:  { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' },
   confirmou:  { background: 'var(--color-sage-light)',     color: 'var(--color-sage-deep)' },
   recusou:    { background: '#FEF2F2', color: '#B91C1C' },
 }

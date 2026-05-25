@@ -22,7 +22,7 @@ const mesesPT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
 const tipoStyle: Record<string, { bg: string; cor: string; borda: string }> = {
   sessao:      { bg: 'var(--color-sage-light)',     cor: 'var(--color-sage-deep)',     borda: 'var(--color-sage-soft)' },
   agendamento: { bg: 'var(--color-peach-light)',    cor: 'var(--color-peach-main)',    borda: 'var(--color-peach-soft, #F5C5A3)' },
-  feriado:     { bg: '#FEF9F0',                     cor: '#92400E',                    borda: '#FDEBD0' },
+  feriado:     { bg: 'var(--color-amber-light)',     cor: 'var(--color-amber-deep)',    borda: 'var(--color-amber-border)' },
 }
 
 function localStr(d: Date) {

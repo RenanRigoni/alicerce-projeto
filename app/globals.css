@@ -35,8 +35,9 @@
   --color-amber-light:  oklch(98% 0.012 82);
   --color-amber-border: oklch(93% 0.030 80);
   --color-amber-main:   oklch(73% 0.132 72);
-  --color-amber-deep:   oklch(40% 0.108 58);
+  --color-amber-action: oklch(63% 0.165 65);
   --color-amber-mid:    oklch(50% 0.112 58);
+  --color-amber-deep:   oklch(40% 0.108 58);
 
   /* Agenda — tipos de evento */
   --color-agenda-reuniao-bg:       oklch(97% 0.018 254);

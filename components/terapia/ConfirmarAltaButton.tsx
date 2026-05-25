@@ -34,7 +34,7 @@ export function ConfirmarAltaButton({ altaId, pacienteNome, motivo, documentoUrl
     <>
       <div
         className="rounded-xl px-4 py-3 text-sm flex items-start justify-between gap-3"
-        style={{ background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E' }}
+        style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)', color: 'var(--color-amber-deep)' }}
       >
         <div className="flex-1">
           <strong>Solicitação de alta do responsável.</strong>
@@ -47,7 +47,7 @@ export function ConfirmarAltaButton({ altaId, pacienteNome, motivo, documentoUrl
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline font-medium"
-                style={{ color: '#92400E' }}
+                style={{ color: 'var(--color-amber-deep)' }}
               >
                 Ver documento médico →
               </a>
@@ -57,7 +57,7 @@ export function ConfirmarAltaButton({ altaId, pacienteNome, motivo, documentoUrl
         <button
           onClick={() => setModalAberto(true)}
           className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg text-white transition-colors"
-          style={{ background: '#D97706' }}
+          style={{ background: 'var(--color-amber-action)' }}
         >
           Ver e confirmar
         </button>
@@ -109,7 +109,7 @@ export function ConfirmarAltaButton({ altaId, pacienteNome, motivo, documentoUrl
                 onClick={handleConfirmar}
                 disabled={confirmando}
                 className="flex-1 text-sm font-medium px-4 py-2 rounded-xl text-white transition-colors disabled:opacity-50"
-                style={{ background: '#D97706' }}
+                style={{ background: 'var(--color-amber-action)' }}
               >
                 {confirmando ? 'Confirmando...' : 'Confirmar alta'}
               </button>

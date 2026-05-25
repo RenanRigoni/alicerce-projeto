@@ -29,6 +29,7 @@ const navLinks = {
     { href: '/admin/terapeutas',      label: 'Profissionais' },
     { href: '/admin/agendamentos',    label: 'Agenda' },
     { href: '/admin/feriados',        label: 'Feriados' },
+    { href: '/admin/aniversarios',    label: 'Aniversários' },
     { href: '/admin/comunicados',     label: 'Comunicados' },
     { href: '/admin/auditoria',       label: 'Auditoria' },
     { href: '/admin/usuarios',        label: 'Usuários' },
@@ -40,6 +41,7 @@ const navLinks = {
     { href: '/admin/terapeutas',      label: 'Profissionais' },
     { href: '/admin/agendamentos',    label: 'Agenda' },
     { href: '/admin/feriados',        label: 'Feriados' },
+    { href: '/admin/aniversarios',    label: 'Aniversários' },
     { href: '/admin/comunicados',     label: 'Comunicados' },
     { href: '/admin/auditoria',       label: 'Auditoria' },
     { href: '/admin/usuarios',        label: 'Usuários' },
@@ -49,6 +51,7 @@ const navLinks = {
     { href: '/terapia/agenda',        label: 'Agenda' },
     { href: '/terapia/pacientes',     label: 'Pacientes' },
     { href: '/terapia/responsaveis',  label: 'Responsáveis' },
+    { href: '/terapia/aniversarios',  label: 'Aniversários' },
   ],
   pai: [
     { href: '/portal/dashboard',  label: 'Início' },
@@ -64,7 +67,7 @@ function initials(nome: string) {
 // Cor do avatar por role
 const avatarColors = {
   admin:     'bg-[var(--color-rose-blush)] text-[var(--color-rose-deep)]',
-  recepcao:  'bg-amber-50 text-amber-700',
+  recepcao:  'bg-[var(--color-amber-light)] text-[var(--color-amber-deep)]',
   terapeuta: 'bg-[var(--color-sage-light)] text-[var(--color-sage-deep)]',
   pai:       'bg-[var(--color-peach-light)] text-[var(--color-peach-main)]',
 }

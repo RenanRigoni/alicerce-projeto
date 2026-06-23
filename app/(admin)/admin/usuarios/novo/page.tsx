@@ -371,9 +371,23 @@ export default function NovoUsuarioPage() {
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={L}>
-              E-mail <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+              E-mail{form.role !== 'pai' && <span style={{ color: 'var(--color-rose-main)' }}> *</span>}
+              {form.role === 'pai' && <span className="text-xs font-normal ml-1" style={hint}>(opcional)</span>}
             </label>
-            <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="email@exemplo.com" className="input-base" />
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              required={form.role !== 'pai'}
+              placeholder="email@exemplo.com"
+              className="input-base"
+            />
+            {form.role === 'pai' && (
+              <p className="text-xs mt-1" style={hint}>
+                Responsáveis sem e-mail fazem login via CPF ou telefone. Senha será definida via link.
+              </p>
+            )}
           </div>
 
           {/* ── RESPONSÁVEL ────────────────────────────────── */}
@@ -592,7 +606,10 @@ export default function NovoUsuarioPage() {
           )}
 
           <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'var(--color-rose-blush)', color: 'var(--color-ink-mid)' }}>
-            Senha inicial: <strong>alicerce</strong> — usuário receberá e-mail para definir nova senha.
+            {form.role === 'pai' && !form.email
+              ? <>Senha inicial: <strong>alicerce</strong> — sem e-mail cadastrado, compartilhe o link de definição de senha manualmente.</>
+              : <>Senha inicial: <strong>alicerce</strong> — usuário receberá e-mail para definir nova senha.</>
+            }
           </div>
 
           {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}

@@ -5,9 +5,18 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 const SENHA_PADRAO = 'alicerce'
+const DOMINIO_EMAIL_INTERNO = 'noemail.alicerce.app'
 
 function normalizarCpfCnpj(valor: string): string {
   return valor.replace(/\D/g, '')
+}
+
+function gerarEmailInterno(cpf: string): string {
+  return `${cpf}@${DOMINIO_EMAIL_INTERNO}`
+}
+
+function isEmailInterno(email: string): boolean {
+  return email.endsWith(`@${DOMINIO_EMAIL_INTERNO}`)
 }
 
 export async function POST(request: NextRequest) {
@@ -39,8 +48,12 @@ export async function POST(request: NextRequest) {
     data_nascimento, rg, sexo, bairro, estado,
   } = body
 
-  if (!nome || !email || !role) {
+  if (!nome || !role) {
     return NextResponse.json({ error: 'Campos obrigatórios faltando' }, { status: 400 })
+  }
+
+  if (!email && role !== 'pai') {
+    return NextResponse.json({ error: 'E-mail é obrigatório para este perfil' }, { status: 400 })
   }
 
   const ROLES_VALIDOS = ['admin', 'recepcao', 'terapeuta', 'pai']
@@ -89,17 +102,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Código CBO deve ter 6 dígitos' }, { status: 400 })
   }
 
+  let emailEfetivo = email ?? ''
+  let semEmail = false
+
   if (role === 'pai') {
     const cpfDigits = normalizarCpfCnpj(cpf_cnpj ?? '')
     if (cpfDigits.length !== 11) {
       return NextResponse.json({ error: 'CPF é obrigatório para responsáveis (11 dígitos)' }, { status: 400 })
+    }
+    if (!email) {
+      emailEfetivo = gerarEmailInterno(cpfDigits)
+      semEmail = true
     }
   }
 
   const adminClient = createAdminClient()
 
   const { data: newUser, error: authError } = await adminClient.auth.admin.createUser({
-    email,
+    email: emailEfetivo,
     password: SENHA_PADRAO,
     email_confirm: true,
     user_metadata: {
@@ -140,7 +160,7 @@ export async function POST(request: NextRequest) {
   if (role === 'pai') {
     await adminClient.from('responsaveis_detalhes').upsert({
       id: userId,
-      telefone_principal: telefone?.trim() ?? null,
+      telefone_principal: telefone ? telefone.replace(/\D/g, '') : null,
       cep: cep?.replace(/\D/g, '') ?? null,
       endereco: endereco?.trim() ?? null,
       bairro: bairro?.trim() ?? null,
@@ -171,22 +191,24 @@ export async function POST(request: NextRequest) {
   let linkRecuperacao: string | null = null
   let emailErro: string | null = null
 
-  try {
-    const { error: emailError } = await adminClient.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
-    })
-    emailEnviado = !emailError
-    if (emailError) emailErro = emailError.message
-  } catch (e) {
-    emailEnviado = false
-    emailErro = e instanceof Error ? e.message : 'unknown'
+  if (!semEmail && !isEmailInterno(emailEfetivo)) {
+    try {
+      const { error: emailError } = await adminClient.auth.resetPasswordForEmail(emailEfetivo, {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
+      })
+      emailEnviado = !emailError
+      if (emailError) emailErro = emailError.message
+    } catch (e) {
+      emailEnviado = false
+      emailErro = e instanceof Error ? e.message : 'unknown'
+    }
   }
 
   if (!emailEnviado) {
     try {
       const { data: linkData } = await adminClient.auth.admin.generateLink({
         type: 'recovery',
-        email,
+        email: emailEfetivo,
         options: {
           redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
         },
@@ -200,6 +222,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     success: true,
     user_id: userId,
+    sem_email: semEmail,
     email_enviado: emailEnviado,
     ...(emailErro ? { email_erro: emailErro } : {}),
     ...(linkRecuperacao ? { link_recuperacao: linkRecuperacao } : {}),

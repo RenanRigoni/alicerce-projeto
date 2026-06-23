@@ -5,31 +5,60 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
-function isCPF(valor: string): boolean {
-  const digits = valor.replace(/\D/g, '')
-  return digits.length === 11
-}
-
-async function resolverEmail(identificador: string): Promise<string | null> {
-  if (!isCPF(identificador)) return identificador.toLowerCase()
-
+async function resolverEmailPorCpf(cpf: string): Promise<string | null> {
   const res = await fetch('/api/auth/email-from-cpf', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cpf: identificador }),
+    body: JSON.stringify({ cpf }),
   })
-
   if (!res.ok) {
     const json = await res.json().catch(() => ({}))
-    console.warn('[login] cpf lookup failed', {
-      status: res.status,
-      message: typeof json.error === 'string' ? json.error : 'unknown',
-    })
+    console.warn('[login] cpf lookup failed', { status: res.status, message: json.error ?? 'unknown' })
     return null
   }
-
   const { email } = await res.json()
   return typeof email === 'string' ? email.toLowerCase() : null
+}
+
+async function resolverEmailPorTelefone(telefone: string): Promise<string | null> {
+  const res = await fetch('/api/auth/email-from-phone', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ telefone }),
+  })
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}))
+    console.warn('[login] phone lookup failed', { status: res.status, message: json.error ?? 'unknown' })
+    return null
+  }
+  const { email } = await res.json()
+  return typeof email === 'string' ? email.toLowerCase() : null
+}
+
+async function resolverEmail(identificador: string): Promise<string | null> {
+  const valor = identificador.trim()
+
+  if (valor.includes('@')) return valor.toLowerCase()
+
+  const digits = valor.replace(/\D/g, '')
+
+  // 10 dígitos = fixo com DDD; tem '(' = celular formatado
+  if (digits.length === 10 || valor.includes('(')) {
+    return resolverEmailPorTelefone(valor)
+  }
+
+  // 11 dígitos: CPF tem '.' sem '('; senão tenta CPF e cai no telefone
+  if (digits.length === 11) {
+    if (valor.includes('.') && !valor.includes('(')) {
+      return resolverEmailPorCpf(valor)
+    }
+    // Ambíguo — tenta CPF primeiro, depois telefone
+    const emailCpf = await resolverEmailPorCpf(valor)
+    if (emailCpf) return emailCpf
+    return resolverEmailPorTelefone(valor)
+  }
+
+  return null
 }
 
 export default function LoginPage() {
@@ -64,7 +93,7 @@ export default function LoginPage() {
 
     const email = await resolverEmail(identificador.trim())
     if (!email) {
-      setErro('CPF não encontrado ou não autorizado.')
+      setErro('Identificador não encontrado ou não autorizado.')
       setCarregando(false)
       return
     }
@@ -78,7 +107,7 @@ export default function LoginPage() {
         status: authError.status ?? null,
         message: authError.message ?? error.message,
       })
-      setErro('E-mail, CPF ou senha incorretos.')
+      setErro('Credenciais incorretas. Verifique e-mail, CPF, telefone ou senha.')
       setCarregando(false)
       return
     }
@@ -286,10 +315,10 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="w-full space-y-4">
 
-            {/* E-mail ou CPF */}
+            {/* E-mail, CPF ou Telefone */}
             <div>
               <label htmlFor="identificador" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-ink-mid)' }}>
-                E-mail ou CPF
+                E-mail, CPF ou telefone
               </label>
               <input
                 id="identificador"
@@ -299,12 +328,12 @@ export default function LoginPage() {
                 onKeyDown={handleKeyDown}
                 required
                 autoComplete="username"
-                placeholder="seu@email.com ou 000.000.000-00"
+                placeholder="seu@email.com, CPF ou (00) 00000-0000"
                 className="glass-input w-full rounded-xl px-4 py-3 text-sm"
                 style={{ color: 'var(--color-ink)' }}
               />
               <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
-                Responsáveis podem usar CPF para entrar
+                Responsáveis podem usar CPF ou telefone para entrar
               </p>
             </div>
 

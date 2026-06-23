@@ -227,8 +227,6 @@ export default function LoginPage() {
         }
 
         .glass-input {
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
           background: rgba(255,255,255,0.65);
           border: 1.5px solid rgba(255,255,255,0.75);
           transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
@@ -250,8 +248,6 @@ export default function LoginPage() {
         }
 
         .btn-entrar {
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
           transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
         }
         .btn-entrar:hover:not(:disabled) {

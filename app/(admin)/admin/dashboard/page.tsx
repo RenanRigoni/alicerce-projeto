@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card } from '@/components/ui/Card'
 import { ComunicadoCard } from '@/components/ui/ComunicadoCard'
 import { gerarSessoes } from '@/lib/agenda/sessoes'
@@ -304,7 +305,7 @@ export default async function AdminDashboard() {
                 </div>
                 <Link
                   href="/admin/alta"
-                  className="text-xs font-medium rounded-lg px-3 py-1 transition-colors flex-shrink-0"
+                  className="text-xs font-medium rounded-lg px-3 py-2 min-h-[44px] flex items-center transition-colors flex-shrink-0"
                   style={{ color: 'var(--color-amber-deep)', border: '1px solid var(--color-amber-main)', background: 'transparent' }}
                 >
                   Analisar
@@ -318,41 +319,47 @@ export default async function AdminDashboard() {
       {/* Cards de totais */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {podeVerPacientes && (
-        <Link href="/admin/pacientes">
-          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
+        <Link href="/admin/pacientes" aria-label={`${totalPacientes ?? 0} pacientes ativos — ver lista`}>
+          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer">
             <div
-              className="text-3xl font-bold mb-1 group-hover:scale-105 transition-transform duration-200 inline-block"
+              className="text-xl font-semibold leading-tight"
               style={{ color: 'var(--color-rose-main)', fontFamily: 'var(--font-lora)' }}
             >
-              {totalPacientes ?? 0}
+              Pacientes
             </div>
-            <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Pacientes ativos</div>
+            <div className="text-sm mt-2" style={{ color: 'var(--color-ink-soft)' }}>
+              <span className="text-lg font-bold" style={{ color: 'var(--color-ink)' }}>{totalPacientes ?? 0}</span>{' '}ativos
+            </div>
           </Card>
         </Link>
         )}
         {podeGerenciarResponsaveis && (
-        <Link href="/admin/responsaveis">
-          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
+        <Link href="/admin/responsaveis" aria-label={`${totalFamilias} famílias ativas — ver lista`}>
+          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer">
             <div
-              className="text-3xl font-bold mb-1 group-hover:scale-105 transition-transform duration-200 inline-block"
+              className="text-xl font-semibold leading-tight"
               style={{ color: 'var(--color-peach-main)', fontFamily: 'var(--font-lora)' }}
             >
-              {totalFamilias}
+              Famílias
             </div>
-            <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Famílias ativas</div>
+            <div className="text-sm mt-2" style={{ color: 'var(--color-ink-soft)' }}>
+              <span className="text-lg font-bold" style={{ color: 'var(--color-ink)' }}>{totalFamilias}</span>{' '}ativas
+            </div>
           </Card>
         </Link>
         )}
         {podeGerenciarUsuarios && (
-        <Link href="/admin/terapeutas">
-          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group">
+        <Link href="/admin/terapeutas" aria-label={`${totalTerapeutas ?? 0} profissionais ativos — ver lista`}>
+          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer">
             <div
-              className="text-3xl font-bold mb-1 group-hover:scale-105 transition-transform duration-200 inline-block"
+              className="text-xl font-semibold leading-tight"
               style={{ color: 'var(--color-sage-main)', fontFamily: 'var(--font-lora)' }}
             >
-              {totalTerapeutas ?? 0}
+              Profissionais
             </div>
-            <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Profissionais</div>
+            <div className="text-sm mt-2" style={{ color: 'var(--color-ink-soft)' }}>
+              <span className="text-lg font-bold" style={{ color: 'var(--color-ink)' }}>{totalTerapeutas ?? 0}</span>{' '}ativos
+            </div>
           </Card>
         </Link>
         )}
@@ -397,9 +404,9 @@ export default async function AdminDashboard() {
                         {tipoLabel[item.tipoTag] ?? item.tipoTag}
                       </span>
                     ) : item.status === 'confirmada' || item.status === 'expirada' ? (
-                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-confirmada-text)' }}>✅ confirmada</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-confirmada-text)' }}><span aria-hidden="true">✅</span><span className="sr-only">confirmada</span></span>
                     ) : item.status === 'pendente' ? (
-                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-pendente-text)' }}>⏳ pendente</span>
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-pendente-text)' }}><span aria-hidden="true">⏳</span><span className="sr-only">pendente</span></span>
                     ) : (
                       <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-ink-faint)' }}>— sem envio</span>
                     )}
@@ -609,18 +616,17 @@ export default async function AdminDashboard() {
                 return (
                   <div key={a.id} className="flex items-center gap-3">
                     <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden relative"
                       style={{ background: bgAvatar, color: clAvatar }}
                     >
                       {a.fotoUrl
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={a.fotoUrl} alt={a.nome} loading="lazy" className="w-full h-full object-cover" />
+                        ? <Image src={a.fotoUrl} alt={a.nome} fill sizes="36px" className="object-cover" />
                         : ini}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate flex items-center gap-2" style={{ color: 'var(--color-ink)' }}>
                         {a.nome}
-                        {ehHoje && <span className="text-base" title="Hoje!">🎂</span>}
+                        {ehHoje && (<><span className="text-base" aria-hidden="true">🎂</span><span className="sr-only">, aniversário hoje</span></>)}
                       </div>
                       <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
                         {a.tipo === 'profissional' ? 'Profissional' : 'Paciente'}

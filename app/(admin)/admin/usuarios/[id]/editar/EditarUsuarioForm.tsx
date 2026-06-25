@@ -140,19 +140,6 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     e.preventDefault()
     setErro('')
 
-    if (!form.nome.trim() || !form.email.trim()) {
-      setErro('Nome e e-mail são obrigatórios.')
-      return
-    }
-    if (usuario.role === 'terapeuta' && !form.conselho_numero.trim()) {
-      setErro(`${tipoConfig.conselho} é obrigatório para profissionais.`)
-      return
-    }
-    if (usuario.role === 'terapeuta' && !isCodigoCboValido(normalizarCodigoCbo(form.cbo_codigo))) {
-      setErro('Código CBO deve ter 6 dígitos.')
-      return
-    }
-
     setSalvando(true)
 
     const res = await fetch(`/api/usuario/${usuario.id}`, {
@@ -231,13 +218,13 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
 
           <div>
-            <Label>Nome completo *</Label>
-            <input name="nome" value={form.nome} onChange={handle} required className={inputCls} style={inputStyle} />
+            <Label>Nome completo</Label>
+            <input name="nome" value={form.nome} onChange={handle} className={inputCls} style={inputStyle} />
           </div>
 
           <div>
-            <Label>E-mail *</Label>
-            <input type="email" name="email" value={form.email} onChange={handle} required className={inputCls} style={inputStyle} />
+            <Label>E-mail</Label>
+            <input type="email" name="email" value={form.email} onChange={handle} className={inputCls} style={inputStyle} />
           </div>
 
           {usuario.role !== 'pai' && (
@@ -305,7 +292,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
             </div>
 
             <div>
-              <Label>{tipoConfig.conselho} *</Label>
+              <Label>{tipoConfig.conselho}</Label>
               <input name="conselho_numero" value={form.conselho_numero} onChange={handle} className={inputCls} style={inputStyle} />
             </div>
 

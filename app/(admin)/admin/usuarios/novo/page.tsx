@@ -159,24 +159,6 @@ export default function NovoUsuarioPage() {
     setErro('')
     setLinkRecuperacao(null)
 
-    if (form.role === 'pai') {
-      const cpfDigits = form.cpf_cnpj.replace(/\D/g, '')
-      if (cpfDigits.length !== 11) {
-        setErro('CPF deve ter 11 dígitos.')
-        return
-      }
-    }
-
-    if (form.role === 'terapeuta' && !form.conselho_numero.trim()) {
-      setErro(`${tipoConfig.conselho} é obrigatório para profissionais.`)
-      return
-    }
-
-    if (form.role === 'terapeuta' && !isCodigoCboValido(normalizarCodigoCbo(form.cbo_codigo))) {
-      setErro('Código CBO deve ter 6 dígitos.')
-      return
-    }
-
     setCarregando(true)
 
     const payload = {
@@ -351,7 +333,7 @@ export default function NovoUsuarioPage() {
           {/* Perfil */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={L}>
-              Perfil <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+              Perfil
             </label>
             <select name="role" value={form.role} onChange={handleChange} className="input-base">
               {rolesDisponiveis.includes('pai') && <option value="pai">Família (pais/responsáveis)</option>}
@@ -364,22 +346,21 @@ export default function NovoUsuarioPage() {
           {/* Nome + E-mail — todos os perfis */}
           <div>
             <label className="block text-sm font-medium mb-1.5" style={L}>
-              Nome completo <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+              Nome completo
             </label>
-            <input name="nome" value={form.nome} onChange={handleChange} required placeholder="Nome completo" className="input-base" />
+            <input name="nome" value={form.nome} onChange={handleChange} placeholder="Nome completo" className="input-base" />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={L}>
-              E-mail{form.role !== 'pai' && <span style={{ color: 'var(--color-rose-main)' }}> *</span>}
-              {form.role === 'pai' && <span className="text-xs font-normal ml-1" style={hint}>(opcional)</span>}
+              E-mail
+              <span className="text-xs font-normal ml-1" style={hint}>(opcional)</span>
             </label>
             <input
               type="email"
               name="email"
               value={form.email}
               onChange={handleChange}
-              required={form.role !== 'pai'}
               placeholder="email@exemplo.com"
               className="input-base"
             />
@@ -400,9 +381,9 @@ export default function NovoUsuarioPage() {
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={L}>
-                      Telefone principal <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                      Telefone principal
                     </label>
-                    <input name="telefone" value={form.telefone} onChange={handleChange} required placeholder="(00) 00000-0000" className="input-base" />
+                    <input name="telefone" value={form.telefone} onChange={handleChange} placeholder="(00) 00000-0000" className="input-base" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -412,9 +393,9 @@ export default function NovoUsuarioPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5" style={L}>
-                        CPF <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                        CPF
                       </label>
-                      <input name="cpf_cnpj" value={form.cpf_cnpj} onChange={handleChange} required placeholder="000.000.000-00" className="input-base" />
+                      <input name="cpf_cnpj" value={form.cpf_cnpj} onChange={handleChange} placeholder="000.000.000-00" className="input-base" />
                     </div>
                   </div>
 
@@ -457,10 +438,10 @@ export default function NovoUsuarioPage() {
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={L}>
-                      CEP <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                      CEP
                     </label>
                     <div className="relative">
-                      <input name="cep" value={form.cep} onChange={handleChange} onBlur={handleCepBlur} required placeholder="00000-000" maxLength={9} className="input-base pr-8" />
+                      <input name="cep" value={form.cep} onChange={handleChange} onBlur={handleCepBlur} placeholder="00000-000" maxLength={9} className="input-base pr-8" />
                       {buscandoCep && (
                         <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -473,9 +454,9 @@ export default function NovoUsuarioPage() {
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={L}>
-                      Logradouro <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                      Logradouro
                     </label>
-                    <input name="endereco" value={form.endereco} onChange={handleChange} required placeholder="Rua, Avenida..." className="input-base" />
+                    <input name="endereco" value={form.endereco} onChange={handleChange} placeholder="Rua, Avenida..." className="input-base" />
                   </div>
 
                   <div>
@@ -486,9 +467,9 @@ export default function NovoUsuarioPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                     <div className="col-span-2">
                       <label className="block text-sm font-medium mb-1.5" style={L}>
-                        Número <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                        Número
                       </label>
-                      <input name="numero" value={form.numero} onChange={handleChange} required placeholder="123" className="input-base" />
+                      <input name="numero" value={form.numero} onChange={handleChange} placeholder="123" className="input-base" />
                     </div>
                     <div className="col-span-2">
                       <label className="block text-sm font-medium mb-1.5" style={L}>Complemento</label>
@@ -505,9 +486,9 @@ export default function NovoUsuarioPage() {
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={L}>
-                      Cidade <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                      Cidade
                     </label>
-                    <input name="cidade" value={form.cidade} onChange={handleChange} required placeholder="Cidade" className="input-base" />
+                    <input name="cidade" value={form.cidade} onChange={handleChange} placeholder="Cidade" className="input-base" />
                   </div>
 
                 </div>
@@ -519,15 +500,15 @@ export default function NovoUsuarioPage() {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={L}>
-                      Nome do contato <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                      Nome do contato
                     </label>
-                    <input name="contato_emergencia_nome" value={form.contato_emergencia_nome} onChange={handleChange} required placeholder="Nome completo" className="input-base" />
+                    <input name="contato_emergencia_nome" value={form.contato_emergencia_nome} onChange={handleChange} placeholder="Nome completo" className="input-base" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={L}>
-                      Telefone do contato <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                      Telefone do contato
                     </label>
-                    <input name="contato_emergencia_telefone" value={form.contato_emergencia_telefone} onChange={handleChange} required placeholder="(00) 00000-0000" className="input-base" />
+                    <input name="contato_emergencia_telefone" value={form.contato_emergencia_telefone} onChange={handleChange} placeholder="(00) 00000-0000" className="input-base" />
                   </div>
                 </div>
               </div>
@@ -539,9 +520,9 @@ export default function NovoUsuarioPage() {
             <>
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={L}>
-                  Tipo profissional <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                  Tipo profissional
                 </label>
-                <select name="tipo_profissional" value={form.tipo_profissional} onChange={handleChange} className="input-base" required>
+                <select name="tipo_profissional" value={form.tipo_profissional} onChange={handleChange} className="input-base">
                   {TIPOS_PROFISSIONAIS.map(tipo => (
                     <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
                   ))}
@@ -550,17 +531,16 @@ export default function NovoUsuarioPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={L}>
-                  {tipoConfig.conselho} <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+                  {tipoConfig.conselho}
                 </label>
                 <input
                   name="conselho_numero"
                   value={form.conselho_numero}
                   onChange={handleChange}
-                  required
                   placeholder={tipoConfig.conselho === 'CBO' ? 'Ex: 2394-40' : 'Número do registro'}
                   className="input-base"
                 />
-                <p className="text-xs mt-1" style={hint}>Obrigatório para assinatura e identificação profissional</p>
+                <p className="text-xs mt-1" style={hint}>Usado para assinatura e identificação profissional</p>
               </div>
 
               <div>

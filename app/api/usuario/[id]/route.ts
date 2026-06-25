@@ -51,13 +51,10 @@ export async function PATCH(
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
   const telefone = typeof body.telefone === 'string' ? body.telefone.trim() : ''
 
-  if (!nome || !email) {
-    return NextResponse.json({ error: 'Nome e e-mail são obrigatórios' }, { status: 400 })
-  }
-
   const str = (v: unknown) => typeof v === 'string' && v.trim() ? v.trim() : null
 
-  const profileUpdate: Record<string, string | null | boolean> = { nome }
+  const profileUpdate: Record<string, string | null | boolean> = {}
+  if (nome) profileUpdate.nome = nome
   if (alvo.role !== 'pai') profileUpdate.telefone = telefone || null
 
   // Campos pessoais comuns a todos os roles
@@ -67,7 +64,7 @@ export async function PATCH(
   profileUpdate.sexo = sexoValido.includes(body.sexo) ? (body.sexo as string) : null
 
   const metadataUpdate: Record<string, string | null> = {
-    nome,
+    ...(nome ? { nome } : {}),
     role: alvo.role,
   }
 
@@ -75,11 +72,7 @@ export async function PATCH(
     const tipoProfissional = isTipoProfissional(body.tipo_profissional)
       ? body.tipo_profissional
       : null
-    if (!tipoProfissional) {
-      return NextResponse.json({ error: 'Tipo profissional inválido' }, { status: 400 })
-    }
-
-    const tipoConfig = getTipoProfissionalConfig(tipoProfissional)
+    const tipoConfig = tipoProfissional ? getTipoProfissionalConfig(tipoProfissional) : null
     const conselhoNumero = typeof body.conselho_numero === 'string'
       ? body.conselho_numero.trim()
       : ''
@@ -87,16 +80,9 @@ export async function PATCH(
       ? body.conselho_uf.trim().toUpperCase()
       : null
     const cboCodigo = normalizarCodigoCbo(body.cbo_codigo)
-    if (!conselhoNumero) {
-      return NextResponse.json({ error: `${tipoConfig.conselho} é obrigatório para profissionais` }, { status: 400 })
-    }
 
     if (conselhoUf && !isUfBrasil(conselhoUf)) {
       return NextResponse.json({ error: 'UF do conselho inválida' }, { status: 400 })
-    }
-
-    if (!isCodigoCboValido(cboCodigo)) {
-      return NextResponse.json({ error: 'Código CBO deve ter 6 dígitos' }, { status: 400 })
     }
 
     const cpfCnpj = normalizarCpfCnpj(body.cpf_cnpj)
@@ -104,22 +90,27 @@ export async function PATCH(
       return NextResponse.json({ error: 'CPF/CNPJ deve ter 11 ou 14 dígitos' }, { status: 400 })
     }
 
-    profileUpdate.tipo_profissional = tipoConfig.value
-    profileUpdate.conselho_tipo = tipoConfig.conselho
-    profileUpdate.conselho_numero = conselhoNumero
+    if (tipoProfissional && tipoConfig) {
+      profileUpdate.tipo_profissional = tipoConfig.value
+      profileUpdate.conselho_tipo = tipoConfig.conselho
+      metadataUpdate.tipo_profissional = tipoConfig.value
+      metadataUpdate.conselho_tipo = tipoConfig.conselho
+    }
+    if (conselhoNumero) {
+      profileUpdate.conselho_numero = conselhoNumero
+      profileUpdate.crefito = conselhoNumero
+      metadataUpdate.conselho_numero = conselhoNumero
+      metadataUpdate.crefito = conselhoNumero
+    }
     profileUpdate.conselho_uf = conselhoUf
-    profileUpdate.cbo_codigo = cboCodigo
-    profileUpdate.crefito = conselhoNumero
-    profileUpdate.cpf_cnpj = cpfCnpj
+    metadataUpdate.conselho_uf = conselhoUf
+    if (cboCodigo && isCodigoCboValido(cboCodigo)) {
+      profileUpdate.cbo_codigo = cboCodigo
+      metadataUpdate.cbo_codigo = cboCodigo
+    }
+    if (cpfCnpj) profileUpdate.cpf_cnpj = cpfCnpj
     profileUpdate.especialidade = str(body.especialidade)
     profileUpdate.biografia = str(body.biografia)
-
-    metadataUpdate.tipo_profissional = tipoConfig.value
-    metadataUpdate.conselho_tipo = tipoConfig.conselho
-    metadataUpdate.conselho_numero = conselhoNumero
-    metadataUpdate.conselho_uf = conselhoUf
-    metadataUpdate.cbo_codigo = cboCodigo
-    metadataUpdate.crefito = conselhoNumero
   }
 
   const adminClient = createAdminClient()
@@ -130,8 +121,7 @@ export async function PATCH(
   }
 
   const { error: authError } = await adminClient.auth.admin.updateUserById(id, {
-    email,
-    email_confirm: true,
+    ...(email ? { email, email_confirm: true } : {}),
     user_metadata: {
       ...(authUser.user.user_metadata ?? {}),
       ...metadataUpdate,

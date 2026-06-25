@@ -65,7 +65,6 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
   }
 
   async function handleSalvar() {
-    if (!form.nome.trim()) { setErro('Nome não pode estar vazio.'); return }
     setErro('')
     setSalvando(true)
 

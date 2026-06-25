@@ -48,12 +48,8 @@ export async function POST(request: NextRequest) {
     data_nascimento, rg, sexo, bairro, estado,
   } = body
 
-  if (!nome || !role) {
+  if (!role) {
     return NextResponse.json({ error: 'Campos obrigatórios faltando' }, { status: 400 })
-  }
-
-  if (!email && role !== 'pai') {
-    return NextResponse.json({ error: 'E-mail é obrigatório para este perfil' }, { status: 400 })
   }
 
   const ROLES_VALIDOS = ['admin', 'recepcao', 'terapeuta', 'pai']
@@ -86,20 +82,8 @@ export async function POST(request: NextRequest) {
     : null
   const cboCodigo = role === 'terapeuta' ? normalizarCodigoCbo(cbo_codigo) : null
 
-  if (role === 'terapeuta' && !tipoProfissional) {
-    return NextResponse.json({ error: 'Tipo profissional inválido' }, { status: 400 })
-  }
-
-  if (role === 'terapeuta' && !conselhoNumero) {
-    return NextResponse.json({ error: `${conselhoTipo ?? 'Conselho'} é obrigatório para profissionais` }, { status: 400 })
-  }
-
   if (role === 'terapeuta' && conselhoUf && !isUfBrasil(conselhoUf)) {
     return NextResponse.json({ error: 'UF do conselho inválida' }, { status: 400 })
-  }
-
-  if (role === 'terapeuta' && !isCodigoCboValido(cboCodigo)) {
-    return NextResponse.json({ error: 'Código CBO deve ter 6 dígitos' }, { status: 400 })
   }
 
   let emailEfetivo = email ?? ''
@@ -107,11 +91,9 @@ export async function POST(request: NextRequest) {
 
   if (role === 'pai') {
     const cpfDigits = normalizarCpfCnpj(cpf_cnpj ?? '')
-    if (cpfDigits.length !== 11) {
-      return NextResponse.json({ error: 'CPF é obrigatório para responsáveis (11 dígitos)' }, { status: 400 })
-    }
     if (!email) {
-      emailEfetivo = gerarEmailInterno(cpfDigits)
+      const identificador = cpfDigits.length === 11 ? cpfDigits : crypto.randomUUID().replace(/-/g, '')
+      emailEfetivo = gerarEmailInterno(identificador)
       semEmail = true
     }
   }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 import { Button } from '@/components/ui/Button'
 
 interface Props {
@@ -12,15 +13,38 @@ interface Props {
   targetRole: string
   isSelf: boolean
   podeAlterarStatus: boolean
+  podeReenviarAcesso: boolean
 }
 
-export function AcoesUsuario({ usuarioId, ativo, isAdmin, isRecepcao, targetRole, isSelf, podeAlterarStatus }: Props) {
+export function AcoesUsuario({ usuarioId, ativo, isAdmin, isRecepcao, targetRole, isSelf, podeAlterarStatus, podeReenviarAcesso }: Props) {
   // Recepção só pode toggle responsáveis (pais). Admin pode tudo.
   const podeToggleAtivo = podeAlterarStatus && (isAdmin || (isRecepcao && targetRole === 'pai'))
   const router = useRouter()
   const [carregando, setCarregando] = useState(false)
   const [confirmandoDelete, setConfirmandoDelete] = useState(false)
   const [erro, setErro] = useState('')
+  const [reenviando, setReenviando] = useState<'email' | 'link' | null>(null)
+  const [convite, setConvite] = useState<DadosConvite | null>(null)
+
+  async function reenviarAcesso(modo: 'email' | 'link') {
+    setErro('')
+    setConvite(null)
+    setReenviando(modo)
+    const res = await fetch('/api/admin/reenviar-acesso', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario_id: usuarioId, modo }),
+    })
+    const json = await res.json()
+    setReenviando(null)
+    if (!res.ok) { setErro(json.error ?? 'Não foi possível reenviar o acesso.'); return }
+    setConvite({
+      email: json.email ?? null,
+      email_enviado: json.email_enviado === true,
+      email_erro: json.email_erro ?? null,
+      link_recuperacao: json.link_recuperacao ?? null,
+    })
+  }
 
   async function toggleAtivo() {
     setErro('')
@@ -47,7 +71,7 @@ export function AcoesUsuario({ usuarioId, ativo, isAdmin, isRecepcao, targetRole
   }
 
   if (isSelf) return null
-  if (!podeToggleAtivo && !isAdmin) return null
+  if (!podeToggleAtivo && !isAdmin && !podeReenviarAcesso) return null
 
   return (
     <div className="space-y-3">
@@ -55,7 +79,28 @@ export function AcoesUsuario({ usuarioId, ativo, isAdmin, isRecepcao, targetRole
         <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>
       )}
 
+      {convite && <StatusConvite convite={convite} />}
+
       <div className="flex flex-wrap gap-3">
+        {podeReenviarAcesso && (
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => reenviarAcesso('email')}
+              disabled={reenviando !== null}
+            >
+              {reenviando === 'email' ? 'Enviando...' : 'Reenviar acesso por e-mail'}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => reenviarAcesso('link')}
+              disabled={reenviando !== null}
+            >
+              {reenviando === 'link' ? 'Gerando...' : 'Gerar link de senha'}
+            </Button>
+          </>
+        )}
+
         {podeToggleAtivo && (
           <Button
             variant="ghost"

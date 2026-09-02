@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@react-pdf/renderer": "^4.4.1",
+    "@react-pdf/renderer": "^4.9.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
     "jwt-decode": "^4.0.0",

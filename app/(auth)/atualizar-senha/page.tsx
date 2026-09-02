@@ -13,9 +13,25 @@ export default function AtualizarSenhaPage() {
   const [erro, setErro] = useState('')
   const [sucesso, setSucesso] = useState(false)
   const [sessaoValida, setSessaoValida] = useState<boolean | null>(null)
+  const [motivoInvalido, setMotivoInvalido] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
+
+    // Link expirado/já usado: o Supabase devolve o erro no fragmento da URL.
+    // Sem tratar isso, a tela mostrava o formulário e só falhava depois de
+    // o usuário digitar a senha.
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const erroHash = hash.get('error_code') || hash.get('error')
+    if (erroHash) {
+      setMotivoInvalido(
+        erroHash.includes('expired')
+          ? 'Este link já foi usado ou expirou.'
+          : 'Link inválido.'
+      )
+      setSessaoValida(false)
+      return
+    }
 
     // PKCE: Supabase redireciona com ?code=... — o cliente troca o code por sessão
     // onAuthStateChange captura tanto SIGNED_IN quanto PASSWORD_RECOVERY
@@ -99,7 +115,7 @@ export default function AtualizarSenhaPage() {
           ) : sessaoValida === false ? (
             <div className="text-center space-y-4">
               <p className="text-sm" style={{ color: '#B91C1C' }}>
-                Link expirado ou inválido. Solicite um novo link de recuperação.
+                {motivoInvalido || 'Link expirado ou inválido.'} Solicite um novo link de recuperação.
               </p>
               <a
                 href="/recuperar-senha"

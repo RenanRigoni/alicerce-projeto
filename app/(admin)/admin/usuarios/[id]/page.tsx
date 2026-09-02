@@ -260,6 +260,7 @@ export default async function UsuarioDetalhePage({
           targetRole={usuario.role}
           isSelf={isSelf}
           podeAlterarStatus={podeGerenciarUsuarios}
+          podeReenviarAcesso={podeGerenciarUsuarios || podeGerenciarEsteResponsavel}
         />
       )}
 

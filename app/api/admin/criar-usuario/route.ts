@@ -1,11 +1,11 @@
 import { getTipoProfissionalConfig, isCodigoCboValido, isTipoProfissional, isUfBrasil, normalizarCodigoCbo } from '@/lib/profissionais'
 import { temPermissao } from '@/lib/permissoes/definicoes'
+import { enviarConviteAcesso, DOMINIO_EMAIL_INTERNO } from '@/lib/auth/convite'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 const SENHA_PADRAO = 'alicerce'
-const DOMINIO_EMAIL_INTERNO = 'noemail.alicerce.app'
 
 function normalizarCpfCnpj(valor: string): string {
   return valor.replace(/\D/g, '')
@@ -15,8 +15,23 @@ function gerarEmailInterno(cpf: string): string {
   return `${cpf}@${DOMINIO_EMAIL_INTERNO}`
 }
 
-function isEmailInterno(email: string): boolean {
-  return email.endsWith(`@${DOMINIO_EMAIL_INTERNO}`)
+/**
+ * O Supabase devolve "Database error creating new user" para qualquer violação
+ * de constraint disparada pelo trigger handle_new_user. Sem tradução, a recepção
+ * vê uma mensagem em inglês que não diz qual campo está errado.
+ */
+function traduzirErroCriacao(mensagem: string): string {
+  const m = mensagem.toLowerCase()
+  if (m.includes('already been registered') || m.includes('already exists')) {
+    return 'Já existe um usuário cadastrado com este e-mail.'
+  }
+  if (m.includes('unable to validate email') || m.includes('invalid format')) {
+    return 'E-mail inválido. Verifique o endereço digitado.'
+  }
+  if (m.includes('database error')) {
+    return 'Não foi possível salvar o cadastro: algum campo tem valor inválido (conselho, CBO, UF ou sexo). Revise os dados e tente novamente.'
+  }
+  return mensagem
 }
 
 export async function POST(request: NextRequest) {
@@ -116,7 +131,7 @@ export async function POST(request: NextRequest) {
   })
 
   if (authError) {
-    return NextResponse.json({ error: authError.message }, { status: 400 })
+    return NextResponse.json({ error: traduzirErroCriacao(authError.message) }, { status: 400 })
   }
 
   const userId = newUser.user.id
@@ -169,44 +184,18 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  let emailEnviado = false
-  let linkRecuperacao: string | null = null
-  let emailErro: string | null = null
-
-  if (!semEmail && !isEmailInterno(emailEfetivo)) {
-    try {
-      const { error: emailError } = await adminClient.auth.resetPasswordForEmail(emailEfetivo, {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
-      })
-      emailEnviado = !emailError
-      if (emailError) emailErro = emailError.message
-    } catch (e) {
-      emailEnviado = false
-      emailErro = e instanceof Error ? e.message : 'unknown'
-    }
-  }
-
-  if (!emailEnviado) {
-    try {
-      const { data: linkData } = await adminClient.auth.admin.generateLink({
-        type: 'recovery',
-        email: emailEfetivo,
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/atualizar-senha`,
-        },
-      })
-      linkRecuperacao = linkData?.properties?.action_link ?? null
-    } catch {
-      // ignora falha no fallback
-    }
-  }
+  const convite = semEmail
+    ? { email_enviado: false, email_erro: null, link_recuperacao: null }
+    : await enviarConviteAcesso(adminClient, emailEfetivo)
 
   return NextResponse.json({
     success: true,
     user_id: userId,
+    nome,
+    email: semEmail ? null : emailEfetivo,
     sem_email: semEmail,
-    email_enviado: emailEnviado,
-    ...(emailErro ? { email_erro: emailErro } : {}),
-    ...(linkRecuperacao ? { link_recuperacao: linkRecuperacao } : {}),
+    email_enviado: convite.email_enviado,
+    ...(convite.email_erro ? { email_erro: convite.email_erro } : {}),
+    ...(convite.link_recuperacao ? { link_recuperacao: convite.link_recuperacao } : {}),
   })
 }

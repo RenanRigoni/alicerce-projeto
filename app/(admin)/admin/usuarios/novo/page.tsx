@@ -3,6 +3,7 @@
 import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig, isCodigoCboValido, normalizarCodigoCbo } from '@/lib/profissionais'
 import { todasPermissoes } from '@/lib/permissoes/definicoes'
 import { createClient } from '@/lib/supabase/client'
+import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import Link from 'next/link'
@@ -58,14 +59,14 @@ export default function NovoUsuarioPage() {
   const router = useRouter()
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
-  const [etapa, setEtapa] = useState<'form' | 'vincular'>('form')
+  const [etapa, setEtapa] = useState<'form' | 'vincular' | 'sucesso'>('form')
   const [novoUserId, setNovoUserId] = useState('')
   const [buscandoCep, setBuscandoCep] = useState(false)
   const [form, setForm] = useState(FORM_INICIAL)
   const [roleAtual, setRoleAtual] = useState<string | null>(null)
   const [permissoes, setPermissoes] = useState<Record<string, boolean>>({})
-  const [linkRecuperacao, setLinkRecuperacao] = useState<string | null>(null)
-  const [linkCopiado, setLinkCopiado] = useState(false)
+  const [convite, setConvite] = useState<DadosConvite | null>(null)
+  const [nomeCriado, setNomeCriado] = useState('')
 
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [pacientesSelecionados, setPacientesSelecionados] = useState<string[]>([])
@@ -147,17 +148,10 @@ export default function NovoUsuarioPage() {
     )
   }
 
-  async function copiarLink() {
-    if (!linkRecuperacao) return
-    await navigator.clipboard.writeText(linkRecuperacao)
-    setLinkCopiado(true)
-    setTimeout(() => setLinkCopiado(false), 2500)
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setErro('')
-    setLinkRecuperacao(null)
+    setConvite(null)
 
     setCarregando(true)
 
@@ -201,14 +195,15 @@ export default function NovoUsuarioPage() {
 
     if (!res.ok) { setErro(json.error ?? 'Erro ao criar usuário.'); return }
 
-    if (json.link_recuperacao) setLinkRecuperacao(json.link_recuperacao)
-
-    if (form.role === 'pai' && json.user_id) {
-      setNovoUserId(json.user_id)
-      setEtapa('vincular')
-    } else {
-      router.push('/admin/usuarios')
-    }
+    setNomeCriado(json.nome || form.nome)
+    setConvite({
+      email: json.email ?? null,
+      email_enviado: json.email_enviado === true,
+      email_erro: json.email_erro ?? null,
+      link_recuperacao: json.link_recuperacao ?? null,
+    })
+    setNovoUserId(json.user_id)
+    setEtapa(form.role === 'pai' ? 'vincular' : 'sucesso')
   }
 
   async function vincularEConcluir(criarNovo: boolean) {
@@ -232,6 +227,44 @@ export default function NovoUsuarioPage() {
   const hint = { color: 'var(--color-ink-faint)' }
   const secao = { color: 'var(--color-ink-faint)', letterSpacing: '0.06em' }
 
+  if (etapa === 'sucesso') {
+    return (
+      <div className="space-y-6 max-w-xl">
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
+            Usuário criado
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--color-ink-soft)' }}>
+            {nomeCriado} foi cadastrado com sucesso.
+          </p>
+        </div>
+
+        {convite && (
+          <StatusConvite
+            convite={convite}
+            textoSemEmail="Cadastrado sem e-mail. Compartilhe o link abaixo para definir a senha."
+          />
+        )}
+
+        <Card>
+          <div className="space-y-3">
+            <p className="text-sm" style={L}>
+              Senha inicial: <strong>alicerce</strong>. Ela continua válida até o usuário definir uma nova.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-1">
+              <Button onClick={() => router.push(`/admin/usuarios/${novoUserId}`)}>
+                Ver usuário
+              </Button>
+              <Button variant="ghost" onClick={() => router.push('/admin/usuarios')}>
+                Voltar para a lista
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
   if (etapa === 'vincular') {
     return (
       <div className="space-y-6 max-w-xl">
@@ -244,32 +277,7 @@ export default function NovoUsuarioPage() {
           </p>
         </div>
 
-        {linkRecuperacao && (
-          <div className="rounded-xl p-4 space-y-3" style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)' }}>
-            <p className="text-sm font-medium" style={{ color: 'var(--color-amber-deep)' }}>
-              E-mail não enviado automaticamente. Compartilhe este link diretamente com o usuário para ele definir a senha:
-            </p>
-            <div className="flex gap-2 items-start">
-              <code className="text-xs break-all flex-1 bg-white rounded-lg p-2 border" style={{ borderColor: 'var(--color-amber-border)', color: 'var(--color-amber-deep)' }}>
-                {linkRecuperacao}
-              </code>
-              <button
-                onClick={copiarLink}
-                className="shrink-0 text-xs font-medium px-3 py-2 rounded-lg transition-all"
-                style={{
-                  background: linkCopiado ? 'var(--color-status-confirmada-bg)' : 'var(--color-amber-light)',
-                  color: linkCopiado ? 'var(--color-status-confirmada-text)' : 'var(--color-amber-deep)',
-                  border: `1px solid ${linkCopiado ? 'var(--color-status-confirmada-border)' : 'var(--color-amber-border)'}`,
-                }}
-              >
-                {linkCopiado ? 'Copiado!' : 'Copiar'}
-              </button>
-            </div>
-            <p className="text-xs" style={{ color: 'var(--color-amber-mid)' }}>
-              Link válido por 24 horas. Instrua o usuário a abrir no navegador para definir a senha.
-            </p>
-          </div>
-        )}
+        {convite && <StatusConvite convite={convite} />}
 
         <Card>
           <div className="space-y-4">

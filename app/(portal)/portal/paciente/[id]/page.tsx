@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { registrarAcao } from '@/lib/audit/registrar-acao'
 import { OrientacaoCard } from '@/components/portal/OrientacaoCard'
 import { SolicitarAltaPortal } from '@/components/portal/SolicitarAltaPortal'
+import { ListaEvolucoesPortal } from '@/components/evolucao/lista-evolucoes-portal'
 
 const tipoLabel: Record<string, string> = {
   sessao: 'Sessão', devolutiva: 'Devolutiva', reuniao: 'Reunião', reposicao: 'Reposição', bloqueio: 'Indisponível', outro: 'Outro',
@@ -49,7 +50,7 @@ export default async function PacientePortalPage({
       .order('publicado_em', { ascending: false }),
     supabase
       .from('evolucoes')
-      .select('id, identificacao, status, publicado_em, conclusao, pdf_url')
+      .select('id, identificacao, status, publicado_em, conclusao, pdf_url, terapeuta_id, profiles(nome, tipo_profissional)')
       .eq('paciente_id', id)
       .eq('status', 'publicado')
       .order('publicado_em', { ascending: false }),
@@ -127,6 +128,17 @@ export default async function PacientePortalPage({
       href: o.url_midia ?? null,
     })),
   ].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+
+  const evolucoesPortal = (evolucoes ?? []).map((e: any) => ({
+    id: e.id,
+    identificacao: e.identificacao ?? null,
+    conclusao: e.conclusao ?? null,
+    publicado_em: e.publicado_em ?? null,
+    pdf_url: e.pdf_url ?? null,
+    terapeuta_id: e.terapeuta_id ?? null,
+    autor_nome: e.profiles?.nome ?? null,
+    autor_tipo_profissional: e.profiles?.tipo_profissional ?? null,
+  }))
 
   type TerapeutaInfo = { id: string; nome: string; fotoUrl: string | null }
   const terapeutasDados: TerapeutaInfo[] = (terapeutas ?? [])
@@ -372,55 +384,7 @@ export default async function PacientePortalPage({
 
       {/* ── Evolução ── */}
       {aba === 'evolucoes' && (
-        <div className="space-y-3">
-          {evolucoes && evolucoes.length > 0 ? evolucoes.map(e => (
-            <Card key={e.id}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="font-medium" style={{ color: 'var(--color-ink)' }}>
-                    {e.identificacao ?? 'Evolução clínica'}
-                  </div>
-                  {e.conclusao && (
-                    <p className="text-sm mt-1 line-clamp-2" style={{ color: 'var(--color-ink-mid)' }}>
-                      {e.conclusao}
-                    </p>
-                  )}
-                  <div className="text-xs mt-2" style={{ color: 'var(--color-ink-faint)' }}>
-                    {e.publicado_em
-                      ? new Date(e.publicado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-                      : ''}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <a
-                    href={`/portal/paciente/${id}/evolucao/${e.id}`}
-                    className="text-sm font-medium transition-opacity hover:opacity-70"
-                    style={{ color: 'var(--color-rose-main)' }}
-                  >
-                    Ver
-                  </a>
-                  {e.pdf_url && (
-                    <a
-                      href={e.pdf_url.startsWith('http') ? e.pdf_url : `/api/evolucao/${e.id}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-                      style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
-                    >
-                      PDF
-                    </a>
-                  )}
-                </div>
-              </div>
-            </Card>
-          )) : (
-            <Card>
-              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                Nenhuma evolução disponível ainda.
-              </p>
-            </Card>
-          )}
-        </div>
+        <ListaEvolucoesPortal pacienteId={id} evolucoes={evolucoesPortal} />
       )}
 
       {/* ── Orientações ── */}

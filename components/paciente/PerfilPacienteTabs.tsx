@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { AbaDadosClinicos } from './AbaDadosClinicos'
 import { DeletarPacienteButton } from '@/components/admin/DeletarPacienteButton'
+import { FiltroEvolucoes, autoriaEvolucao, useFiltroEvolucoes } from '@/components/evolucao/filtro-evolucoes'
 
 // ── Tipos ────────────────────────────────────────────────────
 
@@ -69,7 +70,11 @@ export interface Relatorio {
   pdf_url: string | null
 }
 
-export type Evolucao = Relatorio
+export interface Evolucao extends Relatorio {
+  terapeuta_id: string | null
+  autor_nome: string | null
+  autor_tipo_profissional: string | null
+}
 
 export interface Documento {
   id: string
@@ -201,6 +206,7 @@ export function PerfilPacienteTabs({
 }: Props) {
   const router = useRouter()
   const [abaAtiva, setAbaAtiva] = useState<Aba>('Dados Gerais')
+  const filtroEvo = useFiltroEvolucoes(evolucoes)
 
   // Modal vincular responsável
   const [modalResp, setModalResp] = useState(false)
@@ -846,7 +852,9 @@ export function PerfilPacienteTabs({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-              {evolucoes.length} {evolucoes.length === 1 ? 'evolução' : 'evoluções'}
+              {filtroEvo.evolucoesFiltradas.length === evolucoes.length
+                ? `${evolucoes.length} ${evolucoes.length === 1 ? 'evolução' : 'evoluções'}`
+                : `${filtroEvo.evolucoesFiltradas.length} de ${evolucoes.length} evoluções`}
             </span>
             {role === 'terapeuta' && paciente.status === 'ativo' && (
               <a
@@ -858,15 +866,46 @@ export function PerfilPacienteTabs({
               </a>
             )}
           </div>
-          {evolucoes.length > 0 ? (
+          {filtroEvo.mostrarFiltro && (
+            <FiltroEvolucoes
+              profissionais={filtroEvo.profissionais}
+              tipos={filtroEvo.tipos}
+              profSel={filtroEvo.profSel}
+              tipoSel={filtroEvo.tipoSel}
+              onAlternarProf={filtroEvo.alternarProf}
+              onAlternarTipo={filtroEvo.alternarTipo}
+              onLimparProf={filtroEvo.limparProf}
+              onLimparTipo={filtroEvo.limparTipo}
+            />
+          )}
+          {evolucoes.length === 0 ? (
+            <Card>
+              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
+                Nenhuma evolução ainda.
+              </p>
+            </Card>
+          ) : filtroEvo.evolucoesFiltradas.length === 0 ? (
+            <Card>
+              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
+                Nenhuma evolução para esse filtro.
+              </p>
+            </Card>
+          ) : (
             <div className="space-y-2">
-              {evolucoes.map(e => (
+              {filtroEvo.evolucoesFiltradas.map(e => {
+                const autoria = autoriaEvolucao(e)
+                return (
                 <Card key={e.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
                         {e.identificacao ?? 'Sem título'}
                       </div>
+                      {autoria && (
+                        <div className="text-xs mt-0.5" style={{ color: 'var(--color-sage-deep)' }}>
+                          {autoria}
+                        </div>
+                      )}
                       {e.conclusao && (
                         <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--color-ink-soft)' }}>
                           {e.conclusao}
@@ -910,14 +949,9 @@ export function PerfilPacienteTabs({
                     </div>
                   </div>
                 </Card>
-              ))}
+                )
+              })}
             </div>
-          ) : (
-            <Card>
-              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                Nenhuma evolução ainda.
-              </p>
-            </Card>
           )}
         </div>
       )}

@@ -51,7 +51,7 @@ export default async function AdminPacienteDetalhePage({
       .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
     podeVerClinico ? supabase
       .from('evolucoes')
-      .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
+      .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url, terapeuta_id, profiles(nome, tipo_profissional)')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
     podeVerClinico ? supabase
@@ -102,6 +102,19 @@ export default async function AdminPacienteDetalhePage({
     solicitado_por_nome: a.profiles?.nome ?? null,
   }))
 
+  const evolucoesMapped = (evolucoes ?? []).map((e: any) => ({
+    id: e.id,
+    identificacao: e.identificacao ?? null,
+    status: e.status,
+    publicado_em: e.publicado_em ?? null,
+    criado_em: e.criado_em,
+    conclusao: e.conclusao ?? null,
+    pdf_url: e.pdf_url ?? null,
+    terapeuta_id: e.terapeuta_id ?? null,
+    autor_nome: e.profiles?.nome ?? null,
+    autor_tipo_profissional: e.profiles?.tipo_profissional ?? null,
+  }))
+
   return (
     <PerfilPacienteTabs
       paciente={{
@@ -124,7 +137,7 @@ export default async function AdminPacienteDetalhePage({
       responsaveis={responsaveis}
       dadosClinicos={dadosClinicos ?? null}
       relatorios={relatorios ?? []}
-      evolucoes={evolucoes ?? []}
+      evolucoes={evolucoesMapped}
       documentos={documentos ?? []}
       orientacoes={orientacoes ?? []}
       altas={altasMapped}

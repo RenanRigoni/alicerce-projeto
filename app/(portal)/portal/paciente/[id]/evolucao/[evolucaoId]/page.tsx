@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { notFound } from 'next/navigation'
 import { registrarAcao } from '@/lib/audit/registrar-acao'
+import { autoriaEvolucao } from '@/lib/evolucao'
 
 export default async function EvolucaoPortalPage({
   params,
@@ -17,7 +18,7 @@ export default async function EvolucaoPortalPage({
     .select(`
       *,
       pacientes(nome),
-      profiles(nome)
+      profiles(nome, tipo_profissional)
     `)
     .eq('id', evolucaoId)
     .eq('paciente_id', id)
@@ -74,7 +75,12 @@ export default async function EvolucaoPortalPage({
             className="flex items-center gap-3 text-xs mt-2 pt-2"
             style={{ borderTop: '1px solid var(--color-border-soft)', color: 'var(--color-ink-faint)' }}
           >
-            <span>Profissional: {(evolucao.profiles as any)?.nome}</span>
+            <span>
+              Profissional: {autoriaEvolucao({
+                autor_nome: (evolucao.profiles as any)?.nome,
+                autor_tipo_profissional: (evolucao.profiles as any)?.tipo_profissional,
+              }) ?? (evolucao.profiles as any)?.nome}
+            </span>
             {dataPublicacao && <span>· {dataPublicacao}</span>}
           </div>
         </div>

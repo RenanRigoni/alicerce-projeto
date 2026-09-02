@@ -372,11 +372,11 @@ export default function NovoUsuarioPage() {
               placeholder="email@exemplo.com"
               className="input-base"
             />
-            {form.role === 'pai' && (
-              <p className="text-xs mt-1" style={hint}>
-                Responsáveis sem e-mail fazem login via CPF ou telefone. Senha será definida via link.
-              </p>
-            )}
+            <p className="text-xs mt-1" style={hint}>
+              {form.role === 'pai'
+                ? 'Sem e-mail, o login é feito por CPF ou telefone — preencha um dos dois. A senha é definida por link.'
+                : 'Sem e-mail, o login é feito pelo CPF — preencha o CPF abaixo. A senha é definida por link.'}
+            </p>
           </div>
 
           {/* ── RESPONSÁVEL ────────────────────────────────── */}
@@ -594,9 +594,9 @@ export default function NovoUsuarioPage() {
           )}
 
           <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'var(--color-rose-blush)', color: 'var(--color-ink-mid)' }}>
-            {form.role === 'pai' && !form.email
-              ? <>Senha inicial: <strong>alicerce</strong> — sem e-mail cadastrado, compartilhe o link de definição de senha manualmente.</>
-              : <>Senha inicial: <strong>alicerce</strong> — usuário receberá e-mail para definir nova senha.</>
+            {form.email
+              ? <>Senha inicial: <strong>alicerce</strong> — usuário receberá e-mail para definir nova senha.</>
+              : <>Senha inicial: <strong>alicerce</strong> — sem e-mail cadastrado, compartilhe o link de definição de senha manualmente.</>
             }
           </div>
 

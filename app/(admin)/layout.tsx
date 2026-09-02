@@ -11,11 +11,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, role, permissoes, foto_url')
+    .select('nome, role, ativo, permissoes, foto_url')
     .eq('id', user.id)
     .single()
 
-  if (!profile || !['admin', 'recepcao'].includes(profile.role)) {
+  if (!profile || !profile.ativo || !['admin', 'recepcao'].includes(profile.role)) {
     redirect('/login')
   }
 

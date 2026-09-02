@@ -34,13 +34,23 @@ export async function POST(request: NextRequest) {
 
   const adminClient = createAdminClient()
 
-  const { data: profile } = await adminClient
+  // Sem filtro de role: profissionais cadastrados sem e-mail também precisam
+  // entrar pelo CPF. A senha continua sendo exigida normalmente.
+  const { data: perfis } = await adminClient
     .from('profiles')
     .select('id')
     .eq('cpf_cnpj', cpfDigits)
-    .eq('role', 'pai')
     .eq('ativo', true)
-    .single()
+    .limit(2)
+
+  if (perfis && perfis.length > 1) {
+    return NextResponse.json(
+      { error: 'Este CPF está cadastrado para mais de um usuário. Entre com o e-mail.' },
+      { status: 409 }
+    )
+  }
+
+  const profile = perfis?.[0] ?? null
 
   if (!profile) {
     return NextResponse.json({ error: 'CPF não encontrado ou usuário não autorizado' }, { status: 404 })

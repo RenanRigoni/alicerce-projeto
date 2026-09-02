@@ -28,6 +28,9 @@ function traduzirErroCriacao(mensagem: string): string {
   if (m.includes('unable to validate email') || m.includes('invalid format')) {
     return 'E-mail inválido. Verifique o endereço digitado.'
   }
+  if (m.includes('without either an email or phone')) {
+    return 'Informe um e-mail ou um CPF válido — sem um dos dois não é possível criar o acesso.'
+  }
   if (m.includes('database error')) {
     return 'Não foi possível salvar o cadastro: algum campo tem valor inválido (conselho, CBO, UF ou sexo). Revise os dados e tente novamente.'
   }
@@ -101,16 +104,39 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'UF do conselho inválida' }, { status: 400 })
   }
 
-  let emailEfetivo = email ?? ''
+  if (cboCodigo && !isCodigoCboValido(cboCodigo)) {
+    return NextResponse.json(
+      { error: 'Código CBO inválido. Use o formato 0000-00 (ex: 2238-10) ou deixe em branco.' },
+      { status: 400 }
+    )
+  }
+
+  // O trigger handle_new_user só cobre nome NULL; string vazia passa e o perfil
+  // fica sem nome, sumindo das buscas da recepção.
+  const nomeEfetivo = typeof nome === 'string' && nome.trim() ? nome.trim() : null
+
+  let emailEfetivo = typeof email === 'string' ? email.trim().toLowerCase() : ''
   let semEmail = false
 
-  if (role === 'pai') {
+  // E-mail é opcional para todos os perfis, não só para responsáveis: sem este
+  // fallback o Supabase recusava a criação com "Cannot create a user without
+  // either an email or phone" e a profissional simplesmente não era cadastrada.
+  if (!emailEfetivo) {
     const cpfDigits = normalizarCpfCnpj(cpf_cnpj ?? '')
-    if (!email) {
-      const identificador = cpfDigits.length === 11 ? cpfDigits : crypto.randomUUID().replace(/-/g, '')
-      emailEfetivo = gerarEmailInterno(identificador)
-      semEmail = true
+    const telefoneDigits = typeof telefone === 'string' ? telefone.replace(/\D/g, '') : ''
+    const temIdentificadorDeLogin =
+      cpfDigits.length === 11 || (role === 'pai' && telefoneDigits.length >= 10)
+
+    if (!temIdentificadorDeLogin) {
+      return NextResponse.json(
+        { error: 'Informe um e-mail ou um CPF — sem um dos dois o usuário não tem como entrar no sistema.' },
+        { status: 400 }
+      )
     }
+
+    const identificador = cpfDigits.length === 11 ? cpfDigits : crypto.randomUUID().replace(/-/g, '')
+    emailEfetivo = gerarEmailInterno(identificador)
+    semEmail = true
   }
 
   const adminClient = createAdminClient()
@@ -120,7 +146,7 @@ export async function POST(request: NextRequest) {
     password: SENHA_PADRAO,
     email_confirm: true,
     user_metadata: {
-      nome,
+      nome: nomeEfetivo ?? emailEfetivo,
       role,
       ...(tipoProfissional ? { tipo_profissional: tipoProfissional } : {}),
       ...(conselhoTipo ? { conselho_tipo: conselhoTipo } : {}),
@@ -137,10 +163,10 @@ export async function POST(request: NextRequest) {
   const userId = newUser.user.id
   const cpfCnpjNorm = cpf_cnpj ? normalizarCpfCnpj(cpf_cnpj) : null
 
-  await adminClient
+  const { error: perfilErro } = await adminClient
     .from('profiles')
     .update({
-      nome,
+      ...(nomeEfetivo ? { nome: nomeEfetivo } : {}),
       ...(telefone?.trim() ? { telefone: telefone.trim() } : {}),
       ...(tipoProfissional ? { tipo_profissional: tipoProfissional } : {}),
       ...(conselhoTipo ? { conselho_tipo: conselhoTipo } : {}),
@@ -153,6 +179,17 @@ export async function POST(request: NextRequest) {
       ...(role === 'pai' && sexo ? { sexo } : {}),
     })
     .eq('id', userId)
+
+  // Sem esta checagem o usuário ficava criado no Auth mas com o perfil vazio —
+  // sem nome e sem CPF, ele não aparecia direito na lista nem conseguia entrar
+  // pelo CPF, e a tela dizia que tinha dado tudo certo.
+  if (perfilErro) {
+    await adminClient.auth.admin.deleteUser(userId)
+    return NextResponse.json(
+      { error: `Não foi possível salvar os dados do cadastro: ${perfilErro.message}` },
+      { status: 400 }
+    )
+  }
 
   if (role === 'pai') {
     await adminClient.from('responsaveis_detalhes').upsert({
@@ -184,14 +221,14 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const convite = semEmail
-    ? { email_enviado: false, email_erro: null, link_recuperacao: null }
-    : await enviarConviteAcesso(adminClient, emailEfetivo)
+  // Também para quem foi cadastrado sem e-mail: o lib devolve o link de
+  // definição de senha para a recepção repassar por WhatsApp.
+  const convite = await enviarConviteAcesso(adminClient, emailEfetivo)
 
   return NextResponse.json({
     success: true,
     user_id: userId,
-    nome,
+    nome: nomeEfetivo ?? emailEfetivo,
     email: semEmail ? null : emailEfetivo,
     sem_email: semEmail,
     email_enviado: convite.email_enviado,

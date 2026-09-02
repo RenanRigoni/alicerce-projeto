@@ -33,11 +33,24 @@ export async function POST(request: NextRequest) {
 
   const adminClient = createAdminClient()
 
-  const { data: detalhe } = await adminClient
+  // Compara pela coluna gerada (só dígitos): parte dos registros tem o telefone
+  // gravado formatado, e a comparação direta com telefone_principal nunca casava.
+  const { data: detalhes } = await adminClient
     .from('responsaveis_detalhes')
     .select('id')
-    .eq('telefone_principal', telefoneDigits)
-    .single()
+    .eq('telefone_digits', telefoneDigits)
+    .limit(2)
+
+  // Mesmo telefone em dois responsáveis (mesma casa) é ambíguo — sem isso a
+  // pessoa só via "telefone não encontrado" e não sabia o que fazer.
+  if (detalhes && detalhes.length > 1) {
+    return NextResponse.json(
+      { error: 'Este telefone está cadastrado para mais de uma pessoa. Entre com o CPF ou o e-mail.' },
+      { status: 409 }
+    )
+  }
+
+  const detalhe = detalhes?.[0] ?? null
 
   if (!detalhe) {
     return NextResponse.json({ error: 'Telefone não encontrado ou usuário não autorizado' }, { status: 404 })
@@ -47,7 +60,7 @@ export async function POST(request: NextRequest) {
     .from('profiles')
     .select('ativo, role')
     .eq('id', detalhe.id)
-    .single()
+    .maybeSingle()
 
   if (!profile || !profile.ativo || profile.role !== 'pai') {
     return NextResponse.json({ error: 'Telefone não encontrado ou usuário não autorizado' }, { status: 404 })

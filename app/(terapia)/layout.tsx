@@ -11,11 +11,11 @@ export default async function TerapiaLayout({ children }: { children: React.Reac
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, role, permissoes, foto_url')
+    .select('nome, role, ativo, permissoes, foto_url')
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'terapeuta') redirect('/login')
+  if (!profile || !profile.ativo || profile.role !== 'terapeuta') redirect('/login')
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--color-sage-light)' }}>

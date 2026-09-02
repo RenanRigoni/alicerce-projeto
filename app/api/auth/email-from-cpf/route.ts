@@ -27,9 +27,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'CPF não informado' }, { status: 400 })
   }
 
+  // 14 dígitos: profissional cadastrado com CNPJ. Antes só 11 era aceito e ele
+  // ficava sem forma de entrar quando não tinha e-mail.
   const cpfDigits = String(body.cpf).replace(/\D/g, '')
-  if (cpfDigits.length !== 11) {
-    return NextResponse.json({ error: 'CPF inválido' }, { status: 400 })
+  if (![11, 14].includes(cpfDigits.length)) {
+    return NextResponse.json({ error: 'CPF ou CNPJ inválido' }, { status: 400 })
   }
 
   const adminClient = createAdminClient()

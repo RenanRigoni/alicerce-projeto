@@ -47,6 +47,11 @@ async function resolverEmail(identificador: string): Promise<string | null> {
     return resolverEmailPorTelefone(valor)
   }
 
+  // 14 dígitos = CNPJ (profissional PJ)
+  if (digits.length === 14) {
+    return resolverEmailPorCpf(valor)
+  }
+
   // 11 dígitos: CPF tem '.' sem '('; senão tenta CPF e cai no telefone
   if (digits.length === 11) {
     if (valor.includes('.') && !valor.includes('(')) {

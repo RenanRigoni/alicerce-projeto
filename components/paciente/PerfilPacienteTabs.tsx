@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { AbaDadosClinicos } from './AbaDadosClinicos'
 import { DeletarPacienteButton } from '@/components/admin/DeletarPacienteButton'
 import { FiltroEvolucoes, autoriaEvolucao, useFiltroEvolucoes } from '@/components/evolucao/filtro-evolucoes'
+import { ModalPortal } from '@/components/ui/ModalPortal'
 
 // ── Tipos ────────────────────────────────────────────────────
 
@@ -1441,6 +1442,7 @@ export function PerfilPacienteTabs({
 
     {/* Modal: editar orientação */}
     {editandoOri && (
+      <ModalPortal>
       <div
         className="fixed inset-0 flex items-center justify-center z-50 px-4 py-6 overflow-y-auto"
         style={{ background: 'rgba(44,32,24,0.4)' }}
@@ -1522,10 +1524,12 @@ export function PerfilPacienteTabs({
           </div>
         </div>
       </div>
+      </ModalPortal>
     )}
 
     {/* Modal: ver relatório completo */}
     {modalRel && (
+      <ModalPortal>
       <div
         className="fixed inset-0 flex items-center justify-center z-50 p-4"
         style={{ background: 'rgba(44,32,24,0.5)' }}
@@ -1608,10 +1612,12 @@ export function PerfilPacienteTabs({
           </div>
         </div>
       </div>
+      </ModalPortal>
     )}
 
     {/* Modal: vincular responsável existente */}
     {modalResp && (
+      <ModalPortal>
       <div
         className="fixed inset-0 flex items-center justify-center z-50 p-4"
         style={{ background: 'rgba(44,32,24,0.4)' }}
@@ -1688,6 +1694,7 @@ export function PerfilPacienteTabs({
           </div>
         </div>
       </div>
+      </ModalPortal>
     )}
     </>
   )

@@ -254,7 +254,9 @@ h1, h2, h3, h4 {
 /* ─── Animações ──────────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  /* 'to' evita transform residual: com fill-mode 'both', qualquer transform != none
+     no fim da animação vira containing block e quebra position:fixed dos modais */
+  to   { opacity: 1; transform: none; }
 }
 
 .animate-fade-up {

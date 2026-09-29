@@ -2,7 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useMemo, type FormEvent } from 'react'
-import { Trash2, Calendar, MessageCircle, Lock } from 'lucide-react'
+import { Trash2, Calendar, MessageCircle, Lock, CalendarPlus } from 'lucide-react'
+import { LABEL_DIA, diaDaSemanaBRT, horaBRT } from '@/lib/agenda/horarios-fixos'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,6 +18,13 @@ export interface EventoAgenda {
   confirmacao?: { token: string; status: string } | null
   terapeutaId?: string | null
   terapeutaNome?: string | null
+  /** 'recorrente' = projetada do horário fixo; 'agendamento' = linha gravada */
+  origem?: 'recorrente' | 'agendamento'
+}
+
+export interface PacienteAgendavel {
+  id: string
+  nome: string
 }
 
 interface Feriado {
@@ -31,6 +39,9 @@ interface Props {
   hideFab?: boolean
   terapeutasFiltro?: Array<{ id: string; nome: string }>
   onFiltroChange?: (terapeutaId: string, pacienteId: string) => void
+  /** Libera tocar em horário vago para agendar e desmarcar atendimentos */
+  podeMontarAgenda?: boolean
+  pacientesAgendaveis?: PacienteAgendavel[]
 }
 
 interface ConflitoBloqueio {
@@ -368,11 +379,13 @@ function ViewDia({
   eventos,
   feriados,
   onEventClick,
+  onSlotClick,
 }: {
   dia: Date
   eventos: EventoAgenda[]
   feriados: Feriado[]
   onEventClick: (e: EventoAgenda) => void
+  onSlotClick?: (dateStr: string, hora: string) => void
 }) {
   const evs = getEventosForDate(dia, eventos)
   const feriado = getFeriadoForDate(dia, feriados)
@@ -440,6 +453,27 @@ function ViewDia({
           {Array.from({ length: HORA_FIM - HORA_INICIO }, (_, i) => (
             <div key={`h${i}`} className="absolute inset-x-0" style={{ top: (i + 0.5) * PX_POR_HORA, borderTop: '1px dashed var(--color-border-soft)', opacity: 0.4 }} />
           ))}
+          {/* Faixas de 30min clicáveis. Ficam atrás dos eventos, que são desenhados depois. */}
+          {onSlotClick && Array.from({ length: (HORA_FIM - HORA_INICIO) * 2 }, (_, i) => {
+            const hora = `${String(HORA_INICIO + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`
+            return (
+              <button
+                key={`slot${i}`}
+                type="button"
+                onClick={() => onSlotClick(localDateStr(dia), hora)}
+                aria-label={`Agendar às ${hora}`}
+                className="absolute inset-x-0 group"
+                style={{ top: i * (PX_POR_HORA / 2), height: PX_POR_HORA / 2 }}
+              >
+                <span
+                  className="flex h-full items-center justify-center text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                  style={{ background: 'var(--color-rose-blush)', color: 'var(--color-rose-deep)' }}
+                >
+                  + {hora}
+                </span>
+              </button>
+            )
+          })}
           {agoraTop !== null && (
             <div className="absolute inset-x-0 z-10 flex items-center" style={{ top: agoraTop }}>
               <div className="w-2.5 h-2.5 rounded-full -ml-1.5 flex-shrink-0" style={{ background: 'var(--color-rose-main)' }} />
@@ -589,6 +623,10 @@ function ModalEvento({
   removerBloqueioLoading,
   removerBloqueioErro,
   pacienteHref = '/terapia/paciente',
+  podeMontarAgenda = false,
+  onDesmarcar,
+  desmarcarLoading = false,
+  desmarcarErro = null,
 }: {
   evento: EventoAgenda
   onClose: () => void
@@ -599,8 +637,13 @@ function ModalEvento({
   removerBloqueioLoading: boolean
   removerBloqueioErro: string | null
   pacienteHref?: string
+  podeMontarAgenda?: boolean
+  onDesmarcar?: (alvo: 'avulso' | 'ocorrencia' | 'recorrente') => void
+  desmarcarLoading?: boolean
+  desmarcarErro?: string | null
 }) {
   const [confirmandoRemover, setConfirmandoRemover] = useState(false)
+  const [confirmandoFixo, setConfirmandoFixo] = useState(false)
   const s = tipoStyle[evento.tipo] ?? tipoStyle.outro
   const confirmacaoStatus = waConfirmacao?.status ?? evento.confirmacao?.status ?? null
   const podaEnviarWA =
@@ -753,6 +796,72 @@ function ModalEvento({
             </div>
           )}
 
+          {/* Desmarcar — o que aparece depende de ser sessão fixa ou avulsa */}
+          {podeMontarAgenda && evento.paciente && evento.tipo !== 'bloqueio' && (
+            <div className="pt-1 space-y-2">
+              {desmarcarErro && (
+                <div className="text-xs rounded-xl px-3 py-2" style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: '1px solid var(--color-danger-border)' }}>
+                  {desmarcarErro}
+                </div>
+              )}
+
+              {evento.origem === 'agendamento' ? (
+                <button
+                  onClick={() => onDesmarcar?.('avulso')}
+                  disabled={desmarcarLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-85 disabled:opacity-50"
+                  style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: '1px solid var(--color-danger-border)' }}
+                >
+                  <Trash2 size={14} aria-hidden="true" />
+                  {desmarcarLoading ? 'Removendo…' : 'Remover este atendimento'}
+                </button>
+              ) : confirmandoFixo ? (
+                <div className="rounded-xl px-3 py-2.5 space-y-2" style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)' }}>
+                  <p className="text-xs font-medium" style={{ color: 'var(--color-danger-text)' }}>
+                    Encerrar o horário fixo de {evento.paciente.nome}? Ele sai da sua agenda em todas as semanas seguintes.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onDesmarcar?.('recorrente')}
+                      disabled={desmarcarLoading}
+                      className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-opacity hover:opacity-85 disabled:opacity-50"
+                      style={{ background: 'var(--color-danger-text)', color: 'var(--color-warm-white)' }}
+                    >
+                      {desmarcarLoading ? 'Encerrando…' : 'Sim, encerrar'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmandoFixo(false)}
+                      className="flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-opacity hover:opacity-85"
+                      style={{ background: 'var(--color-warm-white)', color: 'var(--color-ink-mid)', border: '1px solid var(--color-border)' }}
+                    >
+                      Voltar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => onDesmarcar?.('ocorrencia')}
+                    disabled={desmarcarLoading || confirmacaoStatus === 'cancelada'}
+                    className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-85 disabled:opacity-40"
+                    style={{ background: 'var(--color-status-cancelada-bg)', color: 'var(--color-status-cancelada-text)', border: '1px solid var(--color-status-cancelada-border)' }}
+                  >
+                    {confirmacaoStatus === 'cancelada'
+                      ? 'Já desmarcada neste dia'
+                      : desmarcarLoading ? 'Desmarcando…' : 'Desmarcar só neste dia'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmandoFixo(true)}
+                    className="w-full px-4 py-2 rounded-xl text-xs font-medium transition-opacity hover:opacity-85"
+                    style={{ background: 'transparent', color: 'var(--color-ink-soft)', border: '1px solid var(--color-border)' }}
+                  >
+                    Encerrar o horário fixo de toda semana
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {evento.tipo === 'bloqueio' && onRemoverBloqueio && (
             <div className="pt-1 space-y-2">
               {removerBloqueioErro && (
@@ -799,9 +908,253 @@ function ModalEvento({
   )
 }
 
+// ── ModalAgendar ──────────────────────────────────────────────────────────────
+
+function ModalAgendar({
+  slot,
+  pacientes,
+  onClose,
+  onPronto,
+}: {
+  slot: { data: string; hora: string }
+  pacientes: PacienteAgendavel[]
+  onClose: () => void
+  onPronto: () => void
+}) {
+  const [data, setData] = useState(slot.data)
+  const [hora, setHora] = useState(slot.hora)
+  const [duracao, setDuracao] = useState('50')
+  const [modo, setModo] = useState<'avulso' | 'recorrente'>('avulso')
+  const [pacienteId, setPacienteId] = useState('')
+  const [busca, setBusca] = useState('')
+  const [erro, setErro] = useState<string | null>(null)
+  const [conflitos, setConflitos] = useState<ConflitoBloqueio[]>([])
+  const [salvando, setSalvando] = useState(false)
+
+  const filtrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase()
+    if (!termo) return pacientes
+    return pacientes.filter(p => p.nome.toLowerCase().includes(termo))
+  }, [busca, pacientes])
+
+  const dataHoraISO = toIsoBRT(data, hora)
+  const diaFixo = LABEL_DIA[diaDaSemanaBRT(dataHoraISO)] ?? null
+  const podeSalvar = !!pacienteId && !!data && !!hora && !salvando
+
+  async function salvar(ignorarConflito: boolean) {
+    setSalvando(true)
+    setErro(null)
+    try {
+      const res = await fetch('/api/terapeuta/agenda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modo,
+          paciente_id: pacienteId,
+          data_hora: dataHoraISO,
+          duracao_minutos: Number(duracao),
+          ignorar_conflito: ignorarConflito,
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+
+      if (res.status === 409) {
+        setConflitos(json.conflitos ?? [])
+        return
+      }
+      if (!res.ok) {
+        setErro(json.error ?? 'Erro ao agendar.')
+        return
+      }
+      onPronto()
+    } catch {
+      setErro('Erro de conexão. Tente de novo.')
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  const inputStyle = {
+    border: '1px solid var(--color-border)',
+    background: 'var(--color-warm-white)',
+    color: 'var(--color-ink)',
+  }
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={{ background: 'rgba(44,32,24,0.4)' }}
+      onClick={onClose}
+    >
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-agendar-titulo"
+        onSubmit={e => { e.preventDefault(); salvar(false) }}
+        className="rounded-2xl p-5 max-w-sm w-full space-y-4 max-h-[90vh] overflow-y-auto"
+        style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <h3 id="modal-agendar-titulo" className="font-semibold" style={{ color: 'var(--color-ink)' }}>
+            Agendar atendimento
+          </h3>
+          <button type="button" onClick={onClose} aria-label="Fechar" className="text-lg leading-none transition-opacity hover:opacity-60" style={{ color: 'var(--color-ink-faint)' }}>×</button>
+        </div>
+
+        {/* Data e hora vêm do horário tocado, mas seguem editáveis para encaixe fora da grade */}
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-xs font-medium" style={{ color: 'var(--color-ink-soft)' }}>
+            Data
+            <input
+              type="date"
+              value={data}
+              onChange={e => { setData(e.target.value); setConflitos([]) }}
+              className="mt-1 w-full rounded-xl px-3 py-2 text-sm outline-none"
+              style={inputStyle}
+              required
+            />
+          </label>
+          <label className="text-xs font-medium" style={{ color: 'var(--color-ink-soft)' }}>
+            Hora
+            <input
+              type="time"
+              value={hora}
+              step={300}
+              onChange={e => { setHora(e.target.value); setConflitos([]) }}
+              className="mt-1 w-full rounded-xl px-3 py-2 text-sm outline-none"
+              style={inputStyle}
+              required
+            />
+          </label>
+        </div>
+
+        <label className="text-xs font-medium block" style={{ color: 'var(--color-ink-soft)' }}>
+          Paciente
+          {pacientes.length > 8 && (
+            <input
+              type="search"
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              placeholder="Buscar por nome"
+              className="mt-1 w-full rounded-xl px-3 py-2 text-sm outline-none"
+              style={inputStyle}
+            />
+          )}
+          <select
+            value={pacienteId}
+            onChange={e => { setPacienteId(e.target.value); setConflitos([]) }}
+            className="mt-1 w-full rounded-xl px-3 py-2 text-sm outline-none"
+            style={inputStyle}
+            required
+          >
+            <option value="">Selecione o paciente</option>
+            {filtrados.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
+          {filtrados.length === 0 && (
+            <span className="text-xs mt-1 block" style={{ color: 'var(--color-ink-faint)' }}>
+              Nenhum paciente encontrado.
+            </span>
+          )}
+        </label>
+
+        <label className="text-xs font-medium block" style={{ color: 'var(--color-ink-soft)' }}>
+          Duração
+          <select
+            value={duracao}
+            onChange={e => { setDuracao(e.target.value); setConflitos([]) }}
+            className="mt-1 w-full rounded-xl px-3 py-2 text-sm outline-none"
+            style={inputStyle}
+          >
+            {['30', '45', '50', '60', '90'].map(d => <option key={d} value={d}>{d} minutos</option>)}
+          </select>
+        </label>
+
+        <fieldset className="space-y-2">
+          <legend className="text-xs font-medium" style={{ color: 'var(--color-ink-soft)' }}>Repetição</legend>
+          {([
+            { valor: 'avulso' as const, titulo: 'Só nesse dia', detalhe: 'Atendimento único nesta data' },
+            { valor: 'recorrente' as const, titulo: 'Toda semana', detalhe: diaFixo ? `Fixa o paciente toda ${diaFixo} às ${hora}` : 'A clínica não atende neste dia' },
+          ]).map(opcao => (
+            <label
+              key={opcao.valor}
+              className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 cursor-pointer"
+              style={{
+                border: `1px solid ${modo === opcao.valor ? 'var(--color-rose-main)' : 'var(--color-border)'}`,
+                background: modo === opcao.valor ? 'var(--color-rose-blush)' : 'transparent',
+              }}
+            >
+              <input
+                type="radio"
+                name="modo"
+                value={opcao.valor}
+                checked={modo === opcao.valor}
+                onChange={() => { setModo(opcao.valor); setConflitos([]) }}
+                disabled={opcao.valor === 'recorrente' && !diaFixo}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="text-sm font-medium block" style={{ color: 'var(--color-ink)' }}>{opcao.titulo}</span>
+                <span className="text-xs block" style={{ color: 'var(--color-ink-soft)' }}>{opcao.detalhe}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+
+        {conflitos.length > 0 && (
+          <div
+            className="rounded-xl p-3 space-y-2"
+            style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)' }}
+          >
+            <p className="text-xs font-medium" style={{ color: 'var(--color-amber-main)' }}>
+              Você já tem algo nesse horário:
+            </p>
+            <ul className="text-xs space-y-0.5" style={{ color: 'var(--color-ink-mid)' }}>
+              {conflitos.map(c => (
+                <li key={c.id}>• {c.titulo} — {formatarDataHora(c.data_hora)}</li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => salvar(true)}
+              disabled={salvando}
+              className="w-full rounded-xl px-3 py-2 text-xs font-semibold transition-opacity hover:opacity-85 disabled:opacity-50"
+              style={{ background: 'var(--color-amber-main)', color: 'var(--color-warm-white)' }}
+            >
+              Agendar mesmo assim
+            </button>
+          </div>
+        )}
+
+        {erro && (
+          <p className="text-xs" style={{ color: 'var(--color-status-cancelada-text)' }}>{erro}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={!podeSalvar}
+          className="w-full rounded-xl px-4 py-3 text-sm font-semibold transition-opacity hover:opacity-85 disabled:opacity-50"
+          style={{ background: 'var(--color-rose-main)', color: 'var(--color-warm-white)' }}
+        >
+          {salvando ? 'Agendando…' : 'Agendar'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
 // ── Main: CalendarioAgenda ────────────────────────────────────────────────────
 
-export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/paciente', hideFab = false, terapeutasFiltro, onFiltroChange }: Props) {
+export function CalendarioAgenda({
+  eventos,
+  feriados,
+  pacienteHref = '/terapia/paciente',
+  hideFab = false,
+  terapeutasFiltro,
+  onFiltroChange,
+  podeMontarAgenda = false,
+  pacientesAgendaveis = [],
+}: Props) {
   const router = useRouter()
 
   const [view, setView] = useState<ViewType>('semana')
@@ -838,6 +1191,44 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
   } | null>(null)
   const [reposicaoAberta, setReposicaoAberta] = useState(false)
   const [reposicaoSlot, setReposicaoSlot] = useState<string | null>(null)
+
+  const [agendarSlot, setAgendarSlot] = useState<{ data: string; hora: string } | null>(null)
+  const [desmarcarErro, setDesmarcarErro] = useState<string | null>(null)
+  const [desmarcarLoading, setDesmarcarLoading] = useState(false)
+
+  async function handleDesmarcar(evento: EventoAgenda, alvo: 'avulso' | 'ocorrencia' | 'recorrente') {
+    setDesmarcarLoading(true)
+    setDesmarcarErro(null)
+    try {
+      const corpo =
+        alvo === 'avulso'
+          ? { alvo, id: evento.id }
+          : alvo === 'ocorrencia'
+            ? { alvo, paciente_id: evento.paciente?.id, data_hora: evento.data_hora }
+            : {
+                alvo,
+                paciente_id: evento.paciente?.id,
+                horario: { dia: diaDaSemanaBRT(evento.data_hora), hora: horaBRT(evento.data_hora) },
+              }
+
+      const res = await fetch('/api/terapeuta/agenda', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(corpo),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setDesmarcarErro(json.error ?? 'Erro ao desmarcar.')
+        return
+      }
+      setEventoAberto(null)
+      router.refresh()
+    } catch {
+      setDesmarcarErro('Erro de conexão. Tente de novo.')
+    } finally {
+      setDesmarcarLoading(false)
+    }
+  }
 
   useEffect(() => {
     setWaConfirmacao(null)
@@ -1228,6 +1619,7 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
                 eventos={eventosFiltrados}
                 feriados={feriadosFiltrados}
                 onEventClick={setEventoAberto}
+                onSlotClick={podeMontarAgenda ? (data, hora) => setAgendarSlot({ data, hora }) : undefined}
               />
             )}
 
@@ -1376,6 +1768,19 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
       {!hideFab && <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
         {fabAberto && (
           <div className="flex flex-col items-end gap-2 mb-1 animate-in fade-in slide-in-from-bottom-2">
+            {podeMontarAgenda && (
+              <button
+                onClick={() => {
+                  setFabAberto(false)
+                  setAgendarSlot({ data: localDateStr(dataBase), hora: horaInputInicial() })
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium shadow-lg transition-all hover:opacity-90 whitespace-nowrap"
+                style={{ background: 'var(--color-warm-white)', color: 'var(--color-ink)', border: '1px solid var(--color-border)' }}
+              >
+                <CalendarPlus size={14} aria-hidden="true" />
+                Agendar atendimento
+              </button>
+            )}
             <button
               onClick={() => { setFabAberto(false); setBloqueioAberto(true) }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium shadow-lg transition-all hover:opacity-90 whitespace-nowrap"
@@ -1453,6 +1858,20 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
           removerBloqueioLoading={removerBloqueioLoading}
           removerBloqueioErro={removerBloqueioErro}
           pacienteHref={pacienteHref}
+          podeMontarAgenda={podeMontarAgenda}
+          onDesmarcar={alvo => handleDesmarcar(eventoAberto, alvo)}
+          desmarcarLoading={desmarcarLoading}
+          desmarcarErro={desmarcarErro}
+        />
+      )}
+
+      {/* ── Modal: agendar atendimento ────────────────────────────────────────── */}
+      {agendarSlot && (
+        <ModalAgendar
+          slot={agendarSlot}
+          pacientes={pacientesAgendaveis}
+          onClose={() => setAgendarSlot(null)}
+          onPronto={() => { setAgendarSlot(null); router.refresh() }}
         />
       )}
 

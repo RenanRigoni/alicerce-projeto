@@ -45,7 +45,7 @@ export default async function AgendamentosPage() {
         pacientes(id, nome),
         profiles!agendamentos_terapeuta_id_fkey(id, nome)
       `)
-      .neq('tipo', 'sessao')
+      // Inclui tipo 'sessao': agendamentos avulsos ficavam invisíveis na agenda
       .gte('data_hora', inicio.toISOString())
       .order('data_hora'),
     supabase
@@ -119,9 +119,21 @@ export default async function AgendamentosPage() {
 
   const sessoesRec = gerarSessoes(pacientesParaGerar, inicio, fim, feriadosDatas)
 
+  // Linha gravada vence a sessão projetada, e duplicatas no mesmo horário viram uma só
+  const avulsosPorChave = new Map<string, any>()
+  for (const a of (especiais ?? []) as any[]) {
+    if (a.tipo !== 'sessao' || !a.pacientes?.id) continue
+    const chave = `${a.pacientes.id}|${new Date(a.data_hora).toISOString()}`
+    if (!avulsosPorChave.has(chave)) avulsosPorChave.set(chave, a)
+  }
+  const idsAvulsosMantidos = new Set([...avulsosPorChave.values()].map(a => a.id))
+  const ehAvulsoDuplicado = (a: any) => a.tipo === 'sessao' && !idsAvulsosMantidos.has(a.id)
+  const temAvulso = (pacienteId: string, dataHora: string) =>
+    avulsosPorChave.has(`${pacienteId}|${new Date(dataHora).toISOString()}`)
+
   // ── Eventos para o CalendarioAgenda ──────────────────────────────────────
   const eventosList: EventoAgenda[] = [
-    ...sessoesRec.map(s => {
+    ...sessoesRec.filter(s => !s.paciente || !temAvulso(s.paciente.id, s.data_hora)).map(s => {
       const brtDate = s.data_hora.slice(0, 10)
       const brtHora = s.data_hora.slice(11, 16)
       const confirmacao = s.paciente
@@ -141,7 +153,7 @@ export default async function AgendamentosPage() {
         terapeutaNome: terapeuta?.nome ?? null,
       }
     }),
-    ...(especiais ?? []).map((a: any) => ({
+    ...(especiais ?? []).filter((a: any) => !ehAvulsoDuplicado(a)).map((a: any) => ({
       id: a.id,
       tipo: a.tipo as string,
       titulo: a.titulo as string,
@@ -164,7 +176,7 @@ export default async function AgendamentosPage() {
   const sessoesRec14 = gerarSessoes(pacientesParaGerar, hoje, em14dias, feriadosDatas)
 
   const proximos: AgendamentoItem[] = [
-    ...sessoesRec14.map(s => {
+    ...sessoesRec14.filter(s => !s.paciente || !temAvulso(s.paciente.id, s.data_hora)).map(s => {
       const brtDate = s.data_hora.slice(0, 10)
       const brtHora = s.data_hora.slice(11, 16)
       const confirmacao = s.paciente
@@ -186,6 +198,7 @@ export default async function AgendamentosPage() {
       }
     }),
     ...(especiais ?? [])
+      .filter((a: any) => !ehAvulsoDuplicado(a))
       .filter((a: any) => a.data_hora >= hoje.toISOString() && a.data_hora <= em14dias.toISOString())
       .map((a: any) => ({
         id: a.id,

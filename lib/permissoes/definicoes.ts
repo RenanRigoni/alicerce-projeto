@@ -99,6 +99,7 @@ export const PERMISSOES_APLICAVEIS_POR_ROLE: Record<string, readonly Permissao[]
     'desativar_reativar_paciente',
     'gerenciar_responsaveis',
     'vincular_terapeutas',
+    'criar_agendamentos',
     'registrar_alta',
   ],
   pai: [

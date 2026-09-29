@@ -80,6 +80,17 @@ const confirmacaoConfig: Record<string, { label: string; icon: string; bg: strin
   expirada:   { icon: '⚠️', label: 'Expirada — confirmada para cobrança', bg: 'var(--color-status-expirada-bg)',   color: 'var(--color-status-expirada-text)',   border: 'var(--color-status-expirada-border)' },
 }
 
+// Sessão cancelada continua visível na agenda, mas apagada: o horário está livre
+const OPACIDADE_CANCELADA = 0.5
+
+function foiCancelada(ev: Pick<EventoAgenda, 'confirmacao'>): boolean {
+  return ev.confirmacao?.status === 'cancelada'
+}
+
+function riscadoSeCancelada(cancelada: boolean) {
+  return cancelada ? ({ textDecoration: 'line-through' } as const) : undefined
+}
+
 const VIEWS: Array<{ key: ViewType; label: string }> = [
   { key: 'dia',         label: 'Dia' },
   { key: 'semana',      label: 'Semana' },
@@ -441,17 +452,19 @@ function ViewDia({
             const top = Math.max(0, minDesde * PX_POR_HORA / 60)
             const height = Math.max(ev.duracao_minutos * PX_POR_HORA / 60, 32)
             const s = tipoStyle[ev.tipo] ?? tipoStyle.outro
+            const cancelada = foiCancelada(ev)
             return (
               <button
                 key={ev.id}
                 onClick={() => onEventClick(ev)}
                 className="absolute left-1 right-1 rounded-lg px-2.5 py-1.5 text-left transition-opacity hover:opacity-85 overflow-hidden shadow-sm"
-                style={{ top, height, background: s.background, border: `1px solid ${s.border}`, color: s.color }}
+                style={{ top, height, background: s.background, border: `1px solid ${s.border}`, color: s.color, opacity: cancelada ? OPACIDADE_CANCELADA : undefined }}
+                title={cancelada ? confirmacaoConfig.cancelada.label : undefined}
               >
-                <div className="text-xs font-bold leading-tight">
+                <div className="text-xs font-bold leading-tight" style={riscadoSeCancelada(cancelada)}>
                   {horaEvento(ev.data_hora)} – {horaFimEvento(ev.data_hora, ev.duracao_minutos)}
                 </div>
-                <div className="text-xs leading-tight truncate font-medium" style={{ color: 'var(--color-ink)' }}>
+                <div className="text-xs leading-tight truncate font-medium" style={{ color: 'var(--color-ink)', ...riscadoSeCancelada(cancelada) }}>
                   {ev.paciente?.nome ?? ev.titulo}
                 </div>
                 {height > 46 && (
@@ -505,11 +518,17 @@ function ViewProgramacao({
               {feriado && !hoje && (
                 <span className="text-xs" style={{ color: 'var(--color-feriado-text)' }}>• {feriado.descricao}</span>
               )}
-              {evs.length > 0 && (
-                <span className="text-xs ml-auto" style={{ color: 'var(--color-ink-faint)' }}>
-                  {evs.length} atendimento{evs.length !== 1 ? 's' : ''}
-                </span>
-              )}
+              {evs.length > 0 && (() => {
+                // Canceladas continuam na lista, mas não contam como atendimento do dia
+                const ativos = evs.filter(e => !foiCancelada(e)).length
+                const canceladas = evs.length - ativos
+                return (
+                  <span className="text-xs ml-auto" style={{ color: 'var(--color-ink-faint)' }}>
+                    {ativos} atendimento{ativos !== 1 ? 's' : ''}
+                    {canceladas > 0 ? ` · ${canceladas} cancelada${canceladas !== 1 ? 's' : ''}` : ''}
+                  </span>
+                )
+              })()}
             </div>
 
             {evs.length === 0 ? (
@@ -519,20 +538,21 @@ function ViewProgramacao({
                 {evs.map(ev => {
                   const s = tipoStyle[ev.tipo] ?? tipoStyle.outro
                   const status = ev.confirmacao?.status
+                  const cancelada = foiCancelada(ev)
                   return (
                     <button
                       key={ev.id}
                       onClick={() => onEventClick(ev)}
                       className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-3 transition-opacity hover:opacity-85 shadow-sm"
-                      style={{ background: s.background, border: `1px solid ${s.border}` }}
+                      style={{ background: s.background, border: `1px solid ${s.border}`, opacity: cancelada ? OPACIDADE_CANCELADA : undefined }}
                     >
                       <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: s.color }} />
                       <div className="flex-shrink-0 text-center" style={{ minWidth: 52 }}>
-                        <div className="text-sm font-bold" style={{ color: s.color }}>{horaEvento(ev.data_hora)}</div>
+                        <div className="text-sm font-bold" style={{ color: s.color, ...riscadoSeCancelada(cancelada) }}>{horaEvento(ev.data_hora)}</div>
                         <div className="text-xs" style={{ color: s.color, opacity: 0.7 }}>{ev.duracao_minutos}min</div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold truncate" style={{ color: 'var(--color-ink)' }}>
+                        <div className="text-sm font-semibold truncate" style={{ color: 'var(--color-ink)', ...riscadoSeCancelada(cancelada) }}>
                           {ev.paciente?.nome ?? ev.titulo}
                         </div>
                         <div className="text-xs mt-0.5" style={{ color: s.color }}>
@@ -1241,15 +1261,17 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
                       <div className="space-y-1">
                         {evs.map(ev => {
                           const st = tipoStyle[ev.tipo] ?? tipoStyle.outro
+                          const cancelada = foiCancelada(ev)
                           return (
                             <button
                               key={ev.id}
                               onClick={() => setEventoAberto(ev)}
                               className="w-full text-left rounded px-1.5 py-1 transition-opacity hover:opacity-80"
-                              style={{ background: st.background, color: st.color, border: `1px solid ${st.border}` }}
+                              style={{ background: st.background, color: st.color, border: `1px solid ${st.border}`, opacity: cancelada ? OPACIDADE_CANCELADA : undefined }}
+                              title={cancelada ? confirmacaoConfig.cancelada.label : undefined}
                             >
-                              <div className="text-xs font-semibold">{horaEvento(ev.data_hora)}</div>
-                              <div className="text-xs leading-tight truncate">{ev.paciente?.nome.split(' ')[0] ?? ev.titulo}</div>
+                              <div className="text-xs font-semibold" style={riscadoSeCancelada(cancelada)}>{horaEvento(ev.data_hora)}</div>
+                              <div className="text-xs leading-tight truncate" style={riscadoSeCancelada(cancelada)}>{ev.paciente?.nome.split(' ')[0] ?? ev.titulo}</div>
                             </button>
                           )
                         })}
@@ -1294,14 +1316,17 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
                           {feriado && <span className="ml-1" style={{ color: 'var(--color-feriado-soft)' }}>•</span>}
                         </div>
                         <div className="space-y-0.5">
-                          {evs.slice(0, 2).map(ev => {
+                          {/* No mês só cabem 2: canceladas cedem a vez para quem ainda vai acontecer */}
+                          {[...evs].sort((a, b) => Number(foiCancelada(a)) - Number(foiCancelada(b))).slice(0, 2).map(ev => {
                             const st = tipoStyle[ev.tipo] ?? tipoStyle.outro
+                            const cancelada = foiCancelada(ev)
                             return (
                               <button
                                 key={ev.id}
                                 onClick={() => setEventoAberto(ev)}
                                 className="w-full text-left text-xs px-1 rounded truncate transition-opacity hover:opacity-80"
-                                style={{ background: st.background, color: st.color }}
+                                style={{ background: st.background, color: st.color, opacity: cancelada ? OPACIDADE_CANCELADA : undefined, ...riscadoSeCancelada(cancelada) }}
+                                title={cancelada ? confirmacaoConfig.cancelada.label : undefined}
                               >
                                 {horaEvento(ev.data_hora)} {ev.paciente?.nome.split(' ')[0] ?? ev.titulo}
                               </button>
@@ -1396,15 +1421,18 @@ export function CalendarioAgenda({ eventos, feriados, pacienteHref = '/terapia/p
             <div className="space-y-2">
               {diaAberto.evs.map(ev => {
                 const st = tipoStyle[ev.tipo] ?? tipoStyle.outro
+                const cancelada = foiCancelada(ev)
                 return (
                   <button
                     key={ev.id}
                     onClick={() => { setDiaAberto(null); setEventoAberto(ev) }}
                     className="w-full text-left rounded-xl px-3 py-2 transition-opacity hover:opacity-80"
-                    style={{ background: st.background, border: `1px solid ${st.border}` }}
+                    style={{ background: st.background, border: `1px solid ${st.border}`, opacity: cancelada ? OPACIDADE_CANCELADA : undefined }}
                   >
-                    <div className="text-xs font-medium" style={{ color: st.color }}>{horaEvento(ev.data_hora)} · {tipoLabel[ev.tipo] ?? ev.tipo}</div>
-                    <div className="text-sm" style={{ color: 'var(--color-ink)' }}>{ev.paciente?.nome ?? ev.titulo}</div>
+                    <div className="text-xs font-medium" style={{ color: st.color }}>
+                      {horaEvento(ev.data_hora)} · {cancelada ? confirmacaoConfig.cancelada.label : (tipoLabel[ev.tipo] ?? ev.tipo)}
+                    </div>
+                    <div className="text-sm" style={{ color: 'var(--color-ink)', ...riscadoSeCancelada(cancelada) }}>{ev.paciente?.nome ?? ev.titulo}</div>
                   </button>
                 )
               })}

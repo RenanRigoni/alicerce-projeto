@@ -79,7 +79,7 @@ export default async function AgendaPage() {
         ? (confirmacaoMap.get(`${s.paciente.id}_${brtDate}_${brtHora}`) ?? null)
         : null
       return { ...s, confirmacao }
-    }).filter(s => s.confirmacao?.status !== 'cancelada'),
+    }),
     ...(especiais ?? []).map((a: any) => ({
       id: a.id,
       tipo: a.tipo as string,

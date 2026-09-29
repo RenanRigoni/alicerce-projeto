@@ -242,7 +242,6 @@ export default async function AdminDashboard() {
   for (const s of sessoesHoje) {
     const key = `${s.paciente!.id}|${new Date(s.data_hora).toISOString()}`
     const status = confirmMap.get(key)
-    if (status === 'cancelada') continue
     agendaHoje.push({ hora: s.data_hora.slice(11, 16), nome: s.paciente!.nome, status: status ?? 'sem_envio' })
   }
   for (const a of agendamentosHoje ?? []) {
@@ -385,7 +384,10 @@ export default async function AdminDashboard() {
                   <li
                     key={i}
                     className="flex items-center gap-2 py-2"
-                    style={{ borderBottom: i < agendaHoje.length - 1 ? '1px solid var(--color-border-soft)' : 'none' }}
+                    style={{
+                      borderBottom: i < agendaHoje.length - 1 ? '1px solid var(--color-border-soft)' : 'none',
+                      opacity: item.status === 'cancelada' ? 0.55 : undefined,
+                    }}
                   >
                     <span
                       className="text-xs font-bold flex-shrink-0 w-10"
@@ -393,7 +395,10 @@ export default async function AdminDashboard() {
                     >
                       {item.hora}
                     </span>
-                    <span className="flex-1 text-xs truncate" style={{ color: 'var(--color-ink)' }}>
+                    <span
+                      className="flex-1 text-xs truncate"
+                      style={{ color: 'var(--color-ink)', textDecoration: item.status === 'cancelada' ? 'line-through' : undefined }}
+                    >
                       {item.nome}
                     </span>
                     {item.tipoTag ? (
@@ -403,6 +408,8 @@ export default async function AdminDashboard() {
                       >
                         {tipoLabel[item.tipoTag] ?? item.tipoTag}
                       </span>
+                    ) : item.status === 'cancelada' ? (
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-cancelada-text)' }}><span aria-hidden="true">❌</span><span className="sr-only">cancelada</span></span>
                     ) : item.status === 'confirmada' || item.status === 'expirada' ? (
                       <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-status-confirmada-text)' }}><span aria-hidden="true">✅</span><span className="sr-only">confirmada</span></span>
                     ) : item.status === 'pendente' ? (

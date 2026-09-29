@@ -140,7 +140,7 @@ export default async function AgendamentosPage() {
         terapeutaId: terapeuta?.id ?? null,
         terapeutaNome: terapeuta?.nome ?? null,
       }
-    }).filter(s => s.confirmacao?.status !== 'cancelada'),
+    }),
     ...(especiais ?? []).map((a: any) => ({
       id: a.id,
       tipo: a.tipo as string,
@@ -184,7 +184,7 @@ export default async function AgendamentosPage() {
         visivel_responsavel: true,
         confirmacao,
       }
-    }).filter(s => s.confirmacao?.status !== 'cancelada'),
+    }),
     ...(especiais ?? [])
       .filter((a: any) => a.data_hora >= hoje.toISOString() && a.data_hora <= em14dias.toISOString())
       .map((a: any) => ({

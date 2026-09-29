@@ -1,11 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { inserirNotificacoes } from '@/lib/notificacoes/inserir'
 
-const TIPO = 'sessao_cancelada_responsavel'
 const LINK_STAFF = '/admin/agendamentos'
 const LINK_TERAPEUTA = '/terapia/agenda'
 
-interface SessaoCancelada {
+interface SessaoRespondida {
   pacienteId: string
   terapeutaId: string | null
   dataHora: string
@@ -28,12 +27,17 @@ function formatarQuando(iso: string) {
 }
 
 /**
- * Avisa a equipe quando o responsável cancela uma sessão pelo link de confirmação.
+ * Avisa a equipe sobre a resposta do responsável ao link de confirmação.
  * Terapeuta da sessão, admins e recepção recebem sino + push.
  *
- * Nunca lança: o cancelamento do responsável não pode falhar por causa do aviso.
+ * Nunca lança: a resposta do responsável não pode falhar por causa do aviso.
  */
-export async function notificarSessaoCancelada({ pacienteId, terapeutaId, dataHora }: SessaoCancelada) {
+async function avisarEquipe(
+  { pacienteId, terapeutaId, dataHora }: SessaoRespondida,
+  tipo: string,
+  titulo: (nomePaciente: string) => string,
+  mensagem: (quando: string) => string,
+) {
   try {
     const db = createAdminClient()
 
@@ -50,15 +54,12 @@ export async function notificarSessaoCancelada({ pacienteId, terapeutaId, dataHo
     }
     if (destinatarios.size === 0) return
 
-    const nome = paciente?.nome ?? 'Paciente'
-    const quando = formatarQuando(dataHora)
-
     await inserirNotificacoes(
       [...destinatarios].map(([destinatarioId, link]) => ({
         destinatario_id: destinatarioId,
-        tipo: TIPO,
-        titulo: `Sessão cancelada — ${nome}`,
-        mensagem: `${quando}. Cancelada pelo responsável. O horário ficou vago.`,
+        tipo,
+        titulo: titulo(paciente?.nome ?? 'Paciente'),
+        mensagem: mensagem(formatarQuando(dataHora)),
         link,
         notification_type: 'individual' as const,
         related_patient_id: pacienteId,
@@ -66,6 +67,24 @@ export async function notificarSessaoCancelada({ pacienteId, terapeutaId, dataHo
       })),
     )
   } catch (err) {
-    console.error('[notificacoes] falha ao avisar cancelamento de sessão:', err)
+    console.error(`[notificacoes] falha ao avisar equipe (${tipo}):`, err)
   }
+}
+
+export function notificarSessaoCancelada(sessao: SessaoRespondida) {
+  return avisarEquipe(
+    sessao,
+    'sessao_cancelada_responsavel',
+    nome => `Sessão cancelada — ${nome}`,
+    quando => `${quando}. Cancelada pelo responsável. O horário ficou vago.`,
+  )
+}
+
+export function notificarSessaoReativada(sessao: SessaoRespondida) {
+  return avisarEquipe(
+    sessao,
+    'sessao_reativada_responsavel',
+    nome => `Cancelamento desfeito — ${nome}`,
+    quando => `${quando}. O responsável confirmou depois de ter cancelado. O horário voltou a ser dele.`,
+  )
 }

@@ -1,196 +1,26 @@
-import { createAdminClient } from '@/lib/supabase/admin'
-import { notificarSessaoCancelada } from '@/lib/notificacoes/sessao-cancelada'
+import { lerEstadoLink } from '@/lib/sessao/confirmacao'
+import { responderSessao } from '@/app/s/acoes'
+import { ResultadoSessao } from '@/app/s/_componentes/ResultadoSessao'
+import { TelaSessao } from '@/app/s/_componentes/TelaSessao'
 
 interface Props {
   params: Promise<{ token: string }>
 }
 
-function formatarDataHora(iso: string) {
-  const dt = new Date(iso)
-  return {
-    data: dt.toLocaleDateString('pt-BR', {
-      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
-      timeZone: 'America/Sao_Paulo',
-    }),
-    hora: dt.toLocaleTimeString('pt-BR', {
-      hour: '2-digit', minute: '2-digit',
-      timeZone: 'America/Sao_Paulo',
-    }),
-  }
-}
-
+// Abrir o link apenas mostra a sessão. Cancelar exige o POST do formulário.
 export default async function CancelarPage({ params }: Props) {
   const { token } = await params
-  const adminClient = createAdminClient()
-  const agora = new Date()
-  const agoraISO = agora.toISOString()
+  const estado = await lerEstadoLink(token, 'cancelar')
 
-  const { data: conf } = await adminClient
-    .from('sessao_confirmacoes')
-    .select('paciente_id, data_hora, status, expira_em')
-    .eq('token', token)
-    .maybeSingle()
-
-  if (!conf) {
-    return <Resultado tipo="nao_encontrado" />
+  if (estado.tipo === 'resultado') {
+    return <ResultadoSessao resultado={estado.resultado} sessao={estado.sessao} />
   }
-
-  const isExpired = new Date(conf.expira_em) <= agora
-
-  if (conf.status === 'cancelada') {
-    const { data: pac } = await adminClient.from('pacientes').select('nome').eq('id', conf.paciente_id).single()
-    const { data, hora } = formatarDataHora(conf.data_hora)
-    return <Resultado tipo="ja_cancelado" paciente={pac?.nome} data={data} hora={hora} />
-  }
-
-  if (isExpired || conf.status === 'expirada') {
-    await adminClient
-      .from('sessao_confirmacoes')
-      .update({ status: 'expirada' })
-      .eq('token', token)
-      .in('status', ['pendente', 'confirmada'])
-    const { data: pac } = await adminClient.from('pacientes').select('nome').eq('id', conf.paciente_id).single()
-    const { data, hora } = formatarDataHora(conf.data_hora)
-    return <Resultado tipo="expirado" paciente={pac?.nome} data={data} hora={hora} />
-  }
-
-  // Cancela atomicamente — aceita pendente ou confirmada (responsável pode mudar de ideia antes do prazo)
-  const { data: updated } = await adminClient
-    .from('sessao_confirmacoes')
-    .update({ status: 'cancelada', respondido_em: agoraISO })
-    .eq('token', token)
-    .in('status', ['pendente', 'confirmada'])
-    .select('paciente_id, terapeuta_id, data_hora')
-    .maybeSingle()
-
-  // Só avisa quando este acesso foi o que de fato cancelou — recarregar a página não repete o alerta
-  if (updated) {
-    await notificarSessaoCancelada({
-      pacienteId: updated.paciente_id as string,
-      terapeutaId: (updated.terapeuta_id as string | null) ?? null,
-      dataHora: updated.data_hora as string,
-    })
-  }
-
-  const alvo = updated ?? conf
-  const { data: pac } = await adminClient.from('pacientes').select('nome').eq('id', alvo.paciente_id).single()
-  const { data, hora } = formatarDataHora(alvo.data_hora)
-
-  return <Resultado tipo="cancelado" paciente={pac?.nome} data={data} hora={hora} />
-}
-
-function Resultado({
-  tipo,
-  paciente,
-  data,
-  hora,
-}: {
-  tipo: 'confirmado' | 'ja_confirmado' | 'ja_cancelado' | 'cancelado' | 'expirado' | 'nao_encontrado'
-  paciente?: string
-  data?: string
-  hora?: string
-}) {
-  const configs = {
-    confirmado: {
-      emoji: '✅',
-      titulo: 'Sessão confirmada',
-      mensagem: 'Esta sessão já foi confirmada. Para cancelar, entre em contato com a clínica.',
-      cor: 'var(--color-status-confirmada-text)',
-      fundo: 'var(--color-status-confirmada-bg)',
-      borda: 'var(--color-status-confirmada-border)',
-    },
-    ja_confirmado: {
-      emoji: '✅',
-      titulo: 'Sessão já confirmada',
-      mensagem: 'Esta sessão já foi confirmada anteriormente. Para cancelar, entre em contato com a clínica.',
-      cor: 'var(--color-status-confirmada-text)',
-      fundo: 'var(--color-status-confirmada-bg)',
-      borda: 'var(--color-status-confirmada-border)',
-    },
-    ja_cancelado: {
-      emoji: '❌',
-      titulo: 'Sessão já cancelada',
-      mensagem: 'Esta sessão já foi cancelada. Se precisar remarcar, entre em contato com a clínica.',
-      cor: 'var(--color-status-cancelada-text)',
-      fundo: 'var(--color-status-cancelada-bg)',
-      borda: 'var(--color-status-cancelada-border)',
-    },
-    cancelado: {
-      emoji: '❌',
-      titulo: 'Sessão cancelada',
-      mensagem: 'Sessão cancelada com sucesso. O horário ficou vago. Entre em contato se precisar remarcar.',
-      cor: 'var(--color-status-cancelada-text)',
-      fundo: 'var(--color-status-cancelada-bg)',
-      borda: 'var(--color-status-cancelada-border)',
-    },
-    expirado: {
-      emoji: '⚠️',
-      titulo: 'Link expirado',
-      mensagem: 'O prazo para cancelamento encerrou. A sessão foi confirmada automaticamente e será cobrada normalmente.',
-      cor: 'var(--color-amber-main)',
-      fundo: 'var(--color-amber-light)',
-      borda: 'var(--color-amber-border)',
-    },
-    nao_encontrado: {
-      emoji: '🔍',
-      titulo: 'Link inválido',
-      mensagem: 'Este link não existe ou já foi utilizado. Entre em contato com a clínica.',
-      cor: 'var(--color-status-expirada-text)',
-      fundo: 'var(--color-status-expirada-bg)',
-      borda: 'var(--color-status-expirada-border)',
-    },
-  }
-
-  const c = configs[tipo]
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{ background: 'var(--color-cream)' }}
-    >
-      <div
-        className="max-w-sm w-full rounded-2xl p-8 text-center space-y-4"
-        style={{
-          background: c.fundo,
-          border: `1.5px solid ${c.borda}`,
-          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-        }}
-      >
-        <div className="text-5xl">{c.emoji}</div>
-
-        <div>
-          <h1
-            className="text-xl font-semibold"
-            style={{ color: c.cor, fontFamily: 'var(--font-lora)' }}
-          >
-            {c.titulo}
-          </h1>
-        </div>
-
-        {paciente && data && hora && (
-          <div
-            className="rounded-xl p-4 text-sm space-y-1"
-            style={{ background: 'rgba(255,255,255,0.7)', color: 'var(--color-ink-mid)' }}
-          >
-            <div className="font-semibold" style={{ color: 'var(--color-ink)' }}>{paciente}</div>
-            <div className="capitalize">{data}</div>
-            <div className="font-medium">{hora}</div>
-          </div>
-        )}
-
-        <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-          {c.mensagem}
-        </p>
-
-        <div className="pt-2">
-          <div
-            className="text-xs"
-            style={{ color: 'var(--color-ink-faint)' }}
-          >
-            Alicerce — Espaço Terapêutico
-          </div>
-        </div>
-      </div>
-    </div>
+    <TelaSessao
+      acao="cancelar"
+      sessao={estado.sessao}
+      responder={responderSessao.bind(null, token, 'cancelar')}
+    />
   )
 }

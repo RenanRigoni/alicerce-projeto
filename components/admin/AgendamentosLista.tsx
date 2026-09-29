@@ -124,12 +124,17 @@ export function AgendamentosLista({ porDia, diasOrdenados }: Props) {
                 conf === null || conf?.status === 'cancelada' || conf?.status === 'expirada' || conf?.status === 'pendente'
               )
               const status = conf?.status ?? null
+              // Cancelada continua na lista, apagada: mostra que o horário vagou
+              const cancelada = status === 'cancelada'
 
               return (
                 <div
                   key={a.id}
                   className="px-4 py-3 flex items-start gap-3"
-                  style={{ borderTop: i > 0 ? '1px solid var(--color-border-soft)' : 'none' }}
+                  style={{
+                    borderTop: i > 0 ? '1px solid var(--color-border-soft)' : 'none',
+                    opacity: cancelada ? 0.55 : undefined,
+                  }}
                 >
                   {/* Info principal */}
                   <div className="flex-1 min-w-0">
@@ -140,9 +145,24 @@ export function AgendamentosLista({ porDia, diasOrdenados }: Props) {
                       >
                         {tipoLabel[a.tipo] ?? a.tipo}
                       </span>
-                      <span className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>
+                      <span
+                        className="text-sm font-medium truncate"
+                        style={{ color: 'var(--color-ink)', textDecoration: cancelada ? 'line-through' : undefined }}
+                      >
                         {a.titulo}
                       </span>
+                      {cancelada && (
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
+                          style={{
+                            background: 'var(--color-status-cancelada-bg)',
+                            color: 'var(--color-status-cancelada-text)',
+                            border: '1px solid var(--color-status-cancelada-border)',
+                          }}
+                        >
+                          Cancelada
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
                       {a.pacienteNome && <span>{a.pacienteNome} · </span>}

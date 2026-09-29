@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { inserirNotificacoes } from '@/lib/notificacoes/inserir'
+import { terapeutasDaSessao } from '@/lib/agenda/terapeutas-da-sessao'
 
 const LINK_STAFF = '/admin/agendamentos'
 const LINK_TERAPEUTA = '/terapia/agenda'
@@ -41,14 +42,22 @@ async function avisarEquipe(
   try {
     const db = createAdminClient()
 
-    const [{ data: paciente }, { data: staff }] = await Promise.all([
+    const [{ data: paciente }, { data: staff }, donasDoHorario] = await Promise.all([
       db.from('pacientes').select('nome').eq('id', pacienteId).maybeSingle(),
       db.from('profiles').select('id').in('role', ['admin', 'recepcao']).eq('ativo', true),
+      terapeutasDaSessao(db, pacienteId, dataHora),
     ])
 
-    // Terapeuta primeiro: se ele também for staff, mantém o link da agenda dele
+    // Não basta o terapeuta_id da confirmação: linhas antigas foram gravadas com
+    // quem clicou em enviar, não com quem atende. Quem tem o horário sempre recebe.
+    const idsStaff = new Set((staff ?? []).map(s => s.id))
+    const terapeutas = new Set(donasDoHorario)
+    // Admin ou recepção na coluna não vira terapeuta: receberia link de agenda que não abre
+    if (terapeutaId && !idsStaff.has(terapeutaId)) terapeutas.add(terapeutaId)
+
+    // Terapeuta primeiro: se ela também for staff, mantém o link da agenda dela
     const destinatarios = new Map<string, string>()
-    if (terapeutaId) destinatarios.set(terapeutaId, LINK_TERAPEUTA)
+    for (const id of terapeutas) destinatarios.set(id, LINK_TERAPEUTA)
     for (const s of staff ?? []) {
       if (!destinatarios.has(s.id)) destinatarios.set(s.id, LINK_STAFF)
     }

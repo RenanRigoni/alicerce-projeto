@@ -1,5 +1,6 @@
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { terapeutasDaSessao } from '@/lib/agenda/terapeutas-da-sessao'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -73,13 +74,12 @@ export async function POST(request: NextRequest) {
         .eq('data_hora', dataHoraISO)
     }
 
-    // Usa o terapeuta vinculado ao paciente, não o usuário logado
-    const { data: vinculoTerapeuta } = await adminClient
-      .from('paciente_terapeutas')
-      .select('terapeuta_id')
-      .eq('paciente_id', paciente_id)
-      .maybeSingle()
-    const terapeutaId = vinculoTerapeuta?.terapeuta_id ?? user.id
+    // Dona do horário, não quem clicou. Paciente com duas profissionais quebrava
+    // o maybeSingle() daqui e caía no usuário logado, gravando a confirmação no
+    // nome da recepção — e o aviso de cancelamento ia para a pessoa errada.
+    const donas = await terapeutasDaSessao(adminClient, paciente_id, dataHoraISO)
+    const terapeutaId =
+      (profile?.role === 'terapeuta' && donas.includes(user.id) ? user.id : donas[0]) ?? user.id
 
     const { data: nova, error } = await adminClient
       .from('sessao_confirmacoes')

@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { notificarSessaoCancelada } from '@/lib/notificacoes/sessao-cancelada'
 
 interface Props {
   params: Promise<{ token: string }>
@@ -59,8 +60,17 @@ export default async function CancelarPage({ params }: Props) {
     .update({ status: 'cancelada', respondido_em: agoraISO })
     .eq('token', token)
     .in('status', ['pendente', 'confirmada'])
-    .select('paciente_id, data_hora')
+    .select('paciente_id, terapeuta_id, data_hora')
     .maybeSingle()
+
+  // Só avisa quando este acesso foi o que de fato cancelou — recarregar a página não repete o alerta
+  if (updated) {
+    await notificarSessaoCancelada({
+      pacienteId: updated.paciente_id as string,
+      terapeutaId: (updated.terapeuta_id as string | null) ?? null,
+      dataHora: updated.data_hora as string,
+    })
+  }
 
   const alvo = updated ?? conf
   const { data: pac } = await adminClient.from('pacientes').select('nome').eq('id', alvo.paciente_id).single()

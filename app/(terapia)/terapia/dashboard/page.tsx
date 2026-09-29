@@ -56,13 +56,13 @@ export default async function TerapiaDashboard() {
   ] = await Promise.all([
     supabase
       .from('paciente_terapeutas')
-      .select('paciente_id, pacientes(id, nome, foto_url, status, frequencia_atendimento, horarios_atendimento)')
+      .select('paciente_id, horarios_atendimento, pacientes(id, nome, foto_url, status, frequencia_atendimento)')
       .eq('terapeuta_id', user!.id),
     supabase
       .from('agendamentos')
-      .select('id, tipo, titulo, data_hora, duracao_minutos, pacientes(nome)')
+      .select('id, tipo, titulo, data_hora, duracao_minutos, pacientes(id, nome)')
       .eq('terapeuta_id', user!.id)
-      .neq('tipo', 'sessao')
+      // Inclui tipo 'sessao': atendimento avulso também é compromisso
       .gte('data_hora', new Date().toISOString())
       .order('data_hora')
       .limit(10),
@@ -120,7 +120,11 @@ export default async function TerapiaDashboard() {
 
   const pacientesAtivos = (vinculos ?? []).filter((v: any) => v.pacientes?.status === 'ativo')
   const pacientesComAlta = (vinculosAlta ?? []).map((v: any) => v.pacientes).filter(Boolean)
-  const pacientesComHorario = pacientesAtivos.map((v: any) => v.pacientes).filter(Boolean)
+  // O horário fixo vem do vínculo, não do paciente: pacientes.horarios_atendimento
+  // soma os horários de todas as profissionais e traria sessão de colega pra cá
+  const pacientesComHorario = pacientesAtivos
+    .map((v: any) => v.pacientes && { ...v.pacientes, horarios_atendimento: v.horarios_atendimento ?? [] })
+    .filter(Boolean)
 
   const feriadosDatasBloqueio = datasFeriadosParaBloqueio(
     feriados ?? [],
@@ -147,21 +151,33 @@ export default async function TerapiaDashboard() {
     canceladasProximasSet.add(`${(c as any).paciente_id}_${brtDate}_${brtHora}`)
   }
 
+  // Linha gravada vence a sessão projetada no mesmo instante, e duplicatas viram uma só
+  const avulsosPorChave = new Map<string, any>()
+  for (const a of (especiais ?? []) as any[]) {
+    if (a.tipo !== 'sessao' || !a.pacientes?.id) continue
+    const chave = `${a.pacientes.id}|${new Date(a.data_hora).toISOString()}`
+    if (!avulsosPorChave.has(chave)) avulsosPorChave.set(chave, a)
+  }
+  const idsAvulsosMantidos = new Set([...avulsosPorChave.values()].map(a => a.id))
+
   const proximosCompromissos = [
     ...sessoesProximas.filter(s => {
       if (!s.paciente) return true
+      if (avulsosPorChave.has(`${s.paciente.id}|${new Date(s.data_hora).toISOString()}`)) return false
       const key = `${s.paciente.id}_${s.data_hora.slice(0, 10)}_${s.data_hora.slice(11, 16)}`
       return !canceladasProximasSet.has(key)
     }),
-    ...(especiais ?? []).map((a: any) => ({
-      id: a.id,
-      tipo: a.tipo,
-      titulo: a.titulo,
-      motivo: null,
-      data_hora: a.data_hora,
-      duracao_minutos: a.duracao_minutos,
-      paciente: a.pacientes ? { id: '', nome: a.pacientes.nome } : null,
-    })),
+    ...(especiais ?? [])
+      .filter((a: any) => a.tipo !== 'sessao' || idsAvulsosMantidos.has(a.id))
+      .map((a: any) => ({
+        id: a.id,
+        tipo: a.tipo,
+        titulo: a.titulo,
+        motivo: null,
+        data_hora: a.data_hora,
+        duracao_minutos: a.duracao_minutos,
+        paciente: a.pacientes ? { id: a.pacientes.id ?? '', nome: a.pacientes.nome } : null,
+      })),
   ]
     .sort((a, b) => a.data_hora.localeCompare(b.data_hora))
     .slice(0, 5)

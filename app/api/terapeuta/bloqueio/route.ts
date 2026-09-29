@@ -238,6 +238,9 @@ export async function POST(request: NextRequest) {
     criado_por: user.id,
   })
 
+  if (reposicaoError?.code === '23505') {
+    return erro('Ja existe uma reposicao deste paciente nesse horario.', 409)
+  }
   if (reposicaoError) return erro('Erro ao criar reposicao.', 500)
 
   const { error: bloqueioError } = await adminClient.from('agendamentos').insert({

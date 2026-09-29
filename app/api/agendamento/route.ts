@@ -101,6 +101,13 @@ export async function POST(request: NextRequest) {
     criado_por: user.id,
   })
 
+  // 23505: o indice unico barrou um agendamento identico (duplo clique no botao)
+  if (error?.code === '23505') {
+    return NextResponse.json(
+      { error: 'Este paciente já tem um agendamento igual nesse horário.' },
+      { status: 409 },
+    )
+  }
   if (error) return NextResponse.json({ error: 'Erro ao salvar agendamento.' }, { status: 500 })
 
   return NextResponse.json({ success: true })

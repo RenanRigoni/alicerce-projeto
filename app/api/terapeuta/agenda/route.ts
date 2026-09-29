@@ -236,6 +236,10 @@ export async function POST(request: NextRequest) {
       visivel_responsavel: true,
       criado_por: terapeutaId,
     })
+    // 23505: o indice unico barrou um agendamento identico (duplo toque no botao)
+    if (error?.code === '23505') {
+      return erro('Você já agendou este paciente nesse horário.', 409)
+    }
     if (error) return erro('Erro ao criar o agendamento.', 500)
     return NextResponse.json({ success: true, modo })
   }

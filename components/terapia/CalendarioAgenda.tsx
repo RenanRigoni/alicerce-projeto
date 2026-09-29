@@ -958,8 +958,9 @@ function ModalAgendar({
       })
       const json = await res.json().catch(() => ({}))
 
-      if (res.status === 409) {
-        setConflitos(json.conflitos ?? [])
+      // 409 vem em dois sabores: choque de horário (traz conflitos) ou duplicata exata
+      if (res.status === 409 && json.conflitos?.length) {
+        setConflitos(json.conflitos)
         return
       }
       if (!res.ok) {

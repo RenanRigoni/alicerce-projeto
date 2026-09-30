@@ -151,6 +151,9 @@ export function MeuPerfilForm(props: Props) {
       const supabase = createClient()
       const { error } = await supabase.auth.updateUser({ password: novaSenha })
       if (error) throw error
+      // Sem isto o gate de primeiro acesso cobraria a troca de novo. Se falhar, a senha
+      // já mudou; a pessoa só vê a tela de definição de senha mais uma vez.
+      await fetch('/api/auth/senha-definida', { method: 'POST' })
       showToast('Senha alterada com sucesso!')
       setNovaSenha('')
       setConfirmSenha('')

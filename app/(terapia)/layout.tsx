@@ -11,11 +11,14 @@ export default async function TerapiaLayout({ children }: { children: React.Reac
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, role, ativo, permissoes, foto_url')
+    .select('nome, role, ativo, permissoes, foto_url, senha_definida_em')
     .eq('id', user.id)
     .single()
 
   if (!profile || !profile.ativo || profile.role !== 'terapeuta') redirect('/login')
+
+  // Redirect de página inteira (não modal): {children} nem chega a renderizar.
+  if (!profile.senha_definida_em) redirect('/definir-senha')
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--color-sage-light)' }}>

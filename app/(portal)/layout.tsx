@@ -12,11 +12,15 @@ export default async function PortalLayout({ children }: { children: React.React
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, role, ativo, consentimento_aceito_em, consentimento_policy_versao, permissoes, foto_url')
+    .select('nome, role, ativo, consentimento_aceito_em, consentimento_policy_versao, permissoes, foto_url, senha_definida_em')
     .eq('id', user.id)
     .single()
 
   if (!profile || !profile.ativo || profile.role !== 'pai') redirect('/login')
+
+  // Redirect de página inteira (não modal): {children} nem chega a renderizar.
+  // Antes do bloqueio de acesso e do consentimento, para não empilhar dois avisos.
+  if (!profile.senha_definida_em) redirect('/definir-senha')
 
   // Acesso bloqueado pelo admin (inadimplência, disputa entre responsáveis, etc.)
   if ((profile.permissoes as Record<string, boolean>)?.bloquear_acesso_portal === true) {

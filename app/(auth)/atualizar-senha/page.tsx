@@ -67,6 +67,11 @@ export default function AtualizarSenhaPage() {
       return
     }
 
+    // Caminho do link enviado pela recepção: sem isto o gate de primeiro acesso
+    // cobraria a troca de novo. Se falhar, a senha já mudou; a pessoa só vê a
+    // tela de definição de senha mais uma vez.
+    await fetch('/api/auth/senha-definida', { method: 'POST' })
+
     setSucesso(true)
     setTimeout(() => router.push('/login'), 2500)
   }

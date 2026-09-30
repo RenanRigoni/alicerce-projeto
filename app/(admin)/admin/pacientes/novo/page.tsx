@@ -10,6 +10,8 @@ import { todasPermissoes } from '@/lib/permissoes/definicoes'
 import { BuscaResponsavel, type ResponsavelSelecionado } from '@/components/responsavel/BuscaResponsavel'
 import { ModalNovoResponsavel } from '@/components/responsavel/ModalNovoResponsavel'
 import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
+import { CamposEncaminhamento } from '@/components/paciente/CamposEncaminhamento'
+import { FORM_VAZIO, prepararEncaminhamentoDoCadastro, type FormEncaminhamento } from '@/lib/paciente/encaminhamentos'
 
 interface Terapeuta { id: string; nome: string }
 interface Horario { dia: string; hora: string; terapeuta_id?: string }
@@ -38,6 +40,8 @@ function NovoPacienteForm() {
   const [conviteResponsavel, setConviteResponsavel] = useState<DadosConvite | null>(null)
   const [horarios, setHorarios] = useState<Horario[]>([{ dia: 'segunda', hora: '' }])
   const [permissoes, setPermissoes] = useState<Record<string, boolean>>({})
+  const [papel, setPapel] = useState('')
+  const [encaminhamento, setEncaminhamento] = useState<FormEncaminhamento>(FORM_VAZIO)
 
   const [form, setForm] = useState({
     nome: '',
@@ -60,6 +64,7 @@ function NovoPacienteForm() {
       if (profile) {
         const efetivas = todasPermissoes(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>)
         setPermissoes(efetivas)
+        setPapel(profile.role)
         if (!efetivas.cadastrar_pacientes) {
           router.push('/admin/pacientes')
           return
@@ -124,6 +129,14 @@ function NovoPacienteForm() {
         : {}),
     }))
 
+    // Encaminhamento é opcional; só admin e recepção o registram (o servidor confere de novo).
+    // Em branco: nada é enviado e nenhuma linha é criada.
+    const preparo = prepararEncaminhamentoDoCadastro(podeRegistrarEncaminhamento ? encaminhamento : null)
+    if (!preparo.ok) {
+      setErro(preparo.erro)
+      return
+    }
+
     setCarregando(true)
 
     const res = await fetch('/api/paciente', {
@@ -140,6 +153,7 @@ function NovoPacienteForm() {
         horarios_atendimento: horariosPayload,
         terapeutas: podeVincularTerapeutas ? terapeutasSelecionados : [],
         responsavel_id: podeGerenciarResponsaveis ? (responsavelSelecionado?.id ?? null) : null,
+        encaminhamento: preparo.dados ? encaminhamento : null,
       }),
     })
 
@@ -160,6 +174,7 @@ function NovoPacienteForm() {
   const labelStyle = { color: 'var(--color-ink-mid)' }
   const podeGerenciarResponsaveis = permissoes.gerenciar_responsaveis === true
   const podeVincularTerapeutas = permissoes.vincular_terapeutas === true
+  const podeRegistrarEncaminhamento = papel === 'admin' || papel === 'recepcao'
 
   return (
     <div className="space-y-6 max-w-xl">
@@ -290,6 +305,19 @@ function NovoPacienteForm() {
               onCriado={(r, convite) => { setResponsavelSelecionado(r); setConviteResponsavel(convite) }}
               onFechar={() => setModalResponsavel(false)}
             />
+          )}
+
+          {/* Encaminhamento: o médico que indicou o paciente. Tudo opcional. */}
+          {podeRegistrarEncaminhamento && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-medium" style={labelStyle}>
+                Encaminhamento <span className="font-normal" style={{ color: 'var(--color-ink-faint)' }}>(opcional)</span>
+              </h2>
+              <CamposEncaminhamento
+                form={encaminhamento}
+                onChange={parcial => setEncaminhamento(prev => ({ ...prev, ...parcial }))}
+              />
+            </div>
           )}
 
           {/* Profissionais */}

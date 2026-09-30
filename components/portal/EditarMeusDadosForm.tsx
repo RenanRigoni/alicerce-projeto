@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
 import { mascaraCep } from '@/lib/endereco/cep'
+import { mascaraTelefone } from '@/lib/masks'
 import { useCep } from '@/lib/endereco/use-cep'
 
 interface Props {
@@ -14,13 +15,6 @@ interface Props {
   cidade: string | null
   cep: string | null
   hideNome?: boolean
-}
-
-function mascaraTelefone(valor: string) {
-  const d = valor.replace(/\D/g, '').slice(0, 11)
-  if (d.length <= 2) return d.length ? `(${d}` : ''
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
 }
 
 function parsarEmergencia(raw: string | null) {

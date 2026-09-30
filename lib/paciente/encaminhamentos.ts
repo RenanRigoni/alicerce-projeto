@@ -1,9 +1,14 @@
+import { mascaraTelefone } from '@/lib/masks'
+
+// Nome, CRM e telefone do médico são todos opcionais; a CHECK do banco e
+// validarEncaminhamento exigem ao menos um dos três.
 export interface Encaminhamento {
   id: string
   paciente_id: string
-  medico_nome: string
+  medico_nome: string | null
   medico_crm: string | null
   medico_crm_uf: string | null
+  medico_telefone: string | null
   especialidade: string | null
   data_encaminhamento: string | null
   motivo: string | null
@@ -13,7 +18,7 @@ export interface Encaminhamento {
 }
 
 export const SELECT_ENCAMINHAMENTOS =
-  'id, paciente_id, medico_nome, medico_crm, medico_crm_uf, especialidade, data_encaminhamento, motivo, observacoes, criado_em, atualizado_em'
+  'id, paciente_id, medico_nome, medico_crm, medico_crm_uf, medico_telefone, especialidade, data_encaminhamento, motivo, observacoes, criado_em, atualizado_em'
 
 export const UFS = [
   'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB',
@@ -33,17 +38,19 @@ export interface FormEncaminhamento {
   medico_nome: string
   medico_crm: string
   medico_crm_uf: string
+  medico_telefone: string
   especialidade: string
   data_encaminhamento: string
   motivo: string
   observacoes: string
 }
 
-// O que vai para o banco: vazio vira null e o CRM guarda só dígitos.
+// O que vai para o banco: vazio vira null; CRM e telefone guardam só dígitos.
 export interface DadosEncaminhamento {
-  medico_nome: string
+  medico_nome: string | null
   medico_crm: string | null
   medico_crm_uf: string | null
+  medico_telefone: string | null
   especialidade: string | null
   data_encaminhamento: string | null
   motivo: string | null
@@ -55,15 +62,16 @@ export type ValidacaoEncaminhamento =
   | { valido: false; erro: string }
 
 export const FORM_VAZIO: FormEncaminhamento = {
-  medico_nome: '', medico_crm: '', medico_crm_uf: '', especialidade: '',
+  medico_nome: '', medico_crm: '', medico_crm_uf: '', medico_telefone: '', especialidade: '',
   data_encaminhamento: '', motivo: '', observacoes: '',
 }
 
 export function formDoEncaminhamento(e: Encaminhamento): FormEncaminhamento {
   return {
-    medico_nome: e.medico_nome,
+    medico_nome: e.medico_nome ?? '',
     medico_crm: e.medico_crm ?? '',
     medico_crm_uf: e.medico_crm_uf ?? '',
+    medico_telefone: mascaraTelefone(e.medico_telefone ?? ''),
     especialidade: e.especialidade ?? '',
     data_encaminhamento: e.data_encaminhamento ?? '',
     motivo: e.motivo ?? '',
@@ -95,13 +103,16 @@ function dataValida(valor: string): boolean {
 
 const vazioParaNull = (valor: string) => (valor.trim() ? valor.trim() : null)
 
+export const ERRO_AO_MENOS_UM = 'Informe ao menos um dos três: nome, CRM ou telefone do médico.'
+
 /**
- * Só o nome do médico é obrigatório. CRM, UF, especialidade, data, motivo e
- * observações são opcionais: a equipe pediu que nada trave o salvamento.
+ * Nenhum campo é obrigatório isoladamente, mas é preciso ao menos um entre nome, CRM e
+ * telefone do médico (a CHECK do banco diz o mesmo): sem isso daria para gravar um
+ * encaminhamento em branco no prontuário. UF, especialidade, data, motivo e
+ * observações sozinhos não bastam.
  */
 export function validarEncaminhamento(form: FormEncaminhamento): ValidacaoEncaminhamento {
   const nome = form.medico_nome.trim()
-  if (!nome) return { valido: false, erro: 'Informe o nome do médico.' }
 
   const campos: Array<[keyof typeof LIMITES, string, string]> = [
     ['medico_nome', form.medico_nome, 'Nome do médico'],
@@ -125,17 +136,26 @@ export function validarEncaminhamento(form: FormEncaminhamento): ValidacaoEncami
     return { valido: false, erro: 'UF do CRM inválida.' }
   }
 
+  // Dígitos crus, sem o corte de 11 da máscara: 13 dígitos colados têm de dar erro, não ser truncados.
+  const telefone = form.medico_telefone.replace(/\D/g, '')
+  if (form.medico_telefone.trim() && telefone.length !== 10 && telefone.length !== 11) {
+    return { valido: false, erro: 'Telefone do médico deve ter DDD e número (10 ou 11 dígitos).' }
+  }
+
   const data = form.data_encaminhamento.trim()
   if (data && !dataValida(data)) {
     return { valido: false, erro: 'Data do encaminhamento inválida.' }
   }
 
+  if (!nome && !crm && !telefone) return { valido: false, erro: ERRO_AO_MENOS_UM }
+
   return {
     valido: true,
     dados: {
-      medico_nome: nome,
+      medico_nome: nome || null,
       medico_crm: crm || null,
       medico_crm_uf: uf || null,
+      medico_telefone: telefone || null,
       especialidade: vazioParaNull(form.especialidade),
       data_encaminhamento: data || null,
       motivo: vazioParaNull(form.motivo),
@@ -144,15 +164,48 @@ export function validarEncaminhamento(form: FormEncaminhamento): ValidacaoEncami
   }
 }
 
+/** A pessoa escreveu alguma coisa em algum campo do encaminhamento? */
+export function encaminhamentoTemConteudo(form: FormEncaminhamento): boolean {
+  return Object.values(form).some(valor => valor.trim() !== '')
+}
+
+export type EncaminhamentoDoCadastro =
+  | { ok: true; dados: DadosEncaminhamento | null }
+  | { ok: false; erro: string }
+
+/**
+ * Lê o encaminhamento que vem junto com o cadastro do paciente (tela e servidor usam
+ * esta mesma função). Tudo em branco = `dados: null`: nenhuma linha é criada e o
+ * cadastro segue normal. Com conteúdo, vale a mesma validação da aba Dados Clínicos.
+ */
+export function prepararEncaminhamentoDoCadastro(entrada: unknown): EncaminhamentoDoCadastro {
+  if (entrada === null || entrada === undefined) return { ok: true, dados: null }
+  if (typeof entrada !== 'object' || Array.isArray(entrada)) return { ok: false, erro: 'Encaminhamento inválido.' }
+
+  const bruto = entrada as Record<string, unknown>
+  const form: FormEncaminhamento = { ...FORM_VAZIO }
+  for (const campo of Object.keys(FORM_VAZIO) as Array<keyof FormEncaminhamento>) {
+    const valor = bruto[campo]
+    if (valor === null || valor === undefined) continue
+    if (typeof valor !== 'string') return { ok: false, erro: 'Encaminhamento inválido.' }
+    form[campo] = valor
+  }
+
+  if (!encaminhamentoTemConteudo(form)) return { ok: true, dados: null }
+  const validacao = validarEncaminhamento(form)
+  return validacao.valido ? { ok: true, dados: validacao.dados } : { ok: false, erro: validacao.erro }
+}
+
 /** Escapa os curingas do LIKE para que "50%" ou "a_b" sejam buscados como texto. */
 export function escaparLike(texto: string): string {
   return texto.replace(/[\\%_]/g, c => `\\${c}`)
 }
 
 export interface SugestaoMedico {
-  medico_nome: string
+  medico_nome: string | null
   medico_crm: string | null
   medico_crm_uf: string | null
+  medico_telefone: string | null
   especialidade: string | null
 }
 
@@ -165,7 +218,7 @@ export function sugestoesDeMedicos(linhas: SugestaoMedico[], limite = 8): Sugest
   const vistos = new Set<string>()
   const sugestoes: SugestaoMedico[] = []
   for (const linha of linhas) {
-    const chave = linha.medico_nome.trim().toLowerCase()
+    const chave = (linha.medico_nome ?? '').trim().toLowerCase()
     if (!chave || vistos.has(chave)) continue
     vistos.add(chave)
     sugestoes.push(linha)

@@ -12,7 +12,9 @@
     "test:endereco": "tsx scripts/test-endereco.ts",
     "test:cep": "tsx scripts/test-cep.ts",
     "test:rotas-cep": "tsx scripts/test-rotas-cep.ts",
-    "test:encaminhamentos": "tsx scripts/test-encaminhamentos.ts"
+    "test:encaminhamentos": "tsx scripts/test-encaminhamentos.ts",
+    "test:masks": "tsx scripts/test-masks.ts",
+    "test:cadastro-paciente": "tsx scripts/test-cadastro-paciente.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

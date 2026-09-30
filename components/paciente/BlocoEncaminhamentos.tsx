@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { mascaraTelefone } from '@/lib/masks'
+import { CamposEncaminhamento } from '@/components/paciente/CamposEncaminhamento'
 import {
-  FORM_VAZIO, LIMITES, UFS,
-  escaparLike, formDoEncaminhamento, formatarCrm, mascaraCrm, sugestoesDeMedicos, validarEncaminhamento,
-  type DadosEncaminhamento, type Encaminhamento, type FormEncaminhamento, type SugestaoMedico,
+  FORM_VAZIO, formDoEncaminhamento, formatarCrm, validarEncaminhamento,
+  type DadosEncaminhamento, type Encaminhamento, type FormEncaminhamento,
 } from '@/lib/paciente/encaminhamentos'
 
 interface Props {
@@ -25,8 +26,6 @@ interface Props {
 const MENSAGEM_RECUSADO =
   'Não foi possível salvar. Se o paciente tem alta ou está desativado, o prontuário encerrado só pode ser consultado.'
 
-const rotulo = { color: 'var(--color-ink-mid)' }
-
 function dataBr(iso: string | null): string | null {
   return iso ? new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR') : null
 }
@@ -39,161 +38,19 @@ function FormularioEncaminhamento({ inicial, rotuloSalvar, salvando, erro, onSal
   onSalvar: (form: FormEncaminhamento) => void
   onCancelar: () => void
 }) {
-  const id = useId()
   const [form, setForm] = useState<FormEncaminhamento>(inicial)
-  const [sugestoes, setSugestoes] = useState<SugestaoMedico[]>([])
-
-  const termo = form.medico_nome.trim()
-  useEffect(() => {
-    if (termo.length < 2) return
-    let cancelado = false
-    const espera = setTimeout(async () => {
-      // Sugestão é conveniência: se a consulta falhar, o campo segue livre.
-      const { data } = await createClient()
-        .from('encaminhamentos')
-        .select('medico_nome, medico_crm, medico_crm_uf, especialidade')
-        .ilike('medico_nome', `%${escaparLike(termo)}%`)
-        .order('criado_em', { ascending: false })
-        .limit(40)
-      if (!cancelado) setSugestoes(sugestoesDeMedicos(data ?? [], 5))
-    }, 250)
-    return () => { cancelado = true; clearTimeout(espera) }
-  }, [termo])
-  const sugestoesVisiveis = termo.length >= 2 ? sugestoes : []
-
-  function mudar(campo: keyof FormEncaminhamento, valor: string) {
-    setForm(prev => ({ ...prev, [campo]: valor }))
-  }
-
-  function usarSugestao(s: SugestaoMedico) {
-    setForm(prev => ({
-      ...prev,
-      medico_nome: s.medico_nome,
-      medico_crm: s.medico_crm ?? '',
-      medico_crm_uf: s.medico_crm_uf ?? '',
-      especialidade: s.especialidade ?? '',
-    }))
-    setSugestoes([])
-  }
+  // "Mais detalhes" já abre quando o registro tem algum deles preenchido.
+  const [detalhesAbertos] = useState(() =>
+    [inicial.especialidade, inicial.data_encaminhamento, inicial.motivo, inicial.observacoes].some(v => v !== ''))
 
   return (
     <Card>
       <div className="space-y-4">
-        <div>
-          <label htmlFor={`${id}-nome`} className="block text-sm font-medium mb-1.5" style={rotulo}>
-            Médico <span style={{ color: 'var(--color-rose-main)' }}>*</span>
-          </label>
-          <input
-            id={`${id}-nome`}
-            value={form.medico_nome}
-            onChange={e => mudar('medico_nome', e.target.value)}
-            maxLength={LIMITES.medico_nome}
-            autoComplete="off"
-            placeholder="Nome do médico que encaminhou"
-            className="input-base"
-          />
-          {sugestoesVisiveis.length > 0 && (
-            <div className="mt-2 space-y-1" role="group" aria-label="Médicos já registrados">
-              <div className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-                Já registrado — toque para usar a mesma grafia:
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {sugestoesVisiveis.map(s => {
-                  const detalhe = [formatarCrm(s.medico_crm, s.medico_crm_uf) && `CRM ${formatarCrm(s.medico_crm, s.medico_crm_uf)}`, s.especialidade]
-                    .filter(Boolean).join(' · ')
-                  return (
-                    <button
-                      key={s.medico_nome}
-                      type="button"
-                      onClick={() => usarSugestao(s)}
-                      className="text-xs px-3 py-1.5 rounded-xl text-left transition-opacity hover:opacity-80"
-                      style={{ border: '1px solid var(--color-rose-soft)', color: 'var(--color-rose-deep)', background: 'transparent' }}
-                    >
-                      <span className="font-medium">{s.medico_nome}</span>
-                      {detalhe && <span style={{ color: 'var(--color-ink-soft)' }}> — {detalhe}</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <div className="col-span-2">
-            <label htmlFor={`${id}-crm`} className="block text-sm font-medium mb-1.5" style={rotulo}>
-              CRM <span className="font-normal" style={{ color: 'var(--color-ink-faint)' }}>(opcional)</span>
-            </label>
-            <input
-              id={`${id}-crm`}
-              value={form.medico_crm}
-              onChange={e => mudar('medico_crm', mascaraCrm(e.target.value))}
-              inputMode="numeric"
-              placeholder="Somente números"
-              className="input-base"
-            />
-          </div>
-          <div>
-            <label htmlFor={`${id}-uf`} className="block text-sm font-medium mb-1.5" style={rotulo}>UF</label>
-            <select
-              id={`${id}-uf`}
-              value={form.medico_crm_uf}
-              onChange={e => mudar('medico_crm_uf', e.target.value)}
-              className="input-base"
-            >
-              <option value="">—</option>
-              {UFS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor={`${id}-esp`} className="block text-sm font-medium mb-1.5" style={rotulo}>Especialidade</label>
-            <input
-              id={`${id}-esp`}
-              value={form.especialidade}
-              onChange={e => mudar('especialidade', e.target.value)}
-              maxLength={LIMITES.especialidade}
-              placeholder="Ex.: Neuropediatria"
-              className="input-base"
-            />
-          </div>
-          <div>
-            <label htmlFor={`${id}-data`} className="block text-sm font-medium mb-1.5" style={rotulo}>Data do encaminhamento</label>
-            <input
-              id={`${id}-data`}
-              type="date"
-              value={form.data_encaminhamento}
-              onChange={e => mudar('data_encaminhamento', e.target.value)}
-              className="input-base"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor={`${id}-motivo`} className="block text-sm font-medium mb-1.5" style={rotulo}>Motivo</label>
-          <textarea
-            id={`${id}-motivo`}
-            value={form.motivo}
-            onChange={e => mudar('motivo', e.target.value)}
-            maxLength={LIMITES.motivo}
-            rows={2}
-            className="input-base resize-y"
-          />
-        </div>
-
-        <div>
-          <label htmlFor={`${id}-obs`} className="block text-sm font-medium mb-1.5" style={rotulo}>Observações</label>
-          <textarea
-            id={`${id}-obs`}
-            value={form.observacoes}
-            onChange={e => mudar('observacoes', e.target.value)}
-            maxLength={LIMITES.observacoes}
-            rows={2}
-            className="input-base resize-y"
-          />
-        </div>
+        <CamposEncaminhamento
+          form={form}
+          onChange={parcial => setForm(prev => ({ ...prev, ...parcial }))}
+          detalhesAbertos={detalhesAbertos}
+        />
 
         {erro && <p role="alert" className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
 
@@ -330,9 +187,12 @@ export function BlocoEncaminhamentos({ pacienteId, encaminhamentos, podeVer, pod
                   <Card key={e.id}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>{e.medico_nome}</div>
+                        <div className="text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>
+                          {e.medico_nome ?? <span className="font-normal" style={{ color: 'var(--color-ink-faint)' }}>Médico não identificado</span>}
+                        </div>
                         <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                           {crm ? `CRM ${crm}` : <span style={{ color: 'var(--color-ink-faint)' }}>CRM não informado</span>}
+                          {e.medico_telefone && ` · ${mascaraTelefone(e.medico_telefone)}`}
                           {e.especialidade && ` · ${e.especialidade}`}
                         </div>
                       </div>

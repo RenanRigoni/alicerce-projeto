@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Loader2, Pencil, X, Lock, Camera, Trash2 } from 'lucide-react'
 import { UFS_BRASIL, getTipoProfissionalConfig } from '@/lib/profissionais'
 import Image from 'next/image'
+import { mascaraTelefone } from '@/lib/masks'
 
 interface Props {
   userId: string
@@ -51,13 +52,6 @@ function formatarCpf(valor?: string | null) {
   if (d.length === 11) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`
   if (d.length === 14) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`
   return valor ?? null
-}
-
-function mascaraTelefone(valor: string) {
-  const d = valor.replace(/\D/g, '').slice(0, 11)
-  if (d.length <= 2) return d.length ? `(${d}` : ''
-  if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`
-  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`
 }
 
 function initials(nome: string) {

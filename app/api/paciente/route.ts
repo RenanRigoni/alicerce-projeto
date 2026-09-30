@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { distribuirHorariosPorTerapeuta } from '@/lib/agenda/horarios-fixos'
+import { prepararEncaminhamentoDoCadastro } from '@/lib/paciente/encaminhamentos'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
@@ -37,6 +38,17 @@ export async function POST(request: NextRequest) {
 
   if (responsavel_id && !podeGerenciarResponsaveis) {
     return NextResponse.json({ error: 'Sem permissão para vincular responsável.' }, { status: 403 })
+  }
+
+  // Encaminhamento (médico que indicou). Validado ANTES de criar o paciente, como o resto.
+  // Tudo em branco = nenhuma linha. A gravação usa o cliente admin (que ignora a RLS), então
+  // a regra "só recepção e admin registram encaminhamento" tem de ser conferida aqui.
+  const encaminhamento = prepararEncaminhamentoDoCadastro(body.encaminhamento)
+  if (!encaminhamento.ok) {
+    return NextResponse.json({ error: encaminhamento.erro }, { status: 400 })
+  }
+  if (encaminhamento.dados && profile.role !== 'admin' && profile.role !== 'recepcao') {
+    return NextResponse.json({ error: 'Sem permissão para registrar encaminhamento.' }, { status: 403 })
   }
 
   const terapeutasParaVincular: string[] = isTerapeuta
@@ -101,10 +113,11 @@ export async function POST(request: NextRequest) {
 
   const pacienteId = paciente.id
 
-  // Os dois vínculos são tentados sempre, e cada falha é reportada. Antes o
+  // Vínculos e encaminhamento são tentados sempre, e cada falha é reportada. Antes o
   // erro era ignorado: o paciente nascia sem responsável ou sem profissional e
   // a tela dizia que tinha dado tudo certo.
   const falhas: string[] = []
+  let encaminhamentoFalhou = false
 
   // Vincula responsável se informado
   if (responsavel_id) {
@@ -114,6 +127,19 @@ export async function POST(request: NextRequest) {
       tipo: 'principal',
     })
     if (error) falhas.push('o responsável')
+  }
+
+  // Encaminhamento é opcional: sem dados, nada é gravado. Se falhar, o paciente fica.
+  if (encaminhamento.dados) {
+    const { error } = await adminClient.from('encaminhamentos').insert({
+      paciente_id: pacienteId,
+      ...encaminhamento.dados,
+      registrado_por: user.id,
+    })
+    if (error) {
+      console.error('Falha ao gravar o encaminhamento do cadastro:', error.code)
+      encaminhamentoFalhou = true
+    }
   }
 
   // Vincula terapeutas se informados. Profissional sem permissão de vínculo sempre vincula a si mesmo.
@@ -131,10 +157,18 @@ export async function POST(request: NextRequest) {
   // O paciente existe; não é desfeito (é registro clínico, com auditoria).
   // O paciente_id vai junto para a tela levar a recepção até ele em vez de
   // deixá-la reenviar o formulário e duplicar o cadastro.
-  if (falhas.length > 0) {
+  if (falhas.length > 0 || encaminhamentoFalhou) {
+    const naoFeito = [
+      ...(falhas.length > 0 ? [`vincular ${falhas.join(' nem ')}`] : []),
+      ...(encaminhamentoFalhou ? ['registrar o encaminhamento'] : []),
+    ].join(' e ')
+    const manual = [
+      ...(falhas.length > 0 ? ['faça o vínculo manualmente'] : []),
+      ...(encaminhamentoFalhou ? ['registre o encaminhamento na aba Dados Clínicos'] : []),
+    ].join(' e ')
     return NextResponse.json(
       {
-        error: `O paciente foi cadastrado, mas não foi possível vincular ${falhas.join(' nem ')}. Abra o cadastro do paciente e faça o vínculo manualmente.`,
+        error: `O paciente foi cadastrado, mas não foi possível ${naoFeito}. Abra o cadastro do paciente e ${manual}.`,
         paciente_id: pacienteId,
       },
       { status: 500 }

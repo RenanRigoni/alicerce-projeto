@@ -4,7 +4,7 @@ import {
   TIPOS_PROFISSIONAIS, UFS_BRASIL,
   getTipoProfissionalConfig, isCodigoCboValido, normalizarCodigoCbo,
 } from '@/lib/profissionais'
-import { mascaraCpfCnpj } from '@/lib/masks'
+import { mascaraCpfCnpj, mascaraTelefone } from '@/lib/masks'
 import { mascaraCep } from '@/lib/endereco/cep'
 import { useCep } from '@/lib/endereco/use-cep'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
@@ -14,14 +14,6 @@ import { useState } from 'react'
 const roleLabel: Record<string, string> = {
   admin: 'Admin', recepcao: 'Recepção', terapeuta: 'Profissional', pai: 'Família',
 }
-
-function mascaraTelefone(valor: string) {
-  const d = valor.replace(/\D/g, '').slice(0, 11)
-  if (d.length <= 2) return d.length ? `(${d}` : ''
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
-}
-
 
 function parsarEmergencia(raw: string | null) {
   if (!raw) return { nome: '', telefone: '' }

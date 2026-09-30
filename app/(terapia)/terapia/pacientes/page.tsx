@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { PacientesListaTerapeuta } from './PacientesListaTerapeuta'
 import { temPermissao } from '@/lib/permissoes/definicoes'
+import type { PacienteDaLista } from '@/lib/pacientes/filtrar-lista'
 
 export default async function TerapiaPacientesPage() {
   const supabase = await createClient()
@@ -21,31 +22,33 @@ export default async function TerapiaPacientesPage() {
   const podeCadastrarPacientes = temPermissao(profile.role, permissoes, 'cadastrar_pacientes')
   const podeVerTodosPacientes = temPermissao(profile.role, permissoes, 'ver_todos_pacientes')
 
-  let todos: any[] = []
+  // Os vinculados saem sempre: quem tem ver_todos_pacientes abre neles e só
+  // alterna para a clínica inteira se quiser.
+  const { data: vinculos } = await supabase
+    .from('paciente_terapeutas')
+    .select('pacientes(id, nome, codigo_interno, status, frequencia_atendimento)')
+    .eq('terapeuta_id', user.id)
 
+  const meus: PacienteDaLista[] = (vinculos ?? [])
+    .map((v: any) => v.pacientes)
+    .filter(Boolean)
+    .sort((a: PacienteDaLista, b: PacienteDaLista) => a.nome.localeCompare(b.nome))
+
+  let pacientes = meus
   if (podeVerTodosPacientes) {
     const { data } = await createAdminClient()
       .from('pacientes')
       .select('id, nome, codigo_interno, status, frequencia_atendimento')
       .order('nome')
-    todos = data ?? []
-  } else {
-    const { data: vinculos } = await supabase
-      .from('paciente_terapeutas')
-      .select('pacientes(id, nome, codigo_interno, status, frequencia_atendimento)')
-      .eq('terapeuta_id', user.id)
-
-    todos = (vinculos ?? [])
-      .map((v: any) => v.pacientes)
-      .filter(Boolean)
-      .sort((a: any, b: any) => a.nome.localeCompare(b.nome))
+    pacientes = (data ?? []) as PacienteDaLista[]
   }
 
   return (
     <PacientesListaTerapeuta
-      todos={todos}
+      pacientes={pacientes}
+      meusIds={meus.map(p => p.id)}
       podeCadastrarPacientes={podeCadastrarPacientes}
-      mostrandoTodosPacientes={podeVerTodosPacientes}
+      podeVerTodosPacientes={podeVerTodosPacientes}
     />
   )
 }

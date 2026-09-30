@@ -10,7 +10,7 @@ import { todasPermissoes } from '@/lib/permissoes/definicoes'
 
 interface Terapeuta { id: string; nome: string }
 interface Responsavel { id: string; nome: string }
-interface Horario { dia: string; hora: string }
+interface Horario { dia: string; hora: string; terapeuta_id?: string }
 
 const dias = [
   { value: 'segunda', label: 'Segunda-feira' },
@@ -105,6 +105,20 @@ function NovoPacienteForm() {
       return
     }
 
+    if (horariosValidos.length > 0 && terapeutasSelecionados.length === 0) {
+      setErro('Escolha a profissional que atende nesses horários.')
+      return
+    }
+
+    // Com mais de uma profissional, cada horário é de uma delas (a primeira, se não escolheu)
+    const horariosPayload = horariosValidos.map(h => ({
+      dia: h.dia,
+      hora: h.hora,
+      ...(terapeutasSelecionados.length > 1
+        ? { terapeuta_id: terapeutasSelecionados.includes(h.terapeuta_id ?? '') ? h.terapeuta_id : terapeutasSelecionados[0] }
+        : {}),
+    }))
+
     setCarregando(true)
 
     const res = await fetch('/api/paciente', {
@@ -118,7 +132,7 @@ function NovoPacienteForm() {
         frequencia_atendimento: horariosValidos.length > 0 ? `${horariosValidos.length}x por semana` : null,
         turno_preferencia: form.turno_preferencia || null,
         convenio_ou_particular: form.convenio_ou_particular || null,
-        horarios_atendimento: horariosValidos,
+        horarios_atendimento: horariosPayload,
         terapeutas: podeVincularTerapeutas ? terapeutasSelecionados : [],
         responsavel_id: podeGerenciarResponsaveis ? (responsavelSelecionado || null) : null,
       }),
@@ -333,6 +347,18 @@ function NovoPacienteForm() {
                     inputMode="numeric"
                     className="input-base w-24 text-center"
                   />
+                  {terapeutasSelecionados.length > 1 && (
+                    <select
+                      value={terapeutasSelecionados.includes(h.terapeuta_id ?? '') ? h.terapeuta_id : terapeutasSelecionados[0]}
+                      onChange={e => updateHorario(i, 'terapeuta_id', e.target.value)}
+                      aria-label="Profissional que atende neste horário"
+                      className="input-base flex-1"
+                    >
+                      {terapeutas
+                        .filter(t => terapeutasSelecionados.includes(t.id))
+                        .map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                    </select>
+                  )}
                   {horarios.length > 1 && (
                     <button
                       type="button"

@@ -77,7 +77,7 @@ async function podeAgendarPaciente(
 async function pacienteAtivo(db: Db, pacienteId: string) {
   const { data } = await db
     .from('pacientes')
-    .select('id, nome, status, horarios_atendimento')
+    .select('id, nome, status')
     .eq('id', pacienteId)
     .maybeSingle()
   if (!data || data.status !== 'ativo') return null
@@ -146,44 +146,6 @@ async function lerHorariosDoVinculo(db: Db, pacienteId: string, terapeutaId: str
     .eq('terapeuta_id', terapeutaId)
     .maybeSingle()
   return { existe: !!data, horarios: ((data?.horarios_atendimento ?? []) as HorarioFixo[]) }
-}
-
-/**
- * `pacientes.horarios_atendimento` é a cópia que a agenda do admin lê. Sem este
- * espelho, profissional e recepção enxergam agendas diferentes.
- */
-async function espelharNoPaciente(
-  db: Db,
-  pacienteId: string,
-  horario: HorarioFixo,
-  operacao: 'adicionar' | 'remover',
-) {
-  const { data: paciente } = await db
-    .from('pacientes')
-    .select('horarios_atendimento')
-    .eq('id', pacienteId)
-    .maybeSingle()
-
-  const atuais = (paciente?.horarios_atendimento ?? []) as HorarioFixo[]
-
-  if (operacao === 'adicionar') {
-    const proximos = adicionarHorario(atuais, horario)
-    if (proximos === atuais) return
-    await db.from('pacientes').update({ horarios_atendimento: proximos }).eq('id', pacienteId)
-    return
-  }
-
-  // Outra profissional pode atender o mesmo paciente nesse horário; só apaga do
-  // paciente quando ninguém mais o mantém.
-  const { data: outros } = await db
-    .from('paciente_terapeutas')
-    .select('horarios_atendimento')
-    .eq('paciente_id', pacienteId)
-
-  const aindaUsado = (outros ?? []).some(v => contemHorario((v.horarios_atendimento ?? []) as HorarioFixo[], horario))
-  if (aindaUsado) return
-
-  await db.from('pacientes').update({ horarios_atendimento: removerHorario(atuais, horario) }).eq('id', pacienteId)
 }
 
 // ── POST: agendar ────────────────────────────────────────────────────────────
@@ -269,8 +231,6 @@ export async function POST(request: NextRequest) {
     if (error) return erro('Erro ao vincular o paciente a você.', 500)
   }
 
-  await espelharNoPaciente(db, pacienteId, horario, 'adicionar')
-
   return NextResponse.json({ success: true, modo, horario, vinculoCriado: !existe })
 }
 
@@ -353,7 +313,6 @@ export async function DELETE(request: NextRequest) {
 
     if (error) return erro('Erro ao remover o horário fixo.', 500)
 
-    await espelharNoPaciente(db, pacienteId, horario, 'remover')
     return NextResponse.json({ success: true, alvo })
   }
 

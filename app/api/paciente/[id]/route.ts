@@ -52,7 +52,8 @@ export async function PATCH(
   if (body.frequencia_atendimento !== undefined) updates.frequencia_atendimento = body.frequencia_atendimento || null
   if (body.turno_preferencia !== undefined) updates.turno_preferencia = body.turno_preferencia || null
   if (body.convenio_ou_particular !== undefined) updates.convenio_ou_particular = body.convenio_ou_particular || null
-  if (body.horarios_atendimento !== undefined) updates.horarios_atendimento = body.horarios_atendimento ?? []
+  // horarios_atendimento não é gravado aqui: o horário fixo vive no vínculo de cada profissional
+  // (body.terapeutas) e o resumo em pacientes é mantido por trigger no banco.
 
   if (body.cpf !== undefined) {
     const cpfPlain = typeof body.cpf === 'string' ? body.cpf.trim() : ''
@@ -88,13 +89,13 @@ export async function PATCH(
       if (error) return NextResponse.json({ error: 'Erro ao vincular profissionais' }, { status: 500 })
     }
 
-    // Mantém horarios_atendimento global como merge de todos os terapeutas (backwards compat)
-    const mergedHorarios = terapeutasRaw.flatMap(t =>
-      Array.isArray(t.horarios_atendimento) ? t.horarios_atendimento : []
+    // A frequência é texto derivado da quantidade de horários somados entre as profissionais
+    const totalHorarios = terapeutasRaw.reduce(
+      (soma, t) => soma + (Array.isArray(t.horarios_atendimento) ? t.horarios_atendimento.length : 0),
+      0,
     )
     await adminClient.from('pacientes').update({
-      horarios_atendimento: mergedHorarios,
-      frequencia_atendimento: mergedHorarios.length > 0 ? `${mergedHorarios.length}x por semana` : null,
+      frequencia_atendimento: totalHorarios > 0 ? `${totalHorarios}x por semana` : null,
       atualizado_em: new Date().toISOString(),
     }).eq('id', id)
   }

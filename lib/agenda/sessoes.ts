@@ -63,3 +63,49 @@ export function gerarSessoes(
 
   return sessoes.sort((a, b) => a.data_hora.localeCompare(b.data_hora))
 }
+
+export interface VinculoParaSessoes {
+  terapeutaId: string
+  terapeutaNome: string | null
+  paciente: { id: string; nome: string }
+  horarios: Array<{ dia: string; hora: string }>
+}
+
+export interface SessaoDaProfissional extends SessaoGerada {
+  terapeutaId: string
+  terapeutaNome: string | null
+}
+
+/**
+ * Gera as sessões de cada vínculo profissional–paciente, já com a dona do horário.
+ *
+ * O horário fixo vive no vínculo: um paciente atendido por duas profissionais tem
+ * horários diferentes com cada uma. Gerar a partir da soma dos horários perdia
+ * quem atende cada sessão.
+ */
+export function gerarSessoesPorProfissional(
+  vinculos: VinculoParaSessoes[],
+  dataInicio: Date,
+  dataFim: Date,
+  feriados: string[],
+): SessaoDaProfissional[] {
+  const jaVistas = new Set<string>()
+  const sessoes: SessaoDaProfissional[] = []
+
+  for (const vinculo of vinculos) {
+    const geradas = gerarSessoes(
+      [{ id: vinculo.paciente.id, nome: vinculo.paciente.nome, horarios_atendimento: vinculo.horarios }],
+      dataInicio,
+      dataFim,
+      feriados,
+    )
+    for (const sessao of geradas) {
+      // Mesmo paciente, dia e hora em duas profissionais: mostra uma vez só
+      if (jaVistas.has(sessao.id)) continue
+      jaVistas.add(sessao.id)
+      sessoes.push({ ...sessao, terapeutaId: vinculo.terapeutaId, terapeutaNome: vinculo.terapeutaNome })
+    }
+  }
+
+  return sessoes.sort((a, b) => a.data_hora.localeCompare(b.data_hora))
+}

@@ -64,3 +64,44 @@ export function validarHorario(valor: unknown): HorarioFixo | null {
   if (hh > 23 || mm > 59) return null
   return { dia, hora: `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}` }
 }
+
+export type DistribuicaoHorarios =
+  | { ok: true; porTerapeuta: Map<string, HorarioFixo[]> }
+  | { ok: false; erro: string }
+
+/**
+ * Reparte os horários informados no cadastro entre as profissionais que vão atender.
+ *
+ * O horário fixo pertence a uma profissional (vive no vínculo dela). Com uma só,
+ * tudo é dela. Com várias, cada horário precisa dizer de quem é: não existe jeito
+ * de adivinhar, e chutar mandaria o aviso de cancelamento para a pessoa errada.
+ */
+export function distribuirHorariosPorTerapeuta(entrada: unknown, terapeutaIds: string[]): DistribuicaoHorarios {
+  const porTerapeuta = new Map<string, HorarioFixo[]>(terapeutaIds.map(id => [id, []]))
+  const linhas = Array.isArray(entrada) ? entrada : []
+  if (linhas.length === 0) return { ok: true, porTerapeuta }
+
+  if (terapeutaIds.length === 0) {
+    return { ok: false, erro: 'Escolha a profissional que atende nesses horários.' }
+  }
+
+  for (const linha of linhas) {
+    const horario = validarHorario(linha)
+    if (!horario) return { ok: false, erro: 'Horário inválido. Use dia da semana e hora no formato HH:MM.' }
+
+    let dona: string | undefined
+    if (terapeutaIds.length === 1) {
+      dona = terapeutaIds[0]
+    } else {
+      const indicada = (linha as Record<string, unknown>).terapeuta_id
+      dona = typeof indicada === 'string' && porTerapeuta.has(indicada) ? indicada : undefined
+    }
+    if (!dona) {
+      return { ok: false, erro: 'Com mais de uma profissional, indique quem atende cada horário.' }
+    }
+
+    porTerapeuta.set(dona, adicionarHorario(porTerapeuta.get(dona) ?? [], horario))
+  }
+
+  return { ok: true, porTerapeuta }
+}

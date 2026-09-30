@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { gerarSessoes } from '@/lib/agenda/sessoes'
+import { gerarSessoesPorProfissional } from '@/lib/agenda/sessoes'
 import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 import { type AgendamentoItem } from '@/components/admin/AgendamentosLista'
 import { type EventoAgenda } from '@/components/terapia/CalendarioAgenda'
@@ -26,7 +26,7 @@ export default async function AgendamentosPage() {
   fim.setHours(23, 59, 59, 999)
 
   const [
-    { data: pacientesAtivos },
+    { data: vinculosAtivos },
     { data: especiais },
     { data: passados },
     { data: feriados },
@@ -34,10 +34,12 @@ export default async function AgendamentosPage() {
     { data: confirmacoes },
     { data: terapeutasAtivos },
   ] = await Promise.all([
+    // O horário fixo vive no vínculo, por profissional. Ler de pacientes.horarios_atendimento
+    // (a soma) fazia toda sessão de paciente compartilhado aparecer como da primeira profissional.
     supabase
-      .from('pacientes')
-      .select('id, nome, horarios_atendimento, paciente_terapeutas(terapeuta_id, profiles(id, nome))')
-      .eq('status', 'ativo'),
+      .from('paciente_terapeutas')
+      .select('terapeuta_id, horarios_atendimento, profiles(id, nome), pacientes!inner(id, nome, status)')
+      .eq('pacientes.status', 'ativo'),
     supabase
       .from('agendamentos')
       .select(`
@@ -87,22 +89,14 @@ export default async function AgendamentosPage() {
     configAgenda?.bloquear_feriados === true,
   )
 
-  const pacientesParaGerar = (pacientesAtivos ?? []).map((p: any) => ({
-    id: p.id,
-    nome: p.nome,
-    horarios_atendimento: p.horarios_atendimento ?? [],
-    terapeuta_nome: p.paciente_terapeutas?.[0]?.profiles?.nome ?? null,
-  }))
-
-  // Mapa paciente_id → { terapeutaId, terapeutaNome }
-  const terapeutaByPaciente: Record<string, { id: string | null; nome: string | null }> = {}
-  for (const p of pacientesAtivos ?? []) {
-    const vp = (p as any).paciente_terapeutas?.[0]
-    terapeutaByPaciente[(p as any).id] = {
-      id: vp?.terapeuta_id ?? null,
-      nome: vp?.profiles?.nome ?? null,
-    }
-  }
+  const vinculosParaGerar = ((vinculosAtivos ?? []) as any[])
+    .filter(v => v.pacientes)
+    .map(v => ({
+      terapeutaId: v.terapeuta_id as string,
+      terapeutaNome: (v.profiles?.nome as string | undefined) ?? null,
+      paciente: { id: v.pacientes.id as string, nome: v.pacientes.nome as string },
+      horarios: (v.horarios_atendimento ?? []) as Array<{ dia: string; hora: string }>,
+    }))
 
   // Mapa de confirmações
   const confirmacaoMap = new Map<string, { token: string; status: string }>()
@@ -117,7 +111,7 @@ export default async function AgendamentosPage() {
     })
   }
 
-  const sessoesRec = gerarSessoes(pacientesParaGerar, inicio, fim, feriadosDatas)
+  const sessoesRec = gerarSessoesPorProfissional(vinculosParaGerar, inicio, fim, feriadosDatas)
 
   // Linha gravada vence a sessão projetada, e duplicatas no mesmo horário viram uma só
   const avulsosPorChave = new Map<string, any>()
@@ -139,7 +133,6 @@ export default async function AgendamentosPage() {
       const confirmacao = s.paciente
         ? (confirmacaoMap.get(`${s.paciente.id}_${brtDate}_${brtHora}`) ?? null)
         : null
-      const terapeuta = s.paciente ? (terapeutaByPaciente[s.paciente.id] ?? null) : null
       return {
         id: s.id,
         tipo: s.tipo,
@@ -149,8 +142,8 @@ export default async function AgendamentosPage() {
         duracao_minutos: s.duracao_minutos,
         paciente: s.paciente ?? null,
         confirmacao,
-        terapeutaId: terapeuta?.id ?? null,
-        terapeutaNome: terapeuta?.nome ?? null,
+        terapeutaId: s.terapeutaId,
+        terapeutaNome: s.terapeutaNome,
       }
     }),
     ...(especiais ?? []).filter((a: any) => !ehAvulsoDuplicado(a)).map((a: any) => ({
@@ -173,7 +166,7 @@ export default async function AgendamentosPage() {
   }))
 
   // ── Dados para a lista dos próximos 14 dias ───────────────────────────────
-  const sessoesRec14 = gerarSessoes(pacientesParaGerar, hoje, em14dias, feriadosDatas)
+  const sessoesRec14 = gerarSessoesPorProfissional(vinculosParaGerar, hoje, em14dias, feriadosDatas)
 
   const proximos: AgendamentoItem[] = [
     ...sessoesRec14.filter(s => !s.paciente || !temAvulso(s.paciente.id, s.data_hora)).map(s => {
@@ -191,8 +184,8 @@ export default async function AgendamentosPage() {
         duracao_minutos: s.duracao_minutos,
         pacienteId: s.paciente?.id ?? null,
         pacienteNome: s.paciente?.nome ?? null,
-        terapeutaId: s.paciente ? (terapeutaByPaciente[s.paciente.id]?.id ?? null) : null,
-        terapeutaNome: s.paciente ? (terapeutaByPaciente[s.paciente.id]?.nome ?? null) : null,
+        terapeutaId: s.terapeutaId,
+        terapeutaNome: s.terapeutaNome,
         visivel_responsavel: true,
         confirmacao,
       }

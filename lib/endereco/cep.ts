@@ -49,8 +49,25 @@ export function normalizarCep(valor: unknown): string | null {
   return resultado.valido ? resultado.cep : null
 }
 
-/** 00000-000 enquanto digita. Não corta em 8: colar 9 dígitos precisa acusar erro, não virar outro CEP em silêncio. */
-export function mascaraCep(valor: string): string {
+/**
+ * 00000-000 enquanto digita. O hífen é fixo: aparece assim que há 5 dígitos ("38742-"), então
+ * digitá-lo é inofensivo e não digitá-lo dá no mesmo. Campo sem dígitos continua vazio.
+ *
+ * Não corta em 8: colar 9 dígitos precisa acusar erro, não virar outro CEP em silêncio.
+ *
+ * `apagando`: a mudança veio de uma tecla de apagar. Aí o hífen só fica se ainda estiver no
+ * campo; senão, apagar o hífen de "38742-" o recolocaria e a pessoa nunca mais apagaria o
+ * 5º dígito. Quem semeia estado inicial com o valor gravado não passa a opção.
+ */
+export function mascaraCep(valor: string, opcoes: { apagando?: boolean } = {}): string {
   const digitos = somenteDigitosCep(valor).slice(0, LIMITE_DIGITOS_MASCARA)
-  return digitos.length <= 5 ? digitos : `${digitos.slice(0, 5)}-${digitos.slice(5)}`
+  if (digitos.length > 5) return `${digitos.slice(0, 5)}-${digitos.slice(5)}`
+  if (digitos.length === 5 && (!opcoes.apagando || valor.includes('-'))) return `${digitos}-`
+  return digitos
+}
+
+/** Para o onChange do campo de CEP: detecta apagamento (`inputType` "delete...") e aplica a máscara. */
+export function mascaraCepDoEvento(evento: { target: { value: string }; nativeEvent: Event }): string {
+  const tipo = (evento.nativeEvent as Partial<InputEvent>).inputType
+  return mascaraCep(evento.target.value, { apagando: typeof tipo === 'string' && tipo.startsWith('delete') })
 }

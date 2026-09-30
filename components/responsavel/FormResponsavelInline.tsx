@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 import { Button } from '@/components/ui/Button'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
-import { mascaraCep } from '@/lib/endereco/cep'
+import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
 import { useCep } from '@/lib/endereco/use-cep'
 import { mascaraCpf } from '@/lib/masks'
 import { UFS_BRASIL } from '@/lib/profissionais'
@@ -178,7 +178,7 @@ export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCanc
         <input
           name="cep"
           value={form.cep}
-          onChange={e => { setForm(prev => ({ ...prev, cep: mascaraCep(e.target.value) })); campoCep.aoDigitar() }}
+          onChange={e => { setForm(prev => ({ ...prev, cep: mascaraCepDoEvento(e) })); campoCep.aoDigitar() }}
           onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
           placeholder="00000-000"
           inputMode="numeric"

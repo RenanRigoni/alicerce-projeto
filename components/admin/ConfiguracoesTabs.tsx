@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { salvarDadosClinica, salvarPreferencias, salvarHorarios } from '@/app/(admin)/admin/configuracoes/actions'
 import { CheckCircle, Loader2 } from 'lucide-react'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
-import { mascaraCep } from '@/lib/endereco/cep'
+import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
 import { useCep } from '@/lib/endereco/use-cep'
 
 interface Config {
@@ -178,7 +178,7 @@ function TabDados({ config }: { config: Config | null }) {
             <Input
               name="cep"
               value={form.cep}
-              onChange={e => { set('cep', mascaraCep(e.target.value)); campoCep.aoDigitar() }}
+              onChange={e => { set('cep', mascaraCepDoEvento(e)); campoCep.aoDigitar() }}
               onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
               placeholder="00000-000"
               inputMode="numeric"

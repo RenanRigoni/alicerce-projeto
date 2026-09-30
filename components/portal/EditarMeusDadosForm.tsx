@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
-import { mascaraCep } from '@/lib/endereco/cep'
+import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
 import { mascaraTelefone } from '@/lib/masks'
 import { useCep } from '@/lib/endereco/use-cep'
 
@@ -60,7 +60,7 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
   }
 
   function handleCEP(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm(prev => ({ ...prev, cep: mascaraCep(e.target.value) }))
+    setForm(prev => ({ ...prev, cep: mascaraCepDoEvento(e) }))
     campoCep.aoDigitar()
   }
 

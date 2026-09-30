@@ -5,7 +5,7 @@ import {
   getTipoProfissionalConfig, isCodigoCboValido, normalizarCodigoCbo,
 } from '@/lib/profissionais'
 import { mascaraCpfCnpj, mascaraTelefone } from '@/lib/masks'
-import { mascaraCep } from '@/lib/endereco/cep'
+import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
 import { useCep } from '@/lib/endereco/use-cep'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
 import { useRouter } from 'next/navigation'
@@ -371,7 +371,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
               <input
                 name="cep"
                 value={form.cep}
-                onChange={e => { setForm(prev => ({ ...prev, cep: mascaraCep(e.target.value) })); campoCep.aoDigitar() }}
+                onChange={e => { setForm(prev => ({ ...prev, cep: mascaraCepDoEvento(e) })); campoCep.aoDigitar() }}
                 onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
                 placeholder="00000-000"
                 inputMode="numeric"

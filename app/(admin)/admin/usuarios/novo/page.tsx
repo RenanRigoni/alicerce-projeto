@@ -4,7 +4,7 @@ import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig, isCodigoCbo
 import { todasPermissoes } from '@/lib/permissoes/definicoes'
 import { createClient } from '@/lib/supabase/client'
 import { useCep } from '@/lib/endereco/use-cep'
-import { mascaraCep } from '@/lib/endereco/cep'
+import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
 import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 import { Button } from '@/components/ui/Button'
@@ -432,7 +432,7 @@ export default function NovoUsuarioPage() {
                     <input
                       name="cep"
                       value={form.cep}
-                      onChange={e => { setForm(prev => ({ ...prev, cep: mascaraCep(e.target.value) })); campoCep.aoDigitar() }}
+                      onChange={e => { setForm(prev => ({ ...prev, cep: mascaraCepDoEvento(e) })); campoCep.aoDigitar() }}
                       onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
                       placeholder="00000-000"
                       inputMode="numeric"

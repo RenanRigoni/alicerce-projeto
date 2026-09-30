@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mascaraCep, normalizarCep, validarCep } from '../lib/endereco/cep'
+import { mascaraCep, mascaraCepDoEvento, normalizarCep, validarCep } from '../lib/endereco/cep'
 import { avisoDeValidacao, avisoDoResultado } from '../lib/endereco/aviso-cep'
 import { buscarCep } from '../lib/endereco/via-cep'
 
@@ -50,9 +50,53 @@ async function main() {
   // ── máscara: não pode esconder o erro cortando em 8 ───────────────────────
   assert.equal(mascaraCep('38742240'), '38742-240')
   assert.equal(mascaraCep('387'), '387')
-  assert.equal(mascaraCep('38742'), '38742')
+  assert.equal(mascaraCep('38742'), '38742-', 'o hífen é fixo: aparece com 5 dígitos')
+  assert.equal(mascaraCep('3874'), '3874', 'com 4 dígitos ainda não há hífen')
   assert.equal(mascaraCep('387422401'), '38742-2401') // 9 dígitos continuam visíveis
   assert.equal(validarCep(mascaraCep('387422401')).valido, false)
+
+  // hífen fixo: digitar o hífen ou não digitar dá no mesmo; campo sem dígitos continua vazio
+  assert.equal(mascaraCep(''), '')
+  assert.equal(mascaraCep('-'), '', 'só o hífen não vira nada (senão apareceria erro vermelho sem motivo)')
+  assert.equal(mascaraCep('--'), '')
+  assert.equal(mascaraCep('38742-'), '38742-', 'digitar o hífen depois do 5º dígito é idempotente')
+  assert.equal(mascaraCep('38742--'), '38742-')
+  assert.equal(mascaraCep(mascaraCep('38742')), '38742-', 'reaplicar não muda')
+  assert.equal(mascaraCep('38742-2'), '38742-2')
+  assert.equal(mascaraCep('38742240'), '38742-240', 'valor gravado (8 dígitos) semeia o campo com hífen')
+  assert.equal(mascaraCep('38742-240'), '38742-240', 'valor antigo com hífen também')
+
+  // apagar: não recolocar o hífen que a pessoa acabou de apagar (senão o 5º dígito nunca sai)
+  assert.equal(mascaraCep('38742', { apagando: true }), '38742', 'hífen apagado de "38742-": continua apagado')
+  assert.equal(mascaraCep('38742-', { apagando: true }), '38742-', 'apagou o 1º dígito depois do hífen: o hífen, que ainda está lá, fica')
+  assert.equal(mascaraCep('3874', { apagando: true }), '3874')
+  assert.equal(mascaraCep('38742-24', { apagando: true }), '38742-24')
+  // digitando com o hífen já no campo, nada muda em relação ao padrão
+  assert.equal(mascaraCep('38742', { apagando: false }), '38742-')
+  // sequência completa de Backspace a partir de um CEP cheio, como o campo a veria
+  let campo = mascaraCep('38742240')
+  const esperado = ['38742-24', '38742-2', '38742-', '38742', '3874', '387', '38', '3', '']
+  for (const passo of esperado) {
+    campo = mascaraCep(campo.slice(0, -1), { apagando: true })
+    assert.equal(campo, passo, `Backspace leva a "${passo}"`)
+  }
+
+  // o helper dos onChange lê o tipo do evento nativo
+  const evento = (value: string, inputType?: string) => ({ target: { value }, nativeEvent: { inputType } as unknown as Event })
+  assert.equal(mascaraCepDoEvento(evento('38742', 'insertText')), '38742-')
+  assert.equal(mascaraCepDoEvento(evento('38742', 'deleteContentBackward')), '38742')
+  assert.equal(mascaraCepDoEvento(evento('38742', 'deleteByCut')), '38742')
+  assert.equal(mascaraCepDoEvento(evento('38742', 'deleteContentForward')), '38742')
+  assert.equal(mascaraCepDoEvento(evento('38742', 'insertFromPaste')), '38742-', 'colar não é apagar')
+  assert.equal(mascaraCepDoEvento(evento('38742')), '38742-', 'evento sem inputType: trata como digitação')
+  assert.equal(mascaraCepDoEvento(evento('', 'deleteContentBackward')), '')
+
+  // a validação e o aviso não se atrapalham com o hífen final (B5): "38742-" é "faltam 3 dígitos"
+  assert.equal(validarCep('38742-').valido === false && (validarCep('38742-') as { mensagem: string }).mensagem, 'CEP incompleto — faltam 3 dígitos.')
+  assert.deepEqual(avisoDeValidacao('38742-'), { tipo: 'erro', mensagem: 'CEP incompleto — faltam 3 dígitos.' })
+  assert.equal(normalizarCep('38742-'), null)
+  assert.equal(normalizarCep(mascaraCep('38742240')), '38742240', 'o que é gravado continua sendo 8 dígitos sem hífen')
+  assert.equal(validarCep('-').valido === false && (validarCep('-') as { motivo: string }).motivo, 'sem_digitos', 'é por isso que o campo vazio não pode virar "-"')
 
   // ── mensagens da tela ─────────────────────────────────────────────────────
   assert.deepEqual(avisoDeValidacao('38742-24'), { tipo: 'erro', mensagem: 'CEP incompleto — faltam 1 dígito.' })
@@ -75,6 +119,9 @@ async function main() {
     // incompleto: nem chega a consultar
     const incompleto = await buscarCep('38742-24')
     assert.deepEqual(incompleto, { ok: false, motivo: 'incompleto' })
+    assert.equal(chamadas.length, 0)
+    // com o hífen final que a máscara agora põe: continua "incompleto", sem consultar (B5)
+    assert.deepEqual(await buscarCep('38742-'), { ok: false, motivo: 'incompleto' })
     assert.equal(chamadas.length, 0)
 
     // encontrado

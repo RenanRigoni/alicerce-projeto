@@ -6,6 +6,7 @@ import { RegistrarAltaButton } from '@/components/terapia/RegistrarAltaButton'
 import { ConfirmarAltaButton } from '@/components/terapia/ConfirmarAltaButton'
 import { todasPermissoes, temPermissao } from '@/lib/permissoes/definicoes'
 import { SELECT_RESPONSAVEIS_DO_PACIENTE, mapearResponsaveisVinculo } from '@/lib/paciente/responsaveis-vinculo'
+import { SELECT_ENCAMINHAMENTOS } from '@/lib/paciente/encaminhamentos'
 
 export default async function PacienteTerapeutaPage({
   params,
@@ -56,6 +57,7 @@ export default async function PacienteTerapeutaPage({
     { data: orientacoes },
     { data: altas },
     { data: altaAtual },
+    { data: encaminhamentos },
   ] = await Promise.all([
     dbPaciente.from('pacientes').select('*').eq('id', id).single(),
     dbPaciente
@@ -104,6 +106,14 @@ export default async function PacienteTerapeutaPage({
       .order('criado_em', { ascending: false })
       .limit(1)
       .maybeSingle() : Promise.resolve({ data: null }),
+    // Só a terapeuta vinculada consulta, com o cliente dela (a RLS filtra). Quem entra
+    // pelo ver_todos_pacientes não vê encaminhamento: a tela avisa em vez de mostrar vazio.
+    ehTerapeutaVinculado ? supabase
+      .from('encaminhamentos')
+      .select(SELECT_ENCAMINHAMENTOS)
+      .eq('paciente_id', id)
+      .order('data_encaminhamento', { ascending: false, nullsFirst: false })
+      .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
   ])
 
   if (!paciente) notFound()
@@ -169,6 +179,7 @@ export default async function PacienteTerapeutaPage({
         documentos={documentos ?? []}
         orientacoes={orientacoes ?? []}
         altas={altasMapped}
+        encaminhamentos={encaminhamentos ?? []}
         role="terapeuta"
         ehTerapeutaVinculado={ehTerapeutaVinculado}
         permissoes={permissoesEfetivas}

@@ -6,11 +6,17 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { gerarHash } from '@/lib/hash/gerar-hash'
 import type { DadosClinicos } from './PerfilPacienteTabs'
+import { BlocoEncaminhamentos } from './BlocoEncaminhamentos'
+import type { Encaminhamento } from '@/lib/paciente/encaminhamentos'
 
 interface Props {
   pacienteId: string
   dadosIniciais: DadosClinicos | null
   podeEditar: boolean
+  encaminhamentos: Encaminhamento[]
+  podeVerEncaminhamentos: boolean
+  podeGerenciarEncaminhamentos: boolean
+  prontuarioEncerrado: boolean
 }
 
 type Form = Omit<DadosClinicos, 'atualizado_em'>
@@ -113,7 +119,10 @@ function SecaoClinicos({ titulo, keys, form, camposMap }: {
   )
 }
 
-export function AbaDadosClinicos({ pacienteId, dadosIniciais, podeEditar }: Props) {
+export function AbaDadosClinicos({
+  pacienteId, dadosIniciais, podeEditar,
+  encaminhamentos, podeVerEncaminhamentos, podeGerenciarEncaminhamentos, prontuarioEncerrado,
+}: Props) {
   const [editando, setEditando] = useState(false)
   const [form, setForm] = useState<Form>(formFromDados(dadosIniciais))
   const [salvando, setSalvando] = useState(false)
@@ -169,6 +178,16 @@ export function AbaDadosClinicos({ pacienteId, dadosIniciais, podeEditar }: Prop
     const temDados = camposClinicos.some(c => form[c.key])
     return (
       <div className="space-y-3">
+        <div className="pb-3">
+          <BlocoEncaminhamentos
+            pacienteId={pacienteId}
+            encaminhamentos={encaminhamentos}
+            podeVer={podeVerEncaminhamentos}
+            podeGerenciar={podeGerenciarEncaminhamentos}
+            prontuarioEncerrado={prontuarioEncerrado}
+          />
+        </div>
+
         {podeEditar && (
           <div className="flex justify-end">
             <button

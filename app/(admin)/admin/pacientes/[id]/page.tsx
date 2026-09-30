@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { PerfilPacienteTabs } from '@/components/paciente/PerfilPacienteTabs'
 import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
 import { SELECT_RESPONSAVEIS_DO_PACIENTE, mapearResponsaveisVinculo } from '@/lib/paciente/responsaveis-vinculo'
+import { SELECT_ENCAMINHAMENTOS } from '@/lib/paciente/encaminhamentos'
 
 export default async function AdminPacienteDetalhePage({
   params,
@@ -30,6 +31,7 @@ export default async function AdminPacienteDetalhePage({
     { data: documentos },
     { data: orientacoes },
     { data: altas },
+    { data: encaminhamentos },
   ] = await Promise.all([
     supabase.from('pacientes').select('*').eq('id', id).single(),
     supabase
@@ -70,6 +72,14 @@ export default async function AdminPacienteDetalhePage({
       .select('id, status, tipo, motivo, documento_url, argumentacao_recusa, criado_em, profiles!solicitacoes_alta_solicitado_por_fkey(nome)')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
+    // Encaminhamento não depende de ver_relatorios_todos: é o papel que a recepção recebe.
+    // A RLS (admin/recepção) é quem decide; aqui vai o mais recente primeiro.
+    supabase
+      .from('encaminhamentos')
+      .select(SELECT_ENCAMINHAMENTOS)
+      .eq('paciente_id', id)
+      .order('data_encaminhamento', { ascending: false, nullsFirst: false })
+      .order('criado_em', { ascending: false }),
   ])
 
   if (!paciente) notFound()
@@ -134,6 +144,7 @@ export default async function AdminPacienteDetalhePage({
       documentos={documentos ?? []}
       orientacoes={orientacoes ?? []}
       altas={altasMapped}
+      encaminhamentos={encaminhamentos ?? []}
       role={perfil.role as 'admin' | 'recepcao'}
       ehTerapeutaVinculado={false}
       permissoes={perfil.efetivas}

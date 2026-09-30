@@ -14,6 +14,7 @@ import { ModalNovoResponsavel } from '@/components/responsavel/ModalNovoResponsa
 import { EnderecoDoPaciente } from './EnderecoDoPaciente'
 import { formatarEndereco } from '@/lib/endereco/formatar'
 import type { Responsavel } from '@/lib/paciente/responsaveis-vinculo'
+import type { Encaminhamento } from '@/lib/paciente/encaminhamentos'
 
 // ── Tipos ────────────────────────────────────────────────────
 
@@ -112,6 +113,7 @@ interface Props {
   documentos: Documento[]
   orientacoes: Orientacao[]
   altas: SolicitacaoAlta[]
+  encaminhamentos: Encaminhamento[]
   role: 'admin' | 'recepcao' | 'terapeuta'
   ehTerapeutaVinculado: boolean
   permissoes?: Record<string, boolean>
@@ -198,7 +200,7 @@ type Aba = typeof ABAS[number]
 
 export function PerfilPacienteTabs({
   paciente, terapeutas, responsaveis, dadosClinicos,
-  relatorios, evolucoes, documentos, orientacoes, altas,
+  relatorios, evolucoes, documentos, orientacoes, altas, encaminhamentos,
   role, ehTerapeutaVinculado, permissoes = {},
 }: Props) {
   const router = useRouter()
@@ -353,6 +355,8 @@ export function PerfilPacienteTabs({
   const podeAlterarStatusPaciente = (isAdminOuRecepcao && permissoes.desativar_reativar_paciente === true) || (terapeutaPodeAtuarNoPaciente && permissoes.desativar_reativar_paciente === true)
   const podeGerenciarResponsaveis = (isAdminOuRecepcao && permissoes.gerenciar_responsaveis === true) || (terapeutaPodeAtuarNoPaciente && permissoes.gerenciar_responsaveis === true)
   const podeEditarClinicos = role === 'terapeuta' && ehTerapeutaVinculado
+  // Encaminhamento: a recepção registra, a terapeuta vinculada consulta (mesma regra da RLS).
+  const podeVerEncaminhamentos = isAdminOuRecepcao || (role === 'terapeuta' && ehTerapeutaVinculado)
   const [alterandoStatus, setAlterandoStatus] = useState(false)
   const [erroStatus, setErroStatus] = useState('')
 
@@ -724,6 +728,10 @@ export function PerfilPacienteTabs({
           pacienteId={paciente.id}
           dadosIniciais={dadosClinicos}
           podeEditar={podeEditarClinicos}
+          encaminhamentos={encaminhamentos}
+          podeVerEncaminhamentos={podeVerEncaminhamentos}
+          podeGerenciarEncaminhamentos={isAdminOuRecepcao}
+          prontuarioEncerrado={paciente.status !== 'ativo'}
         />
       )}
 

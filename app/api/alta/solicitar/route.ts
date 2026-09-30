@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     .select('id')
     .eq('paciente_id', paciente_id)
     .eq('status', 'pendente_confirmacao')
+    .limit(1) // sem garantia de unicidade no banco: com 2 linhas o maybeSingle() devolveria null e a checagem passaria em falso
     .maybeSingle()
 
   if (existente) {

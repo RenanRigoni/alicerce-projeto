@@ -15,7 +15,8 @@
     "test:encaminhamentos": "tsx scripts/test-encaminhamentos.ts",
     "test:masks": "tsx scripts/test-masks.ts",
     "test:cadastro-paciente": "tsx scripts/test-cadastro-paciente.ts",
-    "test:busca-prontuario": "tsx scripts/test-busca-prontuario.ts"
+    "test:busca-prontuario": "tsx scripts/test-busca-prontuario.ts",
+    "test:alta-duplicada": "tsx scripts/test-alta-solicitar-duplicada.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

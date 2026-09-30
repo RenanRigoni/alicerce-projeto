@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
     .select('responsavel_id')
     .eq('paciente_id', paciente_id)
     .eq('tipo', 'principal')
+    .limit(1) // sem garantia de unicidade no banco: com 2 linhas o maybeSingle() devolveria null
     .maybeSingle()
 
   let telefone: string | null = null

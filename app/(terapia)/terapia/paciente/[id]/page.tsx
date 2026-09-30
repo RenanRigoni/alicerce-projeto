@@ -5,6 +5,7 @@ import { PerfilPacienteTabs } from '@/components/paciente/PerfilPacienteTabs'
 import { RegistrarAltaButton } from '@/components/terapia/RegistrarAltaButton'
 import { ConfirmarAltaButton } from '@/components/terapia/ConfirmarAltaButton'
 import { todasPermissoes, temPermissao } from '@/lib/permissoes/definicoes'
+import { SELECT_RESPONSAVEIS_DO_PACIENTE, mapearResponsaveisVinculo } from '@/lib/paciente/responsaveis-vinculo'
 
 export default async function PacienteTerapeutaPage({
   params,
@@ -63,7 +64,7 @@ export default async function PacienteTerapeutaPage({
       .eq('paciente_id', id),
     dbPaciente
       .from('paciente_responsaveis')
-      .select('tipo, profiles(id, nome, responsaveis_detalhes(endereco, cidade, cep, telefone_principal))')
+      .select(SELECT_RESPONSAVEIS_DO_PACIENTE)
       .eq('paciente_id', id),
     dbClinico ? dbClinico
       .from('pacientes_dados_clinicos')
@@ -115,17 +116,7 @@ export default async function PacienteTerapeutaPage({
     nome: t.profiles.nome,
   }))
 
-  const responsaveis = (responsaveisVinculo ?? [])
-    .filter((r: any) => r.profiles)
-    .map((r: any) => ({
-      id: r.profiles.id,
-      nome: r.profiles.nome,
-      tipo: r.tipo as 'principal' | 'secundario',
-      endereco: r.profiles.responsaveis_detalhes?.endereco ?? null,
-      cidade: r.profiles.responsaveis_detalhes?.cidade ?? null,
-      cep: r.profiles.responsaveis_detalhes?.cep ?? null,
-      telefone_principal: r.profiles.responsaveis_detalhes?.telefone_principal ?? null,
-    }))
+  const responsaveis = mapearResponsaveisVinculo(responsaveisVinculo)
 
   const altasMapped = (altas ?? []).map((a: any) => ({
     id: a.id,

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { PerfilPacienteTabs } from '@/components/paciente/PerfilPacienteTabs'
 import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
+import { SELECT_RESPONSAVEIS_DO_PACIENTE, mapearResponsaveisVinculo } from '@/lib/paciente/responsaveis-vinculo'
 
 export default async function AdminPacienteDetalhePage({
   params,
@@ -37,7 +38,7 @@ export default async function AdminPacienteDetalhePage({
       .eq('paciente_id', id),
     supabase
       .from('paciente_responsaveis')
-      .select('tipo, profiles(id, nome, responsaveis_detalhes(endereco, cidade, cep, telefone_principal))')
+      .select(SELECT_RESPONSAVEIS_DO_PACIENTE)
       .eq('paciente_id', id),
     podeVerClinico ? supabase
       .from('pacientes_dados_clinicos')
@@ -81,15 +82,7 @@ export default async function AdminPacienteDetalhePage({
     nome: t.profiles.nome,
   }))
 
-  const responsaveis = (responsaveisVinculo ?? []).map((r: any) => ({
-    id: r.profiles.id,
-    nome: r.profiles.nome,
-    tipo: r.tipo as 'principal' | 'secundario',
-    endereco: r.profiles.responsaveis_detalhes?.endereco ?? null,
-    cidade: r.profiles.responsaveis_detalhes?.cidade ?? null,
-    cep: r.profiles.responsaveis_detalhes?.cep ?? null,
-    telefone_principal: r.profiles.responsaveis_detalhes?.telefone_principal ?? null,
-  }))
+  const responsaveis = mapearResponsaveisVinculo(responsaveisVinculo)
 
   const altasMapped = (altas ?? []).map((a: any) => ({
     id: a.id,

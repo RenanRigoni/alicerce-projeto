@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:permissoes": "tsx scripts/test-permissoes.ts",
-    "test:filtro-pacientes": "tsx scripts/test-filtro-pacientes.ts"
+    "test:filtro-pacientes": "tsx scripts/test-filtro-pacientes.ts",
+    "test:endereco": "tsx scripts/test-endereco.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -11,6 +11,9 @@ import { FiltroEvolucoes, autoriaEvolucao, useFiltroEvolucoes } from '@/componen
 import { ModalPortal } from '@/components/ui/ModalPortal'
 import { BuscaResponsavel, type ResponsavelSelecionado } from '@/components/responsavel/BuscaResponsavel'
 import { ModalNovoResponsavel } from '@/components/responsavel/ModalNovoResponsavel'
+import { EnderecoDoPaciente } from './EnderecoDoPaciente'
+import { formatarEndereco } from '@/lib/endereco/formatar'
+import type { Responsavel } from '@/lib/paciente/responsaveis-vinculo'
 
 // ── Tipos ────────────────────────────────────────────────────
 
@@ -31,15 +34,7 @@ export interface DadosPaciente {
   convenio_ou_particular: string | null
 }
 
-export interface Responsavel {
-  id: string
-  nome: string
-  tipo: 'principal' | 'secundario'
-  endereco: string | null
-  cidade: string | null
-  cep: string | null
-  telefone_principal: string | null
-}
+export type { Responsavel }
 
 export interface DadosClinicos {
   hipotese_diagnostica: string | null
@@ -613,6 +608,13 @@ export function PerfilPacienteTabs({
               </div>
             )}
 
+            <EnderecoDoPaciente
+              responsaveis={responsaveis}
+              isAdminOuRecepcao={isAdminOuRecepcao}
+              podeGerenciarResponsaveis={podeGerenciarResponsaveis}
+              onIrParaResponsaveis={() => setAbaAtiva('Responsáveis')}
+            />
+
             {paciente.motivo_desativacao && (
               <div
                 className="mt-4 pt-4 border-t"
@@ -695,20 +697,12 @@ export function PerfilPacienteTabs({
                     <div style={{ color: 'var(--color-ink-mid)' }}>{r.telefone_principal}</div>
                   </div>
                 )}
-                {r.cidade && (
-                  <div>
-                    <div className="text-xs mb-0.5" style={{ color: 'var(--color-ink-faint)' }}>Cidade</div>
-                    <div style={{ color: 'var(--color-ink-mid)' }}>{r.cidade}</div>
+                <div className="col-span-2">
+                  <div className="text-xs mb-0.5" style={{ color: 'var(--color-ink-faint)' }}>Endereço</div>
+                  <div style={{ color: formatarEndereco(r) ? 'var(--color-ink-mid)' : 'var(--color-ink-faint)' }}>
+                    {formatarEndereco(r) ?? 'Não cadastrado'}
                   </div>
-                )}
-                {r.endereco && (
-                  <div className="col-span-2">
-                    <div className="text-xs mb-0.5" style={{ color: 'var(--color-ink-faint)' }}>Endereço</div>
-                    <div style={{ color: 'var(--color-ink-mid)' }}>
-                      {r.endereco}{r.cep ? ` — CEP ${r.cep}` : ''}
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
               <div className="mt-3 pt-3 border-t flex justify-end" style={{ borderColor: 'var(--color-border-soft)' }}>
                 <a

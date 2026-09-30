@@ -62,6 +62,17 @@ export function PacientesListaTerapeuta({
 
   const lista = filtrarPacientes({ pacientes, meusIds: meusIdsSet, modo, status: filtros, busca })
 
+  // Lista de origem vazia (nenhum vínculo) é diferente de "o filtro não achou":
+  // no primeiro caso mexer em filtro não resolve, é preciso falar com a recepção.
+  const semNenhumPaciente = modo === 'meus' ? meusIds.length === 0 : pacientes.length === 0
+  const textoListaVazia = semNenhumPaciente
+    ? (podeVerTodosPacientes
+      ? 'Você ainda não tem pacientes vinculados. Use "Todos" para ver a clínica inteira ou fale com a recepção.'
+      : 'Você ainda não tem pacientes vinculados. Fale com a recepção.')
+    : (modo === 'meus' && podeVerTodosPacientes
+      ? 'Nenhum paciente seu para os filtros selecionados. Use "Todos" para ver a clínica inteira.'
+      : 'Nenhum paciente encontrado para os filtros selecionados.')
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -137,11 +148,7 @@ export function PacientesListaTerapeuta({
 
       <Card>
         {lista.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-            {modo === 'meus' && podeVerTodosPacientes
-              ? 'Nenhum paciente seu para os filtros selecionados. Use "Todos" para ver a clínica inteira.'
-              : 'Nenhum paciente encontrado para os filtros selecionados.'}
-          </p>
+          <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>{textoListaVazia}</p>
         ) : (
           <ul className="divide-y" style={{ borderColor: 'var(--color-border-soft)' }}>
             {lista.map(p => (

@@ -2,8 +2,18 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { validarCep } from '@/lib/endereco/cep'
 
-export async function salvarDadosClinica(formData: FormData) {
+export interface ResultadoSalvarClinica {
+  erro?: string
+}
+
+export async function salvarDadosClinica(formData: FormData): Promise<ResultadoSalvarClinica> {
+  // CEP vazio vale; com dígitos, exatamente 8. Devolve o erro em vez de lançar:
+  // um throw aqui derrubaria a tela inteira por causa de um campo.
+  const cep = validarCep(formData.get('cep'))
+  if (!cep.valido) return { erro: cep.mensagem }
+
   const supabase = await createClient()
   const { error } = await supabase
     .from('configuracoes_clinica')
@@ -14,7 +24,7 @@ export async function salvarDadosClinica(formData: FormData) {
       cpf_cnpj:      formData.get('cpf_cnpj')      || null,
       email:         formData.get('email')          || null,
       telefone:      formData.get('telefone')       || null,
-      cep:           formData.get('cep')            || null,
+      cep:           cep.cep,
       logradouro:    formData.get('logradouro')     || null,
       numero:        formData.get('numero')         || null,
       complemento:   formData.get('complemento')   || null,
@@ -27,6 +37,7 @@ export async function salvarDadosClinica(formData: FormData) {
 
   if (error) throw new Error(error.message)
   revalidatePath('/admin/configuracoes')
+  return {}
 }
 
 export async function salvarPreferencias(formData: FormData) {

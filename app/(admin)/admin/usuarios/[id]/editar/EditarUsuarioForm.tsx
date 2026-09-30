@@ -4,8 +4,10 @@ import {
   TIPOS_PROFISSIONAIS, UFS_BRASIL,
   getTipoProfissionalConfig, isCodigoCboValido, normalizarCodigoCbo,
 } from '@/lib/profissionais'
-import { createClient } from '@/lib/supabase/client'
 import { mascaraCpfCnpj } from '@/lib/masks'
+import { mascaraCep } from '@/lib/endereco/cep'
+import { useCep } from '@/lib/endereco/use-cep'
+import { AvisoCep } from '@/components/endereco/AvisoCep'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -18,11 +20,6 @@ function mascaraTelefone(valor: string) {
   if (d.length <= 2) return d.length ? `(${d}` : ''
   if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
-}
-
-function mascaraCEP(valor: string) {
-  const d = valor.replace(/\D/g, '').slice(0, 8)
-  return d.length <= 5 ? d : `${d.slice(0, 5)}-${d.slice(5)}`
 }
 
 
@@ -121,12 +118,20 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     numero:               detalhes?.numero ?? '',
     complemento:          detalhes?.complemento ?? '',
     cidade:               detalhes?.cidade ?? '',
-    cep:                  mascaraCEP(detalhes?.cep ?? ''),
+    cep:                  mascaraCep(detalhes?.cep ?? ''),
     emergencia_nome:      emergenciaInicial.nome,
     emergencia_telefone:  mascaraTelefone(emergenciaInicial.telefone),
   })
 
   const tipoConfig = getTipoProfissionalConfig(form.tipo_profissional)
+  const campoCep = useCep({
+    cepInicial: detalhes?.cep,
+    onEndereco: e => setForm(prev => ({
+      ...prev,
+      endereco: e.logradouro || prev.endereco,
+      cidade: e.localidade || prev.cidade,
+    })),
+  })
 
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -140,7 +145,18 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     e.preventDefault()
     setErro('')
 
+    if (usuario.role === 'pai') {
+      const erroCep = campoCep.validarParaSalvar(form.cep)
+      if (erroCep) { setErro(erroCep); return }
+    }
+
     setSalvando(true)
+
+    const emergenciaNome = form.emergencia_nome.trim()
+    const emergenciaTel  = form.emergencia_telefone.trim()
+    const contato_emergencia = emergenciaNome && emergenciaTel
+      ? `${emergenciaNome} — ${emergenciaTel}`
+      : emergenciaNome || emergenciaTel || null
 
     const res = await fetch(`/api/usuario/${usuario.id}`, {
       method: 'PATCH',
@@ -160,36 +176,25 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
           especialidade:     form.especialidade || null,
           biografia:         form.biografia || null,
         } : {}),
+        // Endereço e contatos do responsável seguem na mesma chamada: o servidor
+        // valida o CEP antes de gravar qualquer coisa. Antes isto era gravado
+        // direto do navegador, sem validação nenhuma.
+        ...(usuario.role === 'pai' ? {
+          detalhes_responsavel: {
+            telefone_principal: form.telefone_principal,
+            endereco:           form.endereco,
+            numero:             form.numero,
+            complemento:        form.complemento,
+            cidade:             form.cidade,
+            cep:                form.cep,
+            contato_emergencia,
+          },
+        } : {}),
       }),
     })
 
     const json = await res.json().catch(() => ({}))
     if (!res.ok) { setErro(json.error ?? 'Erro ao salvar.'); setSalvando(false); return }
-
-    // Dados de responsável (pai) — via supabase client direto
-    if (usuario.role === 'pai') {
-      const supabase = createClient()
-      const emergenciaNome = form.emergencia_nome.trim()
-      const emergenciaTel  = form.emergencia_telefone.trim()
-      const contato_emergencia = emergenciaNome && emergenciaTel
-        ? `${emergenciaNome} — ${emergenciaTel}`
-        : emergenciaNome || emergenciaTel || null
-
-      const { error: errDet } = await supabase
-        .from('responsaveis_detalhes')
-        .upsert({
-          id: usuario.id,
-          telefone_principal: form.telefone_principal || null,
-          endereco:    form.endereco || null,
-          numero:      form.numero || null,
-          complemento: form.complemento || null,
-          cidade:      form.cidade || null,
-          cep:         form.cep || null,
-          contato_emergencia,
-        }, { onConflict: 'id' })
-
-      if (errDet) { setErro(errDet.message); setSalvando(false); return }
-    }
 
     setSalvando(false)
     router.push(`/admin/usuarios/${usuario.id}`)
@@ -374,12 +379,14 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
               <input
                 name="cep"
                 value={form.cep}
-                onChange={e => setForm(prev => ({ ...prev, cep: mascaraCEP(e.target.value) }))}
+                onChange={e => { setForm(prev => ({ ...prev, cep: mascaraCep(e.target.value) })); campoCep.aoDigitar() }}
+                onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
                 placeholder="00000-000"
                 inputMode="numeric"
                 className={inputCls}
                 style={inputStyle}
               />
+              <AvisoCep aviso={campoCep.aviso} buscando={campoCep.buscando} />
             </div>
 
             <div>

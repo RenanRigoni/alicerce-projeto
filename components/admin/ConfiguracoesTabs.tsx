@@ -3,6 +3,9 @@
 import { useState, useTransition } from 'react'
 import { salvarDadosClinica, salvarPreferencias, salvarHorarios } from '@/app/(admin)/admin/configuracoes/actions'
 import { CheckCircle, Loader2 } from 'lucide-react'
+import { AvisoCep } from '@/components/endereco/AvisoCep'
+import { mascaraCep } from '@/lib/endereco/cep'
+import { useCep } from '@/lib/endereco/use-cep'
 
 interface Config {
   nome_fantasia: string | null
@@ -83,7 +86,7 @@ function Toast({ msg }: { msg: string }) {
 function TabDados({ config }: { config: Config | null }) {
   const [pending, startTransition] = useTransition()
   const [ok, setOk] = useState(false)
-  const [cepLoading, setCepLoading] = useState(false)
+  const [erro, setErro] = useState('')
   const [form, setForm] = useState({
     nome_fantasia: config?.nome_fantasia ?? '',
     razao_social:  config?.razao_social  ?? '',
@@ -91,7 +94,7 @@ function TabDados({ config }: { config: Config | null }) {
     cpf_cnpj:      config?.cpf_cnpj      ?? '',
     email:         config?.email          ?? '',
     telefone:      config?.telefone      ?? '',
-    cep:           config?.cep            ?? '',
+    cep:           mascaraCep(config?.cep ?? ''),
     logradouro:    config?.logradouro    ?? '',
     numero:        config?.numero        ?? '',
     complemento:   config?.complemento   ?? '',
@@ -105,32 +108,30 @@ function TabDados({ config }: { config: Config | null }) {
     setOk(false)
   }
 
-  async function buscarCep(cep: string) {
-    const clean = cep.replace(/\D/g, '')
-    if (clean.length !== 8) return
-    setCepLoading(true)
-    try {
-      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`)
-      const data = await res.json()
-      if (!data.erro) {
-        setForm(f => ({
-          ...f,
-          logradouro: data.logradouro ?? f.logradouro,
-          bairro:     data.bairro     ?? f.bairro,
-          cidade:     data.localidade ?? f.cidade,
-          estado:     data.uf         ?? f.estado,
-        }))
-      }
-    } finally {
-      setCepLoading(false)
-    }
-  }
+  const campoCep = useCep({
+    cepInicial: config?.cep,
+    onEndereco: e => {
+      setForm(f => ({
+        ...f,
+        logradouro: e.logradouro || f.logradouro,
+        bairro:     e.bairro     || f.bairro,
+        cidade:     e.localidade || f.cidade,
+        estado:     e.uf         || f.estado,
+      }))
+      setOk(false)
+    },
+  })
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setErro('')
+    const erroCep = campoCep.validarParaSalvar(form.cep)
+    if (erroCep) { setErro(erroCep); return }
+
     const fd = new FormData(e.currentTarget)
     startTransition(async () => {
-      await salvarDadosClinica(fd)
+      const resultado = await salvarDadosClinica(fd)
+      if (resultado.erro) { setErro(resultado.erro); return }
       setOk(true)
     })
   }
@@ -174,19 +175,15 @@ function TabDados({ config }: { config: Config | null }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <Label>CEP</Label>
-            <div className="relative">
-              <Input
-                name="cep"
-                value={form.cep}
-                onChange={e => set('cep', e.target.value)}
-                onBlur={e => buscarCep(e.target.value)}
-                placeholder="00000-000"
-                maxLength={9}
-              />
-              {cepLoading && (
-                <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin" style={{ color: 'var(--color-ink-soft)' }} />
-              )}
-            </div>
+            <Input
+              name="cep"
+              value={form.cep}
+              onChange={e => { set('cep', mascaraCep(e.target.value)); campoCep.aoDigitar() }}
+              onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
+              placeholder="00000-000"
+              inputMode="numeric"
+            />
+            <AvisoCep aviso={campoCep.aviso} buscando={campoCep.buscando} />
           </div>
           <div className="sm:col-span-2">
             <Label>Logradouro</Label>
@@ -223,6 +220,7 @@ function TabDados({ config }: { config: Config | null }) {
       <div className="flex items-center gap-4 pt-2">
         <SaveButton pending={pending} />
         {ok && <Toast msg="Salvo com sucesso!" />}
+        {erro && <span role="alert" className="text-sm" style={{ color: '#B91C1C' }}>{erro}</span>}
       </div>
     </form>
   )

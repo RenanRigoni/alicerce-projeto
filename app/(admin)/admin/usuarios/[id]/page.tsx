@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card } from '@/components/ui/Card'
+import { formatarCep } from '@/lib/endereco/formatar'
 import { Badge } from '@/components/ui/Badge'
 import { notFound } from 'next/navigation'
 import { AcoesUsuario } from './AcoesUsuario'
@@ -218,7 +219,7 @@ export default async function UsuarioDetalhePage({
           {usuario.especialidade && <Campo label="Especialidade" valor={usuario.especialidade} />}
           {detalhesResponsavel?.endereco && (
             <div className="col-span-2">
-              <Campo label="Endereço" valor={`${detalhesResponsavel.endereco}${detalhesResponsavel.cidade ? ` — ${detalhesResponsavel.cidade}` : ''}${detalhesResponsavel.cep ? `, CEP ${detalhesResponsavel.cep}` : ''}`} />
+              <Campo label="Endereço" valor={`${detalhesResponsavel.endereco}${detalhesResponsavel.cidade ? ` — ${detalhesResponsavel.cidade}` : ''}${detalhesResponsavel.cep ? `, CEP ${formatarCep(detalhesResponsavel.cep)}` : ''}`} />
             </div>
           )}
           {detalhesResponsavel?.contato_emergencia && (

@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AvisoCep } from '@/components/endereco/AvisoCep'
+import { mascaraCep } from '@/lib/endereco/cep'
+import { useCep } from '@/lib/endereco/use-cep'
 
 interface Props {
   nome: string
@@ -18,12 +21,6 @@ function mascaraTelefone(valor: string) {
   if (d.length <= 2) return d.length ? `(${d}` : ''
   if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
-}
-
-function mascaraCEP(valor: string) {
-  const d = valor.replace(/\D/g, '').slice(0, 8)
-  if (d.length <= 5) return d
-  return `${d.slice(0, 5)}-${d.slice(5)}`
 }
 
 function parsarEmergencia(raw: string | null) {
@@ -49,7 +46,15 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
     emergencia_telefone: emergenciaInicial.telefone,
     endereco:            endereco ?? '',
     cidade:              cidade ?? '',
-    cep:                 cep ?? '',
+    cep:                 mascaraCep(cep ?? ''),
+  })
+  const campoCep = useCep({
+    cepInicial: cep,
+    onEndereco: e => setForm(prev => ({
+      ...prev,
+      endereco: e.logradouro || prev.endereco,
+      cidade: e.localidade || prev.cidade,
+    })),
   })
 
   function handle(e: React.ChangeEvent<HTMLInputElement>) {
@@ -61,11 +66,14 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
   }
 
   function handleCEP(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm(prev => ({ ...prev, cep: mascaraCEP(e.target.value) }))
+    setForm(prev => ({ ...prev, cep: mascaraCep(e.target.value) }))
+    campoCep.aoDigitar()
   }
 
   async function handleSalvar() {
     setErro('')
+    const erroCep = campoCep.validarParaSalvar(form.cep)
+    if (erroCep) { setErro(erroCep); return }
     setSalvando(true)
 
     const emergenciaNome = form.emergencia_nome.trim()
@@ -197,10 +205,12 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
                 name="cep"
                 value={form.cep}
                 onChange={handleCEP}
+                onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
                 placeholder="00000-000"
                 inputMode="numeric"
                 style={inputStyle}
               />
+              <AvisoCep aviso={campoCep.aviso} buscando={campoCep.buscando} />
             </div>
           </div>
 

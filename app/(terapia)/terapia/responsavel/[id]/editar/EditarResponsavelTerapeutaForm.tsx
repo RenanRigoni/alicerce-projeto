@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { AvisoCep } from '@/components/endereco/AvisoCep'
+import { mascaraCep } from '@/lib/endereco/cep'
+import { useCep } from '@/lib/endereco/use-cep'
 
 const labelStyle = { color: 'var(--color-ink-mid)' }
 
@@ -12,12 +15,6 @@ function mascaraTelefone(valor: string) {
   if (d.length <= 2) return d.length ? `(${d}` : ''
   if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
-}
-
-function mascaraCEP(valor: string) {
-  const d = valor.replace(/\D/g, '').slice(0, 8)
-  if (d.length <= 5) return d
-  return `${d.slice(0, 5)}-${d.slice(5)}`
 }
 
 function parsarEmergencia(raw: string | null) {
@@ -39,9 +36,17 @@ export function EditarResponsavelTerapeutaForm({ responsavel }: { responsavel: a
     telefone_principal: responsavel.telefone_principal ?? '',
     endereco:           responsavel.endereco ?? '',
     cidade:             responsavel.cidade ?? '',
-    cep:                responsavel.cep ?? '',
+    cep:                mascaraCep(responsavel.cep ?? ''),
     emergencia_nome:    emergenciaInicial.nome,
     emergencia_telefone: emergenciaInicial.telefone,
+  })
+  const campoCep = useCep({
+    cepInicial: responsavel.cep,
+    onEndereco: e => setForm(prev => ({
+      ...prev,
+      endereco: e.logradouro || prev.endereco,
+      cidade: e.localidade || prev.cidade,
+    })),
   })
 
   function handle(e: React.ChangeEvent<HTMLInputElement>) {
@@ -53,11 +58,14 @@ export function EditarResponsavelTerapeutaForm({ responsavel }: { responsavel: a
   }
 
   function handleCEP(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm(prev => ({ ...prev, cep: mascaraCEP(e.target.value) }))
+    setForm(prev => ({ ...prev, cep: mascaraCep(e.target.value) }))
+    campoCep.aoDigitar()
   }
 
   async function handleSalvar() {
     if (!form.nome.trim()) { setErro('Nome é obrigatório.'); return }
+    const erroCep = campoCep.validarParaSalvar(form.cep)
+    if (erroCep) { setErro(erroCep); return }
     setErro('')
     setSalvando(true)
 
@@ -128,10 +136,12 @@ export function EditarResponsavelTerapeutaForm({ responsavel }: { responsavel: a
                 name="cep"
                 value={form.cep}
                 onChange={handleCEP}
+                onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
                 placeholder="00000-000"
                 inputMode="numeric"
                 className="input-base"
               />
+              <AvisoCep aviso={campoCep.aviso} buscando={campoCep.buscando} />
             </div>
           </div>
 

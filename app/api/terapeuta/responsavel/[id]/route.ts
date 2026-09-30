@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { temPermissao } from '@/lib/permissoes/definicoes'
+import { validarCep } from '@/lib/endereco/cep'
 
 export async function PATCH(
   request: NextRequest,
@@ -39,28 +41,46 @@ export async function PATCH(
     return NextResponse.json({ error: 'Sem permissão para editar este responsável' }, { status: 403 })
   }
 
-  const body = await request.json()
+  const body = await request.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
   const { nome, telefone_principal, endereco, cidade, cep, contato_emergencia } = body
 
+  const cepValidado = cep !== undefined ? validarCep(cep) : null
+  if (cepValidado && !cepValidado.valido) {
+    return NextResponse.json({ error: cepValidado.mensagem }, { status: 400 })
+  }
+
+  if (nome !== undefined && (typeof nome !== 'string' || !nome.trim())) {
+    return NextResponse.json({ error: 'Nome não pode estar vazio.' }, { status: 400 })
+  }
+
   const nomeUpdates: Record<string, any> = {}
-  if (nome !== undefined) nomeUpdates.nome = nome
+  if (nome !== undefined) nomeUpdates.nome = nome.trim()
 
   const detalhesUpdates: Record<string, any> = {}
   if (telefone_principal !== undefined) detalhesUpdates.telefone_principal = telefone_principal || null
   if (endereco !== undefined) detalhesUpdates.endereco = endereco || null
   if (cidade !== undefined) detalhesUpdates.cidade = cidade || null
-  if (cep !== undefined) detalhesUpdates.cep = cep || null
+  if (cepValidado?.valido) detalhesUpdates.cep = cepValidado.cep
   if (contato_emergencia !== undefined) detalhesUpdates.contato_emergencia = contato_emergencia || null
 
+  // A autorização acima (profissional + gerenciar_responsaveis + vínculo com um
+  // paciente dela) é o controle de acesso. A escrita usa o cliente de serviço
+  // porque a RLS de profiles e responsaveis_detalhes só deixa escrever o próprio
+  // dono ou admin/recepção: com o cliente da profissional, o UPDATE afetava 0
+  // linhas sem erro e a tela dizia "salvo" sem ter salvo nada. O upsert antigo
+  // ainda usava uma coluna (responsavel_id) que a tabela não tem.
+  const adminClient = createAdminClient()
+
   if (Object.keys(nomeUpdates).length > 0) {
-    const { error } = await supabase.from('profiles').update(nomeUpdates).eq('id', responsavelId)
+    const { error } = await adminClient.from('profiles').update(nomeUpdates).eq('id', responsavelId).eq('role', 'pai')
     if (error) return NextResponse.json({ error: 'Erro ao atualizar nome' }, { status: 500 })
   }
 
   if (Object.keys(detalhesUpdates).length > 0) {
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('responsaveis_detalhes')
-      .upsert({ responsavel_id: responsavelId, ...detalhesUpdates }, { onConflict: 'responsavel_id' })
+      .upsert({ id: responsavelId, ...detalhesUpdates }, { onConflict: 'id' })
     if (error) return NextResponse.json({ error: 'Erro ao atualizar detalhes' }, { status: 500 })
   }
 

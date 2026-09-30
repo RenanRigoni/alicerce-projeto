@@ -1,6 +1,7 @@
 import { getTipoProfissionalConfig, isCodigoCboValido, isTipoProfissional, isUfBrasil, normalizarCodigoCbo } from '@/lib/profissionais'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { enviarConviteAcesso, DOMINIO_EMAIL_INTERNO } from '@/lib/auth/convite'
+import { validarCep } from '@/lib/endereco/cep'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
@@ -134,6 +135,13 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // CEP é opcional, mas com dígitos precisa ter 8. Valida antes de criar a conta
+  // no Auth: recusar depois deixaria um usuário criado sem o cadastro terminar.
+  const cepValidado = role === 'pai' ? validarCep(cep) : { valido: true as const, cep: null }
+  if (!cepValidado.valido) {
+    return NextResponse.json({ error: cepValidado.mensagem }, { status: 400 })
+  }
+
   // O trigger handle_new_user só cobre nome NULL; string vazia passa e o perfil
   // fica sem nome, sumindo das buscas da recepção.
   const nomeEfetivo = typeof nome === 'string' && nome.trim() ? nome.trim() : null
@@ -218,7 +226,7 @@ export async function POST(request: NextRequest) {
     const { error: detalhesErro } = await adminClient.from('responsaveis_detalhes').upsert({
       id: userId,
       telefone_principal: telefone ? telefone.replace(/\D/g, '') : null,
-      cep: cep?.replace(/\D/g, '') ?? null,
+      cep: cepValidado.cep,
       endereco: endereco?.trim() ?? null,
       bairro: bairro?.trim() ?? null,
       numero: numero?.trim() ?? null,

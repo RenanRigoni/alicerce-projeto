@@ -2,6 +2,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getTipoProfissionalConfig, isCodigoCboValido, isTipoProfissional, isUfBrasil, normalizarCodigoCbo } from '@/lib/profissionais'
 import { temPermissao } from '@/lib/permissoes/definicoes'
+import { validarCep } from '@/lib/endereco/cep'
 import { NextRequest, NextResponse } from 'next/server'
 
 function normalizarCpfCnpj(valor: unknown): string | null {
@@ -52,6 +53,18 @@ export async function PATCH(
   const telefone = typeof body.telefone === 'string' ? body.telefone.trim() : ''
 
   const str = (v: unknown) => typeof v === 'string' && v.trim() ? v.trim() : null
+
+  // Dados de contato do responsável. Antes a tela gravava isto direto do navegador,
+  // sem passar por nenhuma validação de servidor. Valida antes de mexer no Auth ou
+  // no perfil, para um CEP recusado não deixar a edição pela metade.
+  const detalhesBruto: Record<string, unknown> | null =
+    alvo.role === 'pai' && body.detalhes_responsavel && typeof body.detalhes_responsavel === 'object'
+      ? body.detalhes_responsavel
+      : null
+  const cepDetalhes = detalhesBruto ? validarCep(detalhesBruto.cep) : null
+  if (cepDetalhes && !cepDetalhes.valido) {
+    return NextResponse.json({ error: cepDetalhes.mensagem }, { status: 400 })
+  }
 
   const profileUpdate: Record<string, string | null | boolean> = {}
   if (nome) profileUpdate.nome = nome
@@ -139,6 +152,28 @@ export async function PATCH(
 
   if (profileError) {
     return NextResponse.json({ error: profileError.message }, { status: 400 })
+  }
+
+  if (detalhesBruto && cepDetalhes?.valido) {
+    const { error: detalhesError } = await adminClient
+      .from('responsaveis_detalhes')
+      .upsert({
+        id,
+        telefone_principal: str(detalhesBruto.telefone_principal),
+        endereco: str(detalhesBruto.endereco),
+        numero: str(detalhesBruto.numero),
+        complemento: str(detalhesBruto.complemento),
+        cidade: str(detalhesBruto.cidade),
+        cep: cepDetalhes.cep,
+        contato_emergencia: str(detalhesBruto.contato_emergencia),
+      }, { onConflict: 'id' })
+
+    if (detalhesError) {
+      return NextResponse.json(
+        { error: `Os dados pessoais foram salvos, mas não o endereço e os contatos: ${detalhesError.message}` },
+        { status: 400 }
+      )
+    }
   }
 
   return NextResponse.json({ success: true })

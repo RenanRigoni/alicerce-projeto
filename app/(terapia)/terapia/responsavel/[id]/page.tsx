@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
+import { formatarCep } from '@/lib/endereco/formatar'
 
 export default async function ResponsavelTerapeutaPage({
   params,
@@ -94,7 +95,7 @@ export default async function ResponsavelTerapeutaPage({
             <div className="col-span-2">
               <div className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--color-ink-faint)' }}>Endereço</div>
               <div className="text-sm" style={{ color: 'var(--color-ink)' }}>
-                {detalhes.endereco}{detalhes.cep ? ` — CEP ${detalhes.cep}` : ''}
+                {detalhes.endereco}{detalhes.cep ? ` — CEP ${formatarCep(detalhes.cep)}` : ''}
               </div>
             </div>
           )}

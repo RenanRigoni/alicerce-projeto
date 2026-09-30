@@ -3,7 +3,9 @@
 import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig, isCodigoCboValido, normalizarCodigoCbo } from '@/lib/profissionais'
 import { todasPermissoes } from '@/lib/permissoes/definicoes'
 import { createClient } from '@/lib/supabase/client'
-import { buscarCep } from '@/lib/endereco/via-cep'
+import { useCep } from '@/lib/endereco/use-cep'
+import { mascaraCep } from '@/lib/endereco/cep'
+import { AvisoCep } from '@/components/endereco/AvisoCep'
 import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -44,7 +46,15 @@ export default function NovoUsuarioPage() {
   const [erro, setErro] = useState('')
   const [etapa, setEtapa] = useState<'form' | 'vincular' | 'sucesso'>('form')
   const [novoUserId, setNovoUserId] = useState('')
-  const [buscandoCep, setBuscandoCep] = useState(false)
+  const campoCep = useCep({
+    onEndereco: e => setForm(prev => ({
+      ...prev,
+      endereco: e.logradouro || prev.endereco,
+      cidade: e.localidade || prev.cidade,
+      bairro: e.bairro || prev.bairro,
+      estado: e.uf || prev.estado,
+    })),
+  })
   const [form, setForm] = useState(FORM_INICIAL)
   const [roleAtual, setRoleAtual] = useState<string | null>(null)
   const [permissoes, setPermissoes] = useState<Record<string, boolean>>({})
@@ -108,23 +118,6 @@ export default function NovoUsuarioPage() {
     setForm(prev => ({ ...prev, sexo: prev.sexo === valor ? '' : valor }))
   }
 
-  async function handleCepBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const cep = e.target.value
-    if (cep.replace(/\D/g, '').length !== 8) return
-    setBuscandoCep(true)
-    const resultado = await buscarCep(cep)
-    setBuscandoCep(false)
-    if (resultado) {
-      setForm(prev => ({
-        ...prev,
-        endereco: resultado.logradouro || prev.endereco,
-        cidade: resultado.localidade || prev.cidade,
-        bairro: resultado.bairro || prev.bairro,
-        estado: resultado.uf || prev.estado,
-      }))
-    }
-  }
-
   function togglePaciente(id: string) {
     setPacientesSelecionados(prev =>
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
@@ -135,6 +128,11 @@ export default function NovoUsuarioPage() {
     e.preventDefault()
     setErro('')
     setConvite(null)
+
+    if (form.role === 'pai') {
+      const erroCep = campoCep.validarParaSalvar(form.cep)
+      if (erroCep) { setErro(erroCep); return }
+    }
 
     setCarregando(true)
 
@@ -431,16 +429,17 @@ export default function NovoUsuarioPage() {
                     <label className="block text-sm font-medium mb-1.5" style={L}>
                       CEP
                     </label>
-                    <div className="relative">
-                      <input name="cep" value={form.cep} onChange={handleChange} onBlur={handleCepBlur} placeholder="00000-000" maxLength={9} className="input-base pr-8" />
-                      {buscandoCep && (
-                        <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                      )}
-                    </div>
-                    <p className="text-xs mt-1" style={hint}>Endereço, bairro e cidade preenchidos automaticamente</p>
+                    <input
+                      name="cep"
+                      value={form.cep}
+                      onChange={e => { setForm(prev => ({ ...prev, cep: mascaraCep(e.target.value) })); campoCep.aoDigitar() }}
+                      onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
+                      placeholder="00000-000"
+                      inputMode="numeric"
+                      className="input-base"
+                    />
+                    <AvisoCep aviso={campoCep.aviso} buscando={campoCep.buscando} />
+                    <p className="text-xs mt-1" style={hint}>Opcional. Com o CEP, endereço, bairro e cidade são preenchidos automaticamente.</p>
                   </div>
 
                   <div>

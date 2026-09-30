@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
+import { formatarCep } from '@/lib/endereco/formatar'
 import { redirect } from 'next/navigation'
 import { ExportarDadosButton } from '@/components/portal/ExportarDadosButton'
 import { EditarMeusDadosForm } from '@/components/portal/EditarMeusDadosForm'
@@ -38,7 +39,7 @@ export default async function MeusDadosPage() {
   const camposEndereco = [
     campo('Endereço',  detalhes?.endereco),
     campo('Cidade',    detalhes?.cidade),
-    campo('CEP',       detalhes?.cep),
+    campo('CEP',       detalhes?.cep ? formatarCep(detalhes.cep) : detalhes?.cep),
   ].filter(Boolean) as { label: string; valor: string }[]
 
   return (

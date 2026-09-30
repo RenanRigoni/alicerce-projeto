@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 import { Button } from '@/components/ui/Button'
-import { buscarCep } from '@/lib/endereco/via-cep'
+import { AvisoCep } from '@/components/endereco/AvisoCep'
+import { mascaraCep } from '@/lib/endereco/cep'
+import { useCep } from '@/lib/endereco/use-cep'
 import { mascaraCpf } from '@/lib/masks'
 import { UFS_BRASIL } from '@/lib/profissionais'
 import type { ResponsavelSelecionado } from './BuscaResponsavel'
@@ -35,27 +37,20 @@ const LABEL = { color: 'var(--color-ink-mid)' }
 export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCancelar }: Props) {
   const [form, setForm] = useState(FORM_INICIAL)
   const [carregando, setCarregando] = useState(false)
-  const [buscandoCep, setBuscandoCep] = useState(false)
   const [erro, setErro] = useState('')
   const [criado, setCriado] = useState<{ nome: string; convite: DadosConvite; aviso: string | null } | null>(null)
+  const campoCep = useCep({
+    onEndereco: e => setForm(prev => ({
+      ...prev,
+      endereco: e.logradouro || prev.endereco,
+      cidade: e.localidade || prev.cidade,
+      bairro: e.bairro || prev.bairro,
+      estado: e.uf || prev.estado,
+    })),
+  })
 
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
-  }
-
-  async function handleCepBlur(e: React.FocusEvent<HTMLInputElement>) {
-    if (e.target.value.replace(/\D/g, '').length !== 8) return
-    setBuscandoCep(true)
-    const resultado = await buscarCep(e.target.value)
-    setBuscandoCep(false)
-    if (!resultado) return
-    setForm(prev => ({
-      ...prev,
-      endereco: resultado.logradouro || prev.endereco,
-      cidade: resultado.localidade || prev.cidade,
-      bairro: resultado.bairro || prev.bairro,
-      estado: resultado.uf || prev.estado,
-    }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -68,6 +63,12 @@ export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCanc
 
     if (!form.nome.trim()) {
       setErro('Informe o nome do responsável.')
+      return
+    }
+
+    const erroCep = campoCep.validarParaSalvar(form.cep)
+    if (erroCep) {
+      setErro(erroCep)
       return
     }
 
@@ -174,14 +175,16 @@ export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCanc
 
       <div>
         <label className="block text-sm font-medium mb-1.5" style={LABEL}>CEP</label>
-        <div className="relative">
-          <input name="cep" value={form.cep} onChange={handle} onBlur={handleCepBlur} placeholder="00000-000" maxLength={9} inputMode="numeric" className="input-base pr-16" />
-          {buscandoCep && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-              buscando...
-            </span>
-          )}
-        </div>
+        <input
+          name="cep"
+          value={form.cep}
+          onChange={e => { setForm(prev => ({ ...prev, cep: mascaraCep(e.target.value) })); campoCep.aoDigitar() }}
+          onBlur={e => campoCep.aoSairDoCampo(e.target.value)}
+          placeholder="00000-000"
+          inputMode="numeric"
+          className="input-base"
+        />
+        <AvisoCep aviso={campoCep.aviso} buscando={campoCep.buscando} />
       </div>
 
       <div>

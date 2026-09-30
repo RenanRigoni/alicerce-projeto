@@ -27,6 +27,19 @@ function mascararCpf(cpf: string | null): string | null {
   return digitos.length === 11 ? `***.***.***-${digitos.slice(9)}` : null
 }
 
+const DIGITOS_MASCARADOS_TELEFONE = 4
+
+// Esconde os primeiros dígitos e preserva a formatação: "(34) 98882-2549" -> "(••) ••882-2549".
+function mascararTelefone(telefone: string | null): string | null {
+  if (!telefone || !soDigitos(telefone)) return null
+  let mascarados = 0
+  return telefone.replace(/\d/g, digito => {
+    if (mascarados >= DIGITOS_MASCARADOS_TELEFONE) return digito
+    mascarados += 1
+    return '•'
+  })
+}
+
 /**
  * Busca de responsáveis para vincular a um paciente.
  *
@@ -93,7 +106,7 @@ export async function GET(request: NextRequest) {
     .map(p => ({
       id: p.id,
       nome: p.nome ?? '',
-      telefone: telefonePorId.get(p.id) ?? null,
+      telefone: mascararTelefone(telefonePorId.get(p.id) ?? null),
       cpf_mascarado: mascararCpf(p.cpf_cnpj),
       total_pacientes: totalPorId.get(p.id) ?? 0,
     }))

@@ -35,7 +35,10 @@ export async function salvarDadosClinica(formData: FormData): Promise<ResultadoS
     })
     .eq('singleton', 'default')
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('Falha ao salvar dados da clínica:', error.message)
+    return { erro: 'Não foi possível salvar os dados da clínica. Tente novamente.' }
+  }
   revalidatePath('/admin/configuracoes')
   return {}
 }

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Exercita as rotas e a action que gravam CEP com os handlers reais. Só o acesso ao
  * Supabase é substituído por um duplo que registra o que seria gravado: assim dá
@@ -12,7 +12,12 @@ import { NextRequest } from 'next/server'
 type Registro = { via: 'usuario' | 'admin'; op: 'update' | 'upsert' | 'insert'; table: string; payload: any }
 type Cenario = {
   usuario: { id: string; role: string; permissoes?: Record<string, boolean> }
+  /**
+   * `tabela` / `tabela?` = linha única; `tabela[]` = lista; `tabela*` = várias linhas que
+   * a consulta casaria, para o maybeSingle() se comportar como o postgrest-js de verdade.
+   */
   respostas: Record<string, any>
+  falhaEscrita?: string
 }
 
 let cenario: Cenario
@@ -20,14 +25,30 @@ let registros: Registro[] = []
 let chamadasAuthAdmin: string[] = []
 
 function construtor(via: Registro['via'], table: string) {
+  let limitado = false
+  let escreveu = false
   const q: any = {
-    select: () => q, eq: () => q, in: () => q, neq: () => q, order: () => q, limit: () => q,
+    select: () => q, eq: () => q, in: () => q, neq: () => q, order: () => q,
+    limit: () => { limitado = true; return q },
     single: async () => ({ data: cenario.respostas[table] ?? null, error: null }),
-    maybeSingle: async () => ({ data: cenario.respostas[`${table}?`] ?? cenario.respostas[table] ?? null, error: null }),
-    update: (payload: any) => { registros.push({ via, op: 'update', table, payload }); return q },
+    maybeSingle: async () => {
+      const linhas: any[] | undefined = cenario.respostas[`${table}*`]
+      if (linhas) {
+        // postgrest-js (PostgrestBuilder.ts:485): mais de uma linha sem limit = data null + PGRST116
+        if (linhas.length > 1 && !limitado) {
+          return { data: null, error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' } }
+        }
+        return { data: linhas[0] ?? null, error: null }
+      }
+      return { data: cenario.respostas[`${table}?`] ?? cenario.respostas[table] ?? null, error: null }
+    },
+    update: (payload: any) => { escreveu = true; registros.push({ via, op: 'update', table, payload }); return q },
     insert: (payload: any) => { registros.push({ via, op: 'insert', table, payload }); return Promise.resolve({ error: null }) },
     upsert: (payload: any) => { registros.push({ via, op: 'upsert', table, payload }); return Promise.resolve({ error: null }) },
-    then: (resolve: (v: any) => void) => resolve({ data: cenario.respostas[`${table}[]`] ?? [], error: null }),
+    then: (resolve: (v: any) => void) => resolve({
+      data: cenario.respostas[`${table}[]`] ?? [],
+      error: escreveu && cenario.falhaEscrita ? { message: cenario.falhaEscrita } : null,
+    }),
   }
   return q
 }
@@ -210,6 +231,40 @@ async function main() {
   assert.equal(res.status, 403, 'sem gerenciar_responsaveis continua 403')
   assert.equal(registros.length, 0)
 
+  // Responsável com DOIS filhos da mesma terapeuta (em produção: Liliana/Letícia e
+  // Virginia/Brenda). A consulta de vínculo devolve 2 linhas e o maybeSingle() sem
+  // limit(1) falhava com PGRST116, então a terapeuta recebia 403.
+  const respostasDoisFilhos = {
+    'paciente_terapeutas[]': [{ paciente_id: 'pac-1' }, { paciente_id: 'pac-2' }],
+    'paciente_responsaveis*': [{ responsavel_id: 'resp-1' }, { responsavel_id: 'resp-1' }],
+  }
+
+  preparar({ usuario: terapeuta, respostas: respostasDoisFilhos })
+  res = await editarComoTerapeuta(requisicao('PATCH', { nome: 'Liliana', cep: '38400-000' }), contexto)
+  assert.equal(res.status, 200, 'responsável com 2 pacientes da mesma terapeuta precisa passar na checagem de vínculo')
+  assert.equal(gravacoesEmDetalhes()[0].payload.cep, '38400000')
+
+  preparar({ usuario: terapeuta, respostas: { ...respostasDoisFilhos, 'paciente_responsaveis*': [] } })
+  res = await editarComoTerapeuta(requisicao('PATCH', { cep: '38400-000' }), contexto)
+  assert.equal(res.status, 403, 'nenhuma linha de vínculo continua 403')
+  assert.equal(registros.length, 0)
+
+  // O mesmo helper que a página de edição usa (a página não roda fora do Next).
+  const { terapeutaTemVinculoComResponsavel } = require('../lib/paciente/vinculo-responsavel')
+  const consolaOriginal = console.error
+  const errosLogados: string[] = []
+  console.error = (...args: unknown[]) => { errosLogados.push(args.join(' ')) }
+  try {
+    preparar({ usuario: terapeuta, respostas: respostasDoisFilhos })
+    assert.equal(await terapeutaTemVinculoComResponsavel(clienteUsuario(), 'ter-1', 'resp-1'), true, 'helper: 2 pacientes = vínculo')
+    assert.deepEqual(errosLogados, [], 'com limit(1) não há erro nenhum para registrar')
+
+    preparar({ usuario: terapeuta, respostas: { 'paciente_terapeutas[]': [], 'paciente_responsaveis*': [{ responsavel_id: 'resp-1' }] } })
+    assert.equal(await terapeutaTemVinculoComResponsavel(clienteUsuario(), 'ter-1', 'resp-1'), false, 'helper: terapeuta sem nenhum paciente')
+  } finally {
+    console.error = consolaOriginal
+  }
+
   // ── /api/portal/meus-dados (a família edita o próprio endereço) ───────────
   const { PATCH: meusDados } = require('../app/api/portal/meus-dados/route')
   const pai = { id: 'pai-1', role: 'pai' }
@@ -264,6 +319,17 @@ async function main() {
   resultado = await salvarDadosClinica(formulario(''))
   assert.deepEqual(resultado, {})
   assert.equal(registros[0].payload.cep, null)
+
+  // Falha do banco também vira { erro }, como o CEP inválido: nada de derrubar a tela.
+  preparar({ usuario: admin, respostas: {}, falhaEscrita: 'permission denied for table configuracoes_clinica' })
+  console.error = () => {}
+  try {
+    resultado = await salvarDadosClinica(formulario('38400-000'))
+  } finally {
+    console.error = consolaOriginal
+  }
+  assert.equal(typeof resultado.erro, 'string')
+  assert.equal(resultado.erro.includes('permission denied'), false, 'a mensagem crua do banco não vai para a tela')
 
   console.log('Rotas de CEP: testes passaram')
 }

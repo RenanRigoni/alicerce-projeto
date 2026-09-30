@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { EditarResponsavelTerapeutaForm } from './EditarResponsavelTerapeutaForm'
 import { temPermissao } from '@/lib/permissoes/definicoes'
+import { terapeutaTemVinculoComResponsavel } from '@/lib/paciente/vinculo-responsavel'
 
 export default async function EditarResponsavelTerapeutaPage({
   params,
@@ -19,21 +20,7 @@ export default async function EditarResponsavelTerapeutaPage({
   if (!temPermissao(profile.role, (profile.permissoes ?? {}) as Record<string, boolean>, 'gerenciar_responsaveis')) notFound()
 
   // Verifica que pelo menos um paciente do responsável é do terapeuta
-  const { data: meusPacientes } = await supabase
-    .from('paciente_terapeutas')
-    .select('paciente_id')
-    .eq('terapeuta_id', user.id)
-
-  const meusIds = (meusPacientes ?? []).map((p: any) => p.paciente_id)
-
-  const { data: vinculo } = await supabase
-    .from('paciente_responsaveis')
-    .select('responsavel_id')
-    .eq('responsavel_id', id)
-    .in('paciente_id', meusIds.length > 0 ? meusIds : [''])
-    .maybeSingle()
-
-  if (!vinculo) notFound()
+  if (!(await terapeutaTemVinculoComResponsavel(supabase, user.id, id))) notFound()
 
   const { data: resp } = await supabase
     .from('profiles')
@@ -46,7 +33,7 @@ export default async function EditarResponsavelTerapeutaPage({
   const { data: detalhes } = await supabase
     .from('responsaveis_detalhes')
     .select('telefone_principal, endereco, cidade, cep, contato_emergencia')
-    .eq('responsavel_id', id)
+    .eq('id', id)
     .maybeSingle()
 
   return (

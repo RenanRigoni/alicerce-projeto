@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { validarCep } from '@/lib/endereco/cep'
+import { terapeutaTemVinculoComResponsavel } from '@/lib/paciente/vinculo-responsavel'
 
 export async function PATCH(
   request: NextRequest,
@@ -23,21 +24,8 @@ export async function PATCH(
   }
 
   // Verifica se o responsável tem ao menos um paciente do terapeuta
-  const { data: meusPacientes } = await supabase
-    .from('paciente_terapeutas')
-    .select('paciente_id')
-    .eq('terapeuta_id', user.id)
-
-  const meusIds = (meusPacientes ?? []).map((p: any) => p.paciente_id)
-
-  const { data: vinculo } = await supabase
-    .from('paciente_responsaveis')
-    .select('responsavel_id')
-    .eq('responsavel_id', responsavelId)
-    .in('paciente_id', meusIds.length > 0 ? meusIds : [''])
-    .maybeSingle()
-
-  if (!vinculo) {
+  const temVinculo = await terapeutaTemVinculoComResponsavel(supabase, user.id, responsavelId)
+  if (!temVinculo) {
     return NextResponse.json({ error: 'Sem permissão para editar este responsável' }, { status: 403 })
   }
 

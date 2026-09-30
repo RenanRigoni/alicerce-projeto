@@ -1,0 +1,225 @@
+'use client'
+
+import { useState } from 'react'
+import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
+import { Button } from '@/components/ui/Button'
+import { buscarCep } from '@/lib/endereco/via-cep'
+import { mascaraCpf } from '@/lib/masks'
+import { UFS_BRASIL } from '@/lib/profissionais'
+import type { ResponsavelSelecionado } from './BuscaResponsavel'
+
+interface Props {
+  /** Quando o paciente já existe, a rota vincula o responsável na hora. */
+  pacienteId?: string
+  onCriado: (responsavel: ResponsavelSelecionado, convite: DadosConvite) => void
+  onConcluir: () => void
+  onCancelar: () => void
+}
+
+const FORM_INICIAL = {
+  nome: '',
+  cpf_cnpj: '',
+  telefone: '',
+  email: '',
+  cep: '',
+  endereco: '',
+  numero: '',
+  complemento: '',
+  bairro: '',
+  cidade: '',
+  estado: '',
+}
+
+const LABEL = { color: 'var(--color-ink-mid)' }
+
+export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCancelar }: Props) {
+  const [form, setForm] = useState(FORM_INICIAL)
+  const [carregando, setCarregando] = useState(false)
+  const [buscandoCep, setBuscandoCep] = useState(false)
+  const [erro, setErro] = useState('')
+  const [criado, setCriado] = useState<{ nome: string; convite: DadosConvite } | null>(null)
+
+  function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  async function handleCepBlur(e: React.FocusEvent<HTMLInputElement>) {
+    if (e.target.value.replace(/\D/g, '').length !== 8) return
+    setBuscandoCep(true)
+    const resultado = await buscarCep(e.target.value)
+    setBuscandoCep(false)
+    if (!resultado) return
+    setForm(prev => ({
+      ...prev,
+      endereco: resultado.logradouro || prev.endereco,
+      cidade: resultado.localidade || prev.cidade,
+      bairro: resultado.bairro || prev.bairro,
+      estado: resultado.uf || prev.estado,
+    }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    // Este form vive num portal, mas o React faz o submit borbulhar pela árvore
+    // de componentes: sem isto, dentro de <form> de paciente ele dispararia o
+    // submit do paciente junto.
+    e.stopPropagation()
+    setErro('')
+
+    if (!form.nome.trim()) {
+      setErro('Informe o nome do responsável.')
+      return
+    }
+
+    setCarregando(true)
+    const res = await fetch('/api/admin/criar-usuario', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        role: 'pai',
+        nome: form.nome,
+        email: form.email,
+        cpf_cnpj: form.cpf_cnpj,
+        telefone: form.telefone,
+        cep: form.cep,
+        endereco: form.endereco,
+        numero: form.numero,
+        complemento: form.complemento || null,
+        bairro: form.bairro || null,
+        cidade: form.cidade,
+        estado: form.estado || null,
+        ...(pacienteId ? { paciente_id: pacienteId } : {}),
+      }),
+    })
+    const json = await res.json().catch(() => ({}))
+    setCarregando(false)
+
+    if (!res.ok) {
+      setErro(json.error ?? 'Erro ao cadastrar responsável.')
+      return
+    }
+
+    const convite: DadosConvite = {
+      email: json.email ?? null,
+      email_enviado: json.email_enviado === true,
+      email_erro: json.email_erro ?? null,
+      link_recuperacao: json.link_recuperacao ?? null,
+    }
+    const nome = json.nome || form.nome
+    setCriado({ nome, convite })
+    onCriado({ id: json.user_id, nome }, convite)
+  }
+
+  if (criado) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm" style={LABEL}>
+          <strong>{criado.nome}</strong> foi cadastrado{pacienteId ? ' e vinculado ao paciente' : ''}.
+        </p>
+        <StatusConvite
+          convite={criado.convite}
+          textoSemEmail="Cadastrado sem e-mail. Copie o link abaixo e envie por WhatsApp para definir a senha."
+        />
+        <Button type="button" onClick={onConcluir}>Concluir</Button>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={LABEL}>
+          Nome completo <span style={{ color: 'var(--color-rose-main)' }}>*</span>
+        </label>
+        <input name="nome" value={form.nome} onChange={handle} required placeholder="Nome do responsável" className="input-base" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={LABEL}>Telefone</label>
+          <input name="telefone" value={form.telefone} onChange={handle} placeholder="(00) 00000-0000" inputMode="tel" className="input-base" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={LABEL}>CPF</label>
+          <input
+            name="cpf_cnpj"
+            value={form.cpf_cnpj}
+            onChange={e => setForm(prev => ({ ...prev, cpf_cnpj: mascaraCpf(e.target.value) }))}
+            placeholder="000.000.000-00"
+            inputMode="numeric"
+            maxLength={14}
+            className="input-base"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={LABEL}>
+          E-mail <span className="text-xs font-normal" style={{ color: 'var(--color-ink-faint)' }}>(opcional)</span>
+        </label>
+        <input type="email" name="email" value={form.email} onChange={handle} placeholder="email@exemplo.com" className="input-base" />
+        <p className="text-xs mt-1" style={{ color: 'var(--color-ink-faint)' }}>
+          Sem e-mail, informe telefone ou CPF: é com eles que a pessoa entra. O link de acesso aparece ao salvar.
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={LABEL}>CEP</label>
+        <div className="relative">
+          <input name="cep" value={form.cep} onChange={handle} onBlur={handleCepBlur} placeholder="00000-000" maxLength={9} inputMode="numeric" className="input-base pr-16" />
+          {buscandoCep && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+              buscando...
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={LABEL}>Logradouro</label>
+        <input name="endereco" value={form.endereco} onChange={handle} placeholder="Rua, Avenida..." className="input-base" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={LABEL}>Número</label>
+          <input name="numero" value={form.numero} onChange={handle} placeholder="123" className="input-base" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={LABEL}>Complemento</label>
+          <input name="complemento" value={form.complemento} onChange={handle} placeholder="Apto, Bloco..." className="input-base" />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={LABEL}>Bairro</label>
+        <input name="bairro" value={form.bairro} onChange={handle} placeholder="Bairro" className="input-base" />
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div className="col-span-2">
+          <label className="block text-sm font-medium mb-1.5" style={LABEL}>Cidade</label>
+          <input name="cidade" value={form.cidade} onChange={handle} placeholder="Cidade" className="input-base" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={LABEL}>UF</label>
+          <select name="estado" value={form.estado} onChange={handle} className="input-base">
+            <option value="">—</option>
+            {UFS_BRASIL.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
+
+      <div className="flex gap-3 pt-1">
+        <Button type="submit" disabled={carregando}>
+          {carregando ? 'Salvando...' : 'Cadastrar responsável'}
+        </Button>
+        <Button type="button" variant="ghost" onClick={onCancelar} disabled={carregando}>
+          Cancelar
+        </Button>
+      </div>
+    </form>
+  )
+}

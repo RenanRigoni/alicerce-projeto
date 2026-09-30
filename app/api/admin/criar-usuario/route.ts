@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
-  if (!profile || !['admin', 'recepcao'].includes(profile.role)) {
+  // Terapeuta entra só para cadastrar responsável (role 'pai') e exige a
+  // permissão gerenciar_responsaveis; o restante do gate está mais abaixo.
+  if (!profile || !['admin', 'recepcao', 'terapeuta'].includes(profile.role)) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
@@ -85,6 +87,27 @@ export async function POST(request: NextRequest) {
 
   if (profile.role === 'recepcao' && podeGerenciarUsuarios && !['terapeuta', 'pai'].includes(role)) {
     return NextResponse.json({ error: 'Recepção só pode cadastrar profissionais e responsáveis' }, { status: 403 })
+  }
+
+  if (profile.role === 'terapeuta' && (role !== 'pai' || !podeGerenciarResponsaveis)) {
+    return NextResponse.json({ error: 'Profissional só pode cadastrar responsáveis' }, { status: 403 })
+  }
+
+  // Vincular a um paciente exige poder atuar nele: terapeuta sem
+  // ver_todos_pacientes só mexe nos pacientes a que está vinculada. Mesma regra
+  // de /api/vincular/paciente-responsavel. Checa antes de criar o usuário para
+  // não deixar conta órfã quando a resposta é 403.
+  if (paciente_id && profile.role === 'terapeuta' && !temPermissao(profile.role, permissoes, 'ver_todos_pacientes')) {
+    const { data: vinculo } = await supabase
+      .from('paciente_terapeutas')
+      .select('paciente_id')
+      .eq('paciente_id', paciente_id)
+      .eq('terapeuta_id', user.id)
+      .maybeSingle()
+
+    if (!vinculo) {
+      return NextResponse.json({ error: 'Sem permissão para gerenciar responsáveis deste paciente' }, { status: 403 })
+    }
   }
 
   const tipoProfissional = role === 'terapeuta'

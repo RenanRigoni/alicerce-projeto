@@ -7,10 +7,17 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { TimePickerInput } from '@/components/ui/TimePickerInput'
 import { mascaraCpf } from '@/lib/masks'
+import { BuscaResponsavel, type ResponsavelSelecionado } from '@/components/responsavel/BuscaResponsavel'
+import { ModalNovoResponsavel } from '@/components/responsavel/ModalNovoResponsavel'
+import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 
 interface Horario {
   dia: string
   hora: string
+}
+
+interface Props {
+  podeGerenciarResponsaveis: boolean
 }
 
 const dias = [
@@ -22,10 +29,13 @@ const dias = [
   { value: 'sabado', label: 'Sábado' },
 ]
 
-export function NovoPacienteTerapeutaForm() {
+export function NovoPacienteTerapeutaForm({ podeGerenciarResponsaveis }: Props) {
   const router = useRouter()
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
+  const [responsavelSelecionado, setResponsavelSelecionado] = useState<ResponsavelSelecionado | null>(null)
+  const [modalResponsavel, setModalResponsavel] = useState(false)
+  const [conviteResponsavel, setConviteResponsavel] = useState<DadosConvite | null>(null)
   const [horarios, setHorarios] = useState<Horario[]>([{ dia: 'segunda', hora: '' }])
   const [form, setForm] = useState({
     nome: '',
@@ -82,6 +92,7 @@ export function NovoPacienteTerapeutaForm() {
         turno_preferencia: form.turno_preferencia || null,
         convenio_ou_particular: form.convenio_ou_particular || null,
         horarios_atendimento: horariosValidos,
+        responsavel_id: podeGerenciarResponsaveis ? (responsavelSelecionado?.id ?? null) : null,
       }),
     })
 
@@ -196,6 +207,34 @@ export function NovoPacienteTerapeutaForm() {
               </select>
             </div>
           </div>
+
+          {podeGerenciarResponsaveis && (
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
+                Responsável (familiar)
+              </label>
+              <BuscaResponsavel
+                valor={responsavelSelecionado}
+                onSelecionar={r => { setResponsavelSelecionado(r); if (!r) setConviteResponsavel(null) }}
+                onPedirCadastro={() => setModalResponsavel(true)}
+              />
+              {conviteResponsavel && (
+                <div className="mt-3">
+                  <StatusConvite
+                    convite={conviteResponsavel}
+                    textoSemEmail="Responsável cadastrado sem e-mail. Copie o link abaixo antes de salvar o paciente."
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {modalResponsavel && (
+            <ModalNovoResponsavel
+              onCriado={(r, convite) => { setResponsavelSelecionado(r); setConviteResponsavel(convite) }}
+              onFechar={() => setModalResponsavel(false)}
+            />
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-2">

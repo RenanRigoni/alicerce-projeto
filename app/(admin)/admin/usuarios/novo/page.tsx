@@ -3,6 +3,7 @@
 import { TIPOS_PROFISSIONAIS, UFS_BRASIL, getTipoProfissionalConfig, isCodigoCboValido, normalizarCodigoCbo } from '@/lib/profissionais'
 import { todasPermissoes } from '@/lib/permissoes/definicoes'
 import { createClient } from '@/lib/supabase/client'
+import { buscarCep } from '@/lib/endereco/via-cep'
 import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -35,24 +36,6 @@ const FORM_INICIAL = {
   conselho_numero: '',
   conselho_uf: '',
   cbo_codigo: '',
-}
-
-async function buscarCep(cep: string): Promise<{ logradouro: string; localidade: string; bairro: string; uf: string } | null> {
-  const digits = cep.replace(/\D/g, '')
-  if (digits.length !== 8) return null
-  try {
-    const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
-    const data = await res.json()
-    if (data.erro) return null
-    return {
-      logradouro: data.logradouro ?? '',
-      localidade: data.localidade ?? '',
-      bairro: data.bairro ?? '',
-      uf: data.uf ?? '',
-    }
-  } catch {
-    return null
-  }
 }
 
 export default function NovoUsuarioPage() {

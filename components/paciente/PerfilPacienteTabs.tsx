@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -10,6 +9,8 @@ import { AbaDadosClinicos } from './AbaDadosClinicos'
 import { DeletarPacienteButton } from '@/components/admin/DeletarPacienteButton'
 import { FiltroEvolucoes, autoriaEvolucao, useFiltroEvolucoes } from '@/components/evolucao/filtro-evolucoes'
 import { ModalPortal } from '@/components/ui/ModalPortal'
+import { BuscaResponsavel, type ResponsavelSelecionado } from '@/components/responsavel/BuscaResponsavel'
+import { ModalNovoResponsavel } from '@/components/responsavel/ModalNovoResponsavel'
 
 // ── Tipos ────────────────────────────────────────────────────
 
@@ -211,18 +212,22 @@ export function PerfilPacienteTabs({
 
   // Modal vincular responsável
   const [modalResp, setModalResp] = useState(false)
-  const [responsaveisDisp, setResponsaveisDisp] = useState<Array<{ id: string; nome: string }>>([])
-  const [respSel, setRespSel] = useState('')
+  const [modalNovoResp, setModalNovoResp] = useState(false)
+  const [respSel, setRespSel] = useState<ResponsavelSelecionado | null>(null)
   const [tipoResp, setTipoResp] = useState<'principal' | 'secundario'>('principal')
   const [vinculando, setVinculando] = useState(false)
   const [erroResp, setErroResp] = useState('')
 
-  async function abrirModalResp() {
-    setErroResp(''); setRespSel(''); setTipoResp('principal')
-    const { createClient } = await import('@/lib/supabase/client')
-    const { data } = await createClient().from('profiles').select('id, nome').eq('role', 'pai').order('nome')
-    setResponsaveisDisp((data ?? []).filter(r => !responsaveis.find(v => v.id === r.id)))
+  function abrirModalResp() {
+    setErroResp(''); setRespSel(null); setTipoResp('principal')
     setModalResp(true)
+  }
+
+  // O responsável novo já sai vinculado pela rota; fechar o modal só recarrega a aba.
+  function fecharCadastroResponsavel() {
+    setModalNovoResp(false)
+    setModalResp(false)
+    router.refresh()
   }
 
   async function vincularResponsavel() {
@@ -231,7 +236,7 @@ export function PerfilPacienteTabs({
     const res = await fetch('/api/vincular/paciente-responsavel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paciente_id: paciente.id, responsavel_id: respSel, tipo: tipoResp }),
+      body: JSON.stringify({ paciente_id: paciente.id, responsavel_id: respSel.id, tipo: tipoResp }),
     })
     setVinculando(false)
     if (!res.ok) { setErroResp('Erro ao vincular.'); return }
@@ -645,15 +650,13 @@ export function PerfilPacienteTabs({
                 >
                   + Adicionar responsável
                 </button>
-                {isAdminOuRecepcao && (
-                  <a
-                    href={`/admin/usuarios/novo`}
-                    className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
-                    style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-mid)' }}
-                  >
-                    Cadastrar novo
-                  </a>
-                )}
+                <button
+                  onClick={() => setModalNovoResp(true)}
+                  className="text-sm font-medium px-3 py-1.5 rounded-xl transition-opacity hover:opacity-80"
+                  style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-mid)' }}
+                >
+                  Cadastrar novo
+                </button>
               </div>
             </div>
           )}
@@ -1636,28 +1639,12 @@ export function PerfilPacienteTabs({
           <div className="space-y-3">
             <div>
               <label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--color-ink-faint)' }}>Responsável</label>
-              {responsaveisDisp.length === 0 ? (
-                <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                  Nenhum responsável disponível.
-                  {isAdminOuRecepcao && (
-                    <>
-                      {' '}
-                      <Link href="/admin/usuarios/novo" style={{ color: 'var(--color-rose-main)' }}>Cadastrar novo →</Link>
-                    </>
-                  )}
-                </p>
-              ) : (
-                <select
-                  value={respSel}
-                  onChange={e => setRespSel(e.target.value)}
-                  className="input-base w-full"
-                >
-                  <option value="">Selecione...</option>
-                  {responsaveisDisp.map(r => (
-                    <option key={r.id} value={r.id}>{r.nome}</option>
-                  ))}
-                </select>
-              )}
+              <BuscaResponsavel
+                valor={respSel}
+                onSelecionar={setRespSel}
+                excluirIds={responsaveis.map(r => r.id)}
+                onPedirCadastro={() => setModalNovoResp(true)}
+              />
             </div>
 
             <div>
@@ -1695,6 +1682,10 @@ export function PerfilPacienteTabs({
         </div>
       </div>
       </ModalPortal>
+    )}
+
+    {modalNovoResp && (
+      <ModalNovoResponsavel pacienteId={paciente.id} onCriado={() => {}} onFechar={fecharCadastroResponsavel} />
     )}
     </>
   )

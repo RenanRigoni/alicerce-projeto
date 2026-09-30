@@ -7,9 +7,11 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { todasPermissoes } from '@/lib/permissoes/definicoes'
+import { BuscaResponsavel, type ResponsavelSelecionado } from '@/components/responsavel/BuscaResponsavel'
+import { ModalNovoResponsavel } from '@/components/responsavel/ModalNovoResponsavel'
+import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 
 interface Terapeuta { id: string; nome: string }
-interface Responsavel { id: string; nome: string }
 interface Horario { dia: string; hora: string; terapeuta_id?: string }
 
 const dias = [
@@ -29,9 +31,10 @@ function NovoPacienteForm() {
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
   const [terapeutas, setTerapeutas] = useState<Terapeuta[]>([])
-  const [responsaveis, setResponsaveis] = useState<Responsavel[]>([])
   const [terapeutasSelecionados, setTerapeutasSelecionados] = useState<string[]>([])
-  const [responsavelSelecionado, setResponsavelSelecionado] = useState(responsavelId ?? '')
+  const [responsavelSelecionado, setResponsavelSelecionado] = useState<ResponsavelSelecionado | null>(null)
+  const [modalResponsavel, setModalResponsavel] = useState(false)
+  const [conviteResponsavel, setConviteResponsavel] = useState<DadosConvite | null>(null)
   const [horarios, setHorarios] = useState<Horario[]>([{ dia: 'segunda', hora: '' }])
   const [permissoes, setPermissoes] = useState<Record<string, boolean>>({})
 
@@ -64,13 +67,14 @@ function NovoPacienteForm() {
           supabase.from('profiles').select('id, nome').eq('role', 'terapeuta').order('nome')
             .then(({ data }) => setTerapeutas(data ?? []))
         }
-        if (efetivas.gerenciar_responsaveis) {
-          supabase.from('profiles').select('id, nome').eq('role', 'pai').order('nome')
-            .then(({ data }) => setResponsaveis(data ?? []))
+        // Vindo da tela de um responsável (?responsavel_id=), ele já chega escolhido.
+        if (efetivas.gerenciar_responsaveis && responsavelId) {
+          supabase.from('profiles').select('id, nome').eq('id', responsavelId).eq('role', 'pai').maybeSingle()
+            .then(({ data }) => { if (data) setResponsavelSelecionado({ id: data.id, nome: data.nome }) })
         }
       }
     })
-  }, [router])
+  }, [router, responsavelId])
 
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -134,7 +138,7 @@ function NovoPacienteForm() {
         convenio_ou_particular: form.convenio_ou_particular || null,
         horarios_atendimento: horariosPayload,
         terapeutas: podeVincularTerapeutas ? terapeutasSelecionados : [],
-        responsavel_id: podeGerenciarResponsaveis ? (responsavelSelecionado || null) : null,
+        responsavel_id: podeGerenciarResponsaveis ? (responsavelSelecionado?.id ?? null) : null,
       }),
     })
 
@@ -259,29 +263,30 @@ function NovoPacienteForm() {
           {/* Responsável */}
           {podeGerenciarResponsaveis && (
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-sm font-medium" style={labelStyle}>
-                Responsável (familiar)
-              </label>
-              <Link
-                href="/admin/usuarios/novo"
-                className="text-xs font-medium transition-opacity hover:opacity-70"
-                style={{ color: 'var(--color-rose-main)' }}
-              >
-                + Cadastrar responsável
-              </Link>
-            </div>
-            <select
-              value={responsavelSelecionado}
-              onChange={e => setResponsavelSelecionado(e.target.value)}
-              className="input-base"
-            >
-              <option value="">Nenhum</option>
-              {responsaveis.map(r => (
-                <option key={r.id} value={r.id}>{r.nome}</option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium mb-1.5" style={labelStyle}>
+              Responsável (familiar)
+            </label>
+            <BuscaResponsavel
+              valor={responsavelSelecionado}
+              onSelecionar={r => { setResponsavelSelecionado(r); if (!r) setConviteResponsavel(null) }}
+              onPedirCadastro={() => setModalResponsavel(true)}
+            />
+            {conviteResponsavel && (
+              <div className="mt-3 space-y-1.5">
+                <StatusConvite
+                  convite={conviteResponsavel}
+                  textoSemEmail="Responsável cadastrado sem e-mail. Copie o link abaixo antes de salvar o paciente."
+                />
+              </div>
+            )}
           </div>
+          )}
+
+          {modalResponsavel && (
+            <ModalNovoResponsavel
+              onCriado={(r, convite) => { setResponsavelSelecionado(r); setConviteResponsavel(convite) }}
+              onFechar={() => setModalResponsavel(false)}
+            />
           )}
 
           {/* Profissionais */}

@@ -24,5 +24,11 @@ export default async function NovoPacienteTerapeutaPage() {
 
   if (!podeCadastrar) notFound()
 
-  return <NovoPacienteTerapeutaForm />
+  const podeGerenciarResponsaveis = temPermissao(
+    profile.role,
+    (profile.permissoes ?? {}) as Record<string, boolean>,
+    'gerenciar_responsaveis',
+  )
+
+  return <NovoPacienteTerapeutaForm podeGerenciarResponsaveis={podeGerenciarResponsaveis} />
 }

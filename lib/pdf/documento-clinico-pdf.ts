@@ -132,6 +132,24 @@ export async function handleDocumentoClinicoPdfPost(
 
   const path = config.storagePath(documento.paciente_id, id)
   const sourcePath = typeof body.sourcePath === 'string' ? body.sourcePath : null
+
+  // O sourcePath vem do cliente e o download roda com service role. Sem esta
+  // trava, dava para ler e apagar o PDF de qualquer outro paciente.
+  if (sourcePath) {
+    const prefixoEsperado = `${documento.paciente_id}/`
+    const pathSuspeito =
+      !sourcePath.startsWith(prefixoEsperado) ||
+      sourcePath.includes('..') ||
+      sourcePath.startsWith('/')
+
+    if (pathSuspeito) {
+      return NextResponse.json(
+        { error: 'Anexo nao pertence a este paciente.' },
+        { status: 403 }
+      )
+    }
+  }
+
   let pdfBuffer: Buffer
   let geradoPeloSistema = false
 

@@ -37,7 +37,7 @@ export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCanc
   const [carregando, setCarregando] = useState(false)
   const [buscandoCep, setBuscandoCep] = useState(false)
   const [erro, setErro] = useState('')
-  const [criado, setCriado] = useState<{ nome: string; convite: DadosConvite } | null>(null)
+  const [criado, setCriado] = useState<{ nome: string; convite: DadosConvite; aviso: string | null } | null>(null)
 
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -94,7 +94,10 @@ export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCanc
     const json = await res.json().catch(() => ({}))
     setCarregando(false)
 
-    if (!res.ok) {
+    // Conta criada mas vínculo com o paciente falhou: a rota devolve 500 com
+    // user_id. Mostra o aviso e o link de acesso em vez de deixar recadastrar.
+    const contaCriada = typeof json.user_id === 'string'
+    if (!res.ok && !contaCriada) {
       setErro(json.error ?? 'Erro ao cadastrar responsável.')
       return
     }
@@ -106,16 +109,22 @@ export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCanc
       link_recuperacao: json.link_recuperacao ?? null,
     }
     const nome = json.nome || form.nome
-    setCriado({ nome, convite })
-    onCriado({ id: json.user_id, nome }, convite)
+    setCriado({ nome, convite, aviso: res.ok ? null : (json.error ?? null) })
+    if (res.ok) onCriado({ id: json.user_id, nome }, convite)
   }
 
   if (criado) {
     return (
       <div className="space-y-4">
-        <p className="text-sm" style={LABEL}>
-          <strong>{criado.nome}</strong> foi cadastrado{pacienteId ? ' e vinculado ao paciente' : ''}.
-        </p>
+        {criado.aviso ? (
+          <p className="text-sm" style={{ color: '#B91C1C' }}>
+            <strong>{criado.nome}</strong>: {criado.aviso}
+          </p>
+        ) : (
+          <p className="text-sm" style={LABEL}>
+            <strong>{criado.nome}</strong> foi cadastrado{pacienteId ? ' e vinculado ao paciente' : ''}.
+          </p>
+        )}
         <StatusConvite
           convite={criado.convite}
           textoSemEmail="Cadastrado sem e-mail. Copie o link abaixo e envie por WhatsApp para definir a senha."

@@ -56,6 +56,23 @@ export async function POST(request: NextRequest) {
 
   const adminClient = createAdminClient()
 
+  // Confere o responsável ANTES de criar o paciente: um id inexistente (ou que
+  // não seja um responsável) só falharia depois, com o paciente já gravado.
+  if (responsavel_id) {
+    const { data: alvo } = await adminClient
+      .from('profiles')
+      .select('role')
+      .eq('id', responsavel_id)
+      .maybeSingle()
+
+    if (!alvo) {
+      return NextResponse.json({ error: 'Responsável não encontrado.' }, { status: 400 })
+    }
+    if (alvo.role !== 'pai') {
+      return NextResponse.json({ error: 'O usuário escolhido não tem perfil de responsável.' }, { status: 400 })
+    }
+  }
+
   // Criptografa CPF se chave configurada (LGPD Art. 46)
   let cpfCifrado: string | null = null
   const cpfPlain = cpf?.trim() || null
@@ -84,23 +101,43 @@ export async function POST(request: NextRequest) {
 
   const pacienteId = paciente.id
 
+  // Os dois vínculos são tentados sempre, e cada falha é reportada. Antes o
+  // erro era ignorado: o paciente nascia sem responsável ou sem profissional e
+  // a tela dizia que tinha dado tudo certo.
+  const falhas: string[] = []
+
   // Vincula responsável se informado
   if (responsavel_id) {
-    await adminClient.from('paciente_responsaveis').insert({
+    const { error } = await adminClient.from('paciente_responsaveis').insert({
       paciente_id: pacienteId,
       responsavel_id,
       tipo: 'principal',
     })
+    if (error) falhas.push('o responsável')
   }
 
   // Vincula terapeutas se informados. Profissional sem permissão de vínculo sempre vincula a si mesmo.
   if (terapeutasParaVincular.length > 0) {
-    await adminClient.from('paciente_terapeutas').insert(
+    const { error } = await adminClient.from('paciente_terapeutas').insert(
       terapeutasParaVincular.map((tid: string) => ({
         paciente_id: pacienteId,
         terapeuta_id: tid,
         horarios_atendimento: distribuicao.porTerapeuta.get(tid) ?? [],
       }))
+    )
+    if (error) falhas.push('a profissional')
+  }
+
+  // O paciente existe; não é desfeito (é registro clínico, com auditoria).
+  // O paciente_id vai junto para a tela levar a recepção até ele em vez de
+  // deixá-la reenviar o formulário e duplicar o cadastro.
+  if (falhas.length > 0) {
+    return NextResponse.json(
+      {
+        error: `O paciente foi cadastrado, mas não foi possível vincular ${falhas.join(' nem ')}. Abra o cadastro do paciente e faça o vínculo manualmente.`,
+        paciente_id: pacienteId,
+      },
+      { status: 500 }
     )
   }
 

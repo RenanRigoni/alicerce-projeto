@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (role === 'pai') {
-    await adminClient.from('responsaveis_detalhes').upsert({
+    const { error: detalhesErro } = await adminClient.from('responsaveis_detalhes').upsert({
       id: userId,
       telefone_principal: telefone ? telefone.replace(/\D/g, '') : null,
       cep: cep?.replace(/\D/g, '') ?? null,
@@ -228,25 +228,56 @@ export async function POST(request: NextRequest) {
       contato_emergencia: contato_emergencia_nome?.trim() ?? null,
       contato_emergencia_telefone: contato_emergencia_telefone?.trim() ?? null,
     })
+
+    // Mesmo tratamento do perfil: sem endereço a conta ficava criada e a tela
+    // dizia que tinha dado certo. Desfaz a conta para a recepção poder repetir
+    // o cadastro com os mesmos dados, sem esbarrar em "já existe".
+    if (detalhesErro) {
+      await adminClient.auth.admin.deleteUser(userId)
+      return NextResponse.json(
+        { error: `Não foi possível salvar o endereço e os contatos do responsável: ${detalhesErro.message}` },
+        { status: 400 }
+      )
+    }
   }
 
+  let vinculoErro: string | null = null
   if (paciente_id) {
     if (role === 'pai') {
-      await adminClient.from('paciente_responsaveis').insert({
+      const { error } = await adminClient.from('paciente_responsaveis').insert({
         paciente_id,
         responsavel_id: userId,
       })
+      if (error) vinculoErro = error.message
     } else if (role === 'terapeuta') {
-      await adminClient.from('paciente_terapeutas').insert({
+      const { error } = await adminClient.from('paciente_terapeutas').insert({
         paciente_id,
         terapeuta_id: userId,
       })
+      if (error) vinculoErro = error.message
     }
   }
 
   // Também para quem foi cadastrado sem e-mail: o lib devolve o link de
   // definição de senha para a recepção repassar por WhatsApp.
   const convite = await enviarConviteAcesso(adminClient, emailEfetivo)
+
+  // A conta existe e está íntegra; só o vínculo falhou. Não desfaz: devolve o
+  // erro com o user_id e o link, para vincular à mão sem recadastrar.
+  if (vinculoErro) {
+    return NextResponse.json(
+      {
+        error: 'O usuário foi cadastrado, mas o vínculo com o paciente não foi salvo. Vincule pela busca em "Adicionar responsável".',
+        user_id: userId,
+        nome: nomeEfetivo ?? emailEfetivo,
+        email: semEmail ? null : emailEfetivo,
+        email_enviado: convite.email_enviado,
+        ...(convite.email_erro ? { email_erro: convite.email_erro } : {}),
+        ...(convite.link_recuperacao ? { link_recuperacao: convite.link_recuperacao } : {}),
+      },
+      { status: 500 }
+    )
+  }
 
   return NextResponse.json({
     success: true,

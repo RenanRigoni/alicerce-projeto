@@ -23,7 +23,11 @@ assert.equal(temPermissao('terapeuta', alexandra, 'desativar_reativar_paciente')
 assert.equal(temPermissao('terapeuta', alexandra, 'gerenciar_responsaveis'), true)
 assert.equal(temPermissao('terapeuta', alexandra, 'vincular_terapeutas'), false)
 assert.equal(temPermissao('terapeuta', { ver_auditoria: true }, 'ver_auditoria'), false)
-assert.equal(temPermissao('terapeuta', { criar_agendamentos: true }, 'criar_agendamentos'), false)
+// Desde 2958cba a profissional monta a própria agenda: a permissão é aplicável
+// ao papel, mas continua desligada por padrão e só liga por override.
+assert.equal(temPermissao('terapeuta', {}, 'criar_agendamentos'), false)
+assert.equal(temPermissao('terapeuta', { criar_agendamentos: true }, 'criar_agendamentos'), true)
+assert.equal(temPermissao('terapeuta', { editar_agendamentos_alheios: true }, 'editar_agendamentos_alheios'), false)
 
 const efetivasAlexandra = todasPermissoes('terapeuta', alexandra)
 assert.equal(efetivasAlexandra.cadastrar_pacientes, true)
@@ -47,7 +51,7 @@ const permissoesTerapeuta = gruposPorRole('terapeuta').flatMap(grupo => grupo.pe
 assert.equal(permissoesTerapeuta.includes('cadastrar_pacientes'), true)
 assert.equal(permissoesTerapeuta.includes('registrar_alta'), true)
 assert.equal(permissoesTerapeuta.includes('ver_auditoria'), false)
-assert.equal(permissoesTerapeuta.includes('criar_agendamentos'), false)
+assert.equal(permissoesTerapeuta.includes('criar_agendamentos'), true)
 assert.equal(permissoesTerapeuta.includes('editar_agendamentos_alheios'), false)
 assert.equal(permissoesTerapeuta.includes('bloquear_acesso_portal'), false)
 

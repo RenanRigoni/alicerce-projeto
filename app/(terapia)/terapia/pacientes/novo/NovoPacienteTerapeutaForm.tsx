@@ -34,6 +34,7 @@ export function NovoPacienteTerapeutaForm({ podeGerenciarResponsaveis }: Props) 
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
   const [responsavelSelecionado, setResponsavelSelecionado] = useState<ResponsavelSelecionado | null>(null)
+  const [pacienteParcialId, setPacienteParcialId] = useState<string | null>(null)
   const [modalResponsavel, setModalResponsavel] = useState(false)
   const [conviteResponsavel, setConviteResponsavel] = useState<DadosConvite | null>(null)
   const [horarios, setHorarios] = useState<Horario[]>([{ dia: 'segunda', hora: '' }])
@@ -100,6 +101,8 @@ export function NovoPacienteTerapeutaForm({ podeGerenciarResponsaveis }: Props) 
     setCarregando(false)
 
     if (!res.ok) {
+      // Paciente criado mas vínculo falhou: trava o reenvio para não duplicar.
+      if (json.paciente_id) setPacienteParcialId(json.paciente_id)
       setErro(json.error ?? 'Erro ao cadastrar paciente.')
       return
     }
@@ -284,8 +287,18 @@ export function NovoPacienteTerapeutaForm({ podeGerenciarResponsaveis }: Props) 
 
           {erro && <p className="text-sm" style={{ color: '#B91C1C' }}>{erro}</p>}
 
+          {pacienteParcialId && (
+            <Link
+              href={`/terapia/paciente/${pacienteParcialId}`}
+              className="inline-block text-sm font-medium transition-opacity hover:opacity-70"
+              style={{ color: 'var(--color-sage-main)' }}
+            >
+              Abrir o paciente cadastrado →
+            </Link>
+          )}
+
           <div className="flex gap-3 pt-1">
-            <Button type="submit" disabled={carregando}>
+            <Button type="submit" disabled={carregando || pacienteParcialId !== null}>
               {carregando ? 'Salvando...' : 'Cadastrar paciente'}
             </Button>
             <Button type="button" variant="ghost" onClick={() => router.push('/terapia/pacientes')}>

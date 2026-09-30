@@ -14,6 +14,8 @@ interface Props {
   dadosIniciais: DadosClinicos | null
   podeEditar: boolean
   encaminhamentos: Encaminhamento[]
+  /** Busca ativa no prontuário: só estes encaminhamentos aparecem. null = sem busca. */
+  idsEncaminhamentosNaBusca?: Set<string> | null
   podeVerEncaminhamentos: boolean
   podeGerenciarEncaminhamentos: boolean
   prontuarioEncerrado: boolean
@@ -121,7 +123,7 @@ function SecaoClinicos({ titulo, keys, form, camposMap }: {
 
 export function AbaDadosClinicos({
   pacienteId, dadosIniciais, podeEditar,
-  encaminhamentos, podeVerEncaminhamentos, podeGerenciarEncaminhamentos, prontuarioEncerrado,
+  encaminhamentos, idsEncaminhamentosNaBusca = null, podeVerEncaminhamentos, podeGerenciarEncaminhamentos, prontuarioEncerrado,
 }: Props) {
   const [editando, setEditando] = useState(false)
   const [form, setForm] = useState<Form>(formFromDados(dadosIniciais))
@@ -182,6 +184,7 @@ export function AbaDadosClinicos({
           <BlocoEncaminhamentos
             pacienteId={pacienteId}
             encaminhamentos={encaminhamentos}
+            idsNaBusca={idsEncaminhamentosNaBusca}
             podeVer={podeVerEncaminhamentos}
             podeGerenciar={podeGerenciarEncaminhamentos}
             prontuarioEncerrado={prontuarioEncerrado}

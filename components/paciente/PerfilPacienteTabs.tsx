@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -15,6 +15,11 @@ import { EnderecoDoPaciente } from './EnderecoDoPaciente'
 import { formatarEndereco } from '@/lib/endereco/formatar'
 import type { Responsavel } from '@/lib/paciente/responsaveis-vinculo'
 import type { Encaminhamento } from '@/lib/paciente/encaminhamentos'
+import { BuscaProntuario } from './BuscaProntuario'
+import {
+  camposDeEncaminhamento, camposDeEvolucaoOuRelatorio, camposDeOrientacao,
+  filtrarPorBusca, resumirBusca, termosDaBusca, type AbaDoResultado,
+} from '@/lib/paciente/busca-prontuario'
 
 // ── Tipos ────────────────────────────────────────────────────
 
@@ -66,6 +71,10 @@ export interface Relatorio {
   criado_em: string
   conclusao: string | null
   pdf_url: string | null
+  // Só alimentam a busca no prontuário (não aparecem na lista): ver lib/paciente/busca-prontuario.
+  obs_clinicas?: string | null
+  testes?: string | null
+  resultado_discussao?: string | null
 }
 
 export interface Evolucao extends Relatorio {
@@ -206,6 +215,36 @@ export function PerfilPacienteTabs({
   const router = useRouter()
   const [abaAtiva, setAbaAtiva] = useState<Aba>('Dados Gerais')
   const filtroEvo = useFiltroEvolucoes(evolucoes)
+
+  // Busca de texto dentro do prontuário: só filtra o que a página já carregou. O termo fica neste
+  // estado e mais nenhum lugar (nem servidor, nem URL, nem armazenamento, nem log): é texto clínico.
+  const [busca, setBusca] = useState('')
+  const termosBusca = useMemo(() => termosDaBusca(busca), [busca])
+  const buscaAtiva = termosBusca.length > 0
+  const evolucoesVisiveis = useMemo(
+    () => filtrarPorBusca(filtroEvo.evolucoesFiltradas, termosBusca, camposDeEvolucaoOuRelatorio),
+    [filtroEvo.evolucoesFiltradas, termosBusca],
+  )
+  const relatoriosVisiveis = useMemo(
+    () => filtrarPorBusca(relatorios, termosBusca, camposDeEvolucaoOuRelatorio),
+    [relatorios, termosBusca],
+  )
+  const orientacoesVisiveis = useMemo(
+    () => filtrarPorBusca(orientacoes, termosBusca, camposDeOrientacao),
+    [orientacoes, termosBusca],
+  )
+  const encaminhamentosVisiveis = useMemo(
+    () => filtrarPorBusca(encaminhamentos, termosBusca, camposDeEncaminhamento),
+    [encaminhamentos, termosBusca],
+  )
+  const resumoBusca = buscaAtiva
+    ? resumirBusca({
+        relatorios: relatoriosVisiveis.length,
+        evolucoes: evolucoesVisiveis.length,
+        orientacoes: orientacoesVisiveis.length,
+        encaminhamentos: encaminhamentosVisiveis.length,
+      })
+    : null
 
   // Modal vincular responsável
   const [modalResp, setModalResp] = useState(false)
@@ -384,24 +423,42 @@ export function PerfilPacienteTabs({
     router.refresh()
   }
 
-  const abaCounts: Partial<Record<Aba, number>> = {
-    'Relatórios': relatorios.length,
-    'Evolução': evolucoes.length,
-    'Orientações': orientacoes.length,
-    'Alta': altas.length,
-  }
+  // Com busca ativa, o número da aba passa a ser o de itens que casaram (inclusive 0), para a
+  // pessoa ver onde está o resultado e não achar que o prontuário esvaziou.
+  const abaCounts: Partial<Record<Aba, number>> = buscaAtiva
+    ? {
+        'Dados Clínicos': encaminhamentosVisiveis.length,
+        'Relatórios': relatoriosVisiveis.length,
+        'Evolução': evolucoesVisiveis.length,
+        'Orientações': orientacoesVisiveis.length,
+        'Alta': altas.length,
+      }
+    : {
+        'Relatórios': relatorios.length,
+        'Evolução': evolucoes.length,
+        'Orientações': orientacoes.length,
+        'Alta': altas.length,
+      }
 
   return (
     <>
     <div className="space-y-3">
       {/* Cabeçalho */}
-      <a
-        href={isAdminOuRecepcao ? '/admin/pacientes' : '/terapia/dashboard'}
-        className="text-sm transition-colors hover:opacity-70 inline-block"
-        style={{ color: 'var(--color-ink-soft)' }}
-      >
-        ← Voltar
-      </a>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <a
+          href={isAdminOuRecepcao ? '/admin/pacientes' : '/terapia/dashboard'}
+          className="text-sm transition-colors hover:opacity-70 inline-block"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          ← Voltar
+        </a>
+        <BuscaProntuario
+          valor={busca}
+          onChange={setBusca}
+          resumo={resumoBusca}
+          onIrParaAba={(aba: AbaDoResultado) => setAbaAtiva(aba)}
+        />
+      </div>
 
       {/* Layout lateral */}
       <div className="flex gap-5 items-start">
@@ -502,6 +559,7 @@ export function PerfilPacienteTabs({
             {ABAS.map((aba, i) => {
               const count = abaCounts[aba]
               const ativa = abaAtiva === aba
+              const mostrarCount = count !== undefined && (count > 0 || (buscaAtiva && aba !== 'Alta'))
               return (
                 <button
                   key={aba}
@@ -515,8 +573,9 @@ export function PerfilPacienteTabs({
                       }}
                 >
                   <span>{aba}</span>
-                  {count !== undefined && count > 0 && (
+                  {mostrarCount && (
                     <span
+                      aria-label={buscaAtiva && aba !== 'Alta' ? `${count} ${count === 1 ? 'item encontrado' : 'itens encontrados'}` : undefined}
                       className="text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center leading-none"
                       style={ativa
                         ? { background: 'rgba(255,255,255,0.25)', color: 'white' }
@@ -729,6 +788,7 @@ export function PerfilPacienteTabs({
           dadosIniciais={dadosClinicos}
           podeEditar={podeEditarClinicos}
           encaminhamentos={encaminhamentos}
+          idsEncaminhamentosNaBusca={buscaAtiva ? new Set(encaminhamentosVisiveis.map(e => e.id)) : null}
           podeVerEncaminhamentos={podeVerEncaminhamentos}
           podeGerenciarEncaminhamentos={isAdminOuRecepcao}
           prontuarioEncerrado={paciente.status !== 'ativo'}
@@ -740,7 +800,9 @@ export function PerfilPacienteTabs({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-              {relatorios.length} relatório{relatorios.length !== 1 ? 's' : ''}
+              {relatoriosVisiveis.length === relatorios.length
+                ? `${relatorios.length} relatório${relatorios.length !== 1 ? 's' : ''}`
+                : `${relatoriosVisiveis.length} de ${relatorios.length} relatórios`}
             </span>
             {role === 'terapeuta' && paciente.status === 'ativo' && (
               <a
@@ -752,9 +814,9 @@ export function PerfilPacienteTabs({
               </a>
             )}
           </div>
-          {relatorios.length > 0 ? (
+          {relatoriosVisiveis.length > 0 ? (
             <div className="space-y-2">
-              {relatorios.map(r => (
+              {relatoriosVisiveis.map(r => (
                 <Card key={r.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -809,7 +871,7 @@ export function PerfilPacienteTabs({
           ) : (
             <Card>
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                Nenhum relatório ainda.
+                {relatorios.length > 0 ? 'Nenhum relatório para essa busca.' : 'Nenhum relatório ainda.'}
               </p>
             </Card>
           )}
@@ -858,9 +920,9 @@ export function PerfilPacienteTabs({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
-              {filtroEvo.evolucoesFiltradas.length === evolucoes.length
+              {evolucoesVisiveis.length === evolucoes.length
                 ? `${evolucoes.length} ${evolucoes.length === 1 ? 'evolução' : 'evoluções'}`
-                : `${filtroEvo.evolucoesFiltradas.length} de ${evolucoes.length} evoluções`}
+                : `${evolucoesVisiveis.length} de ${evolucoes.length} evoluções`}
             </span>
             {role === 'terapeuta' && paciente.status === 'ativo' && (
               <a
@@ -890,15 +952,15 @@ export function PerfilPacienteTabs({
                 Nenhuma evolução ainda.
               </p>
             </Card>
-          ) : filtroEvo.evolucoesFiltradas.length === 0 ? (
+          ) : evolucoesVisiveis.length === 0 ? (
             <Card>
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                Nenhuma evolução para esse filtro.
+                {buscaAtiva ? 'Nenhuma evolução para essa busca.' : 'Nenhuma evolução para esse filtro.'}
               </p>
             </Card>
           ) : (
             <div className="space-y-2">
-              {filtroEvo.evolucoesFiltradas.map(e => {
+              {evolucoesVisiveis.map(e => {
                 const autoria = autoriaEvolucao(e)
                 return (
                 <Card key={e.id}>
@@ -1074,13 +1136,13 @@ export function PerfilPacienteTabs({
             </Card>
           )}
 
-          {orientacoes.length === 0 ? (
+          {orientacoesVisiveis.length === 0 ? (
             <Card>
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                Nenhuma orientação registrada.
+                {orientacoes.length > 0 ? 'Nenhuma orientação para essa busca.' : 'Nenhuma orientação registrada.'}
               </p>
             </Card>
-          ) : orientacoes.map(o => {
+          ) : orientacoesVisiveis.map(o => {
             const expandida = oriExpandidas.has(o.id)
             const tipoLabel: Record<string, string> = { video: 'Vídeo', pdf: 'PDF', imagem: 'Imagem', guia: 'Guia' }
             return (

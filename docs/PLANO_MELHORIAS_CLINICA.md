@@ -636,8 +636,14 @@ Criar bucket **privado** `modelos-avaliacao`.
   `docs/PLANO_SENHA_PRIMEIRO_ACESSO.md`, em execução separada. Se as duas frentes
   estiverem abertas ao mesmo tempo, terminar aquela antes desta, porque ela toca os
   layouts dos três grupos de rota.
-- **Busca de texto dentro do prontuário** — depende de confirmar com a equipe o que
-  significava "busca na página do paciente" (ver nota na Fase 2).
+- ~~**Busca de texto dentro do prontuário**~~ — **entregue na Etapa F** (2026-09-30): campo
+  de busca no perfil do paciente, filtrando no navegador o que a página já carregou
+  (evoluções, relatórios, orientações e encaminhamentos; sem acento e sem diferença de
+  maiúscula; todas as colunas de texto). O termo não vai ao servidor, à URL, ao
+  armazenamento nem a log. Sem endpoint, sem índice de texto, sem `tsvector`.
+- **Busca de texto ENTRE pacientes (global).** Fora de escopo de propósito: daria a quem
+  tem `ver_todos_pacientes` (5 das 8 terapeutas) uma varredura sobre as anotações clínicas
+  de toda a clínica. Feature diferente, que precisaria de decisão própria.
 
 ---
 

@@ -15,6 +15,11 @@ import {
 interface Props {
   pacienteId: string
   encaminhamentos: Encaminhamento[]
+  /**
+   * Busca ativa no prontuário: só estes ids aparecem (null = sem busca). O que está em edição
+   * aparece sempre, para o formulário não sumir debaixo de quem digita na busca.
+   */
+  idsNaBusca?: Set<string> | null
   /** admin/recepção e a terapeuta vinculada. Quem não vê recebe o aviso, não uma lista vazia. */
   podeVer: boolean
   /** só admin e recepção criam e editam (RLS idem). */
@@ -65,10 +70,13 @@ function FormularioEncaminhamento({ inicial, rotuloSalvar, salvando, erro, onSal
   )
 }
 
-export function BlocoEncaminhamentos({ pacienteId, encaminhamentos, podeVer, podeGerenciar, prontuarioEncerrado }: Props) {
+export function BlocoEncaminhamentos({ pacienteId, encaminhamentos, idsNaBusca = null, podeVer, podeGerenciar, prontuarioEncerrado }: Props) {
   const router = useRouter()
   const [criando, setCriando] = useState(false)
   const [editandoId, setEditandoId] = useState<string | null>(null)
+  const lista = idsNaBusca
+    ? encaminhamentos.filter(e => idsNaBusca.has(e.id) || e.id === editandoId)
+    : encaminhamentos
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -157,17 +165,19 @@ export function BlocoEncaminhamentos({ pacienteId, encaminhamentos, podeVer, pod
             />
           )}
 
-          {encaminhamentos.length === 0 && !criando ? (
+          {lista.length === 0 && !criando ? (
             <Card>
               <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
-                {podeEscrever
-                  ? 'Nenhum encaminhamento registrado. Use "Novo encaminhamento" para registrar o médico que encaminhou.'
-                  : 'Nenhum encaminhamento registrado.'}
+                {encaminhamentos.length > 0
+                  ? 'Nenhum encaminhamento para essa busca.'
+                  : podeEscrever
+                    ? 'Nenhum encaminhamento registrado. Use "Novo encaminhamento" para registrar o médico que encaminhou.'
+                    : 'Nenhum encaminhamento registrado.'}
               </p>
             </Card>
           ) : (
             <div className="space-y-3">
-              {encaminhamentos.map(e => {
+              {lista.map(e => {
                 if (editandoId === e.id) {
                   return (
                     <FormularioEncaminhamento

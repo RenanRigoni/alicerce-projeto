@@ -75,12 +75,12 @@ export default async function PacienteTerapeutaPage({
       .maybeSingle() : Promise.resolve({ data: null }),
     dbClinico ? dbClinico
       .from('relatorios')
-      .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url')
+      .select('id, identificacao, obs_clinicas, testes, resultado_discussao, status, publicado_em, criado_em, conclusao, pdf_url')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
     dbClinico ? dbClinico
       .from('evolucoes')
-      .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url, terapeuta_id, profiles(nome, tipo_profissional)')
+      .select('id, identificacao, obs_clinicas, testes, resultado_discussao, status, publicado_em, criado_em, conclusao, pdf_url, terapeuta_id, profiles(nome, tipo_profissional)')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
     dbClinico ? dbClinico
@@ -145,6 +145,9 @@ export default async function PacienteTerapeutaPage({
     status: e.status,
     publicado_em: e.publicado_em ?? null,
     criado_em: e.criado_em,
+    obs_clinicas: e.obs_clinicas ?? null,
+    testes: e.testes ?? null,
+    resultado_discussao: e.resultado_discussao ?? null,
     conclusao: e.conclusao ?? null,
     pdf_url: e.pdf_url ?? null,
     terapeuta_id: e.terapeuta_id ?? null,

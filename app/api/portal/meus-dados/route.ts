@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { validarCep } from '@/lib/endereco/cep'
+import { validarTelefone, validarTelefoneDoContatoEmergencia } from '@/lib/telefone'
 
 // PATCH — responsável atualiza próprios dados (LGPD Art. 18, III — direito de correção)
 export async function PATCH(request: NextRequest) {
@@ -24,6 +25,10 @@ export async function PATCH(request: NextRequest) {
   if (nome !== undefined && !nome?.trim()) erros.push('Nome não pode estar vazio.')
   const cepValidado = cep !== undefined ? validarCep(cep) : null
   if (cepValidado && !cepValidado.valido) erros.push(cepValidado.mensagem)
+  const telefonePrincipal = telefone_principal !== undefined ? validarTelefone(telefone_principal) : null
+  if (telefonePrincipal && !telefonePrincipal.valido) erros.push(telefonePrincipal.mensagem)
+  const telefoneEmergencia = validarTelefoneDoContatoEmergencia(contato_emergencia)
+  if (!telefoneEmergencia.valido) erros.push(telefoneEmergencia.mensagem)
   if (erros.length > 0) return NextResponse.json({ error: erros.join(' ') }, { status: 400 })
 
   if (nome?.trim()) {
@@ -35,7 +40,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const detalhesUpdate: Record<string, string | null> = {}
-  if (telefone_principal !== undefined) detalhesUpdate.telefone_principal = telefone_principal?.trim() || null
+  if (telefonePrincipal?.valido) detalhesUpdate.telefone_principal = telefonePrincipal.telefone
   if (contato_emergencia !== undefined) detalhesUpdate.contato_emergencia = contato_emergencia?.trim() || null
   if (endereco !== undefined)           detalhesUpdate.endereco = endereco?.trim() || null
   if (cidade !== undefined)             detalhesUpdate.cidade = cidade?.trim() || null

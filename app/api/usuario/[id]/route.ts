@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getTipoProfissionalConfig, isCodigoCboValido, isTipoProfissional, isUfBrasil, normalizarCodigoCbo } from '@/lib/profissionais'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { validarCep } from '@/lib/endereco/cep'
+import { validarTelefone, validarTelefoneDoContatoEmergencia } from '@/lib/telefone'
 import { NextRequest, NextResponse } from 'next/server'
 
 function normalizarCpfCnpj(valor: unknown): string | null {
@@ -50,7 +51,6 @@ export async function PATCH(
 
   const nome = typeof body.nome === 'string' ? body.nome.trim() : ''
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
-  const telefone = typeof body.telefone === 'string' ? body.telefone.trim() : ''
 
   const str = (v: unknown) => typeof v === 'string' && v.trim() ? v.trim() : null
 
@@ -66,9 +66,20 @@ export async function PATCH(
     return NextResponse.json({ error: cepDetalhes.mensagem }, { status: 400 })
   }
 
+  // Telefones, também antes de qualquer escrita. O do perfil só conta para quem não é
+  // responsável (para eles a tela esconde o campo e esta rota não o grava).
+  const telefonePerfil = alvo.role !== 'pai' ? validarTelefone(body.telefone) : null
+  const telefonePrincipal = detalhesBruto ? validarTelefone(detalhesBruto.telefone_principal) : null
+  const telefoneEmergencia = detalhesBruto ? validarTelefoneDoContatoEmergencia(detalhesBruto.contato_emergencia) : null
+  for (const validacao of [telefonePerfil, telefonePrincipal, telefoneEmergencia]) {
+    if (validacao && !validacao.valido) {
+      return NextResponse.json({ error: validacao.mensagem }, { status: 400 })
+    }
+  }
+
   const profileUpdate: Record<string, string | null | boolean> = {}
   if (nome) profileUpdate.nome = nome
-  if (alvo.role !== 'pai') profileUpdate.telefone = telefone || null
+  if (telefonePerfil?.valido) profileUpdate.telefone = telefonePerfil.telefone
 
   // Campos pessoais comuns a todos os roles
   profileUpdate.data_nascimento = str(body.data_nascimento)
@@ -159,7 +170,7 @@ export async function PATCH(
       .from('responsaveis_detalhes')
       .upsert({
         id,
-        telefone_principal: str(detalhesBruto.telefone_principal),
+        telefone_principal: telefonePrincipal?.valido ? telefonePrincipal.telefone : null,
         endereco: str(detalhesBruto.endereco),
         numero: str(detalhesBruto.numero),
         complemento: str(detalhesBruto.complemento),

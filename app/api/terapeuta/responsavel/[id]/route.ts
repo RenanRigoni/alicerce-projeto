@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { validarCep } from '@/lib/endereco/cep'
+import { validarTelefone, validarTelefoneDoContatoEmergencia } from '@/lib/telefone'
 import { terapeutaTemVinculoComResponsavel } from '@/lib/paciente/vinculo-responsavel'
 
 export async function PATCH(
@@ -38,6 +39,15 @@ export async function PATCH(
     return NextResponse.json({ error: cepValidado.mensagem }, { status: 400 })
   }
 
+  const telefonePrincipal = telefone_principal !== undefined ? validarTelefone(telefone_principal) : null
+  if (telefonePrincipal && !telefonePrincipal.valido) {
+    return NextResponse.json({ error: telefonePrincipal.mensagem }, { status: 400 })
+  }
+  const telefoneEmergencia = validarTelefoneDoContatoEmergencia(contato_emergencia)
+  if (!telefoneEmergencia.valido) {
+    return NextResponse.json({ error: telefoneEmergencia.mensagem }, { status: 400 })
+  }
+
   if (nome !== undefined && (typeof nome !== 'string' || !nome.trim())) {
     return NextResponse.json({ error: 'Nome não pode estar vazio.' }, { status: 400 })
   }
@@ -46,7 +56,7 @@ export async function PATCH(
   if (nome !== undefined) nomeUpdates.nome = nome.trim()
 
   const detalhesUpdates: Record<string, any> = {}
-  if (telefone_principal !== undefined) detalhesUpdates.telefone_principal = telefone_principal || null
+  if (telefonePrincipal?.valido) detalhesUpdates.telefone_principal = telefonePrincipal.telefone
   if (endereco !== undefined) detalhesUpdates.endereco = endereco || null
   if (cidade !== undefined) detalhesUpdates.cidade = cidade || null
   if (cepValidado?.valido) detalhesUpdates.cep = cepValidado.cep

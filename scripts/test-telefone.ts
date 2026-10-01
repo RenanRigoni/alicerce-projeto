@@ -10,6 +10,7 @@ import {
   separarTelefone,
   somenteDigitosTelefone,
   validarTelefone,
+  validarTelefoneDoContatoEmergencia,
 } from '../lib/telefone'
 
 // ── máscara do número: ancorada à direita, sufixo = sempre os 4 últimos dígitos ──
@@ -185,5 +186,15 @@ for (const t of ['3', '3333444', '349988649', '349988649617']) {
   assert.equal(validarTelefone(t, { aceitaSemDdd: true }).valido, t.length >= 8 && t.length <= 11, `médico, ${t.length} dígitos`)
 }
 assert.equal(validarTelefone('3433334', { aceitaSemDdd: true }).valido, false, '7 dígitos: tamanho intermediário inválido')
+
+// ── contato de emergência: "Nome — telefone" ──
+assert.equal(validarTelefoneDoContatoEmergencia('Ana — (34) 99999-9999').valido, true)
+assert.equal(validarTelefoneDoContatoEmergencia('Ana — (34) 99999-9999').telefone, '34999999999')
+assert.equal(validarTelefoneDoContatoEmergencia('Ana — 123').valido, false)
+assert.equal(validarTelefoneDoContatoEmergencia('Ana — (34) 993222-2908').valido, false, '12 dígitos')
+assert.equal(validarTelefoneDoContatoEmergencia('Só o nome').valido, true, 'sem separador: nada a validar')
+assert.equal(validarTelefoneDoContatoEmergencia('Ana — ').valido, true, 'separador sem telefone')
+assert.equal(validarTelefoneDoContatoEmergencia(null).valido, true)
+assert.equal(validarTelefoneDoContatoEmergencia(42).valido, true)
 
 console.log('Telefone: testes passaram')

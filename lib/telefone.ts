@@ -189,6 +189,19 @@ export function validarTelefone(valor: unknown, opcoes: OpcoesTelefone = {}): Va
   }
 }
 
+const SEPARADOR_CONTATO_EMERGENCIA = ' — '
+
+/**
+ * `contato_emergencia` é um texto só ("Nome — (34) 99882-2549"). Valida o telefone depois do
+ * separador, com a mesma regra dos outros campos. Sem separador não há telefone para validar.
+ */
+export function validarTelefoneDoContatoEmergencia(texto: unknown): ValidacaoTelefone {
+  if (typeof texto !== 'string') return validarTelefone(null)
+  const indice = texto.indexOf(SEPARADOR_CONTATO_EMERGENCIA)
+  if (indice === -1) return validarTelefone(null)
+  return validarTelefone(texto.slice(indice + SEPARADOR_CONTATO_EMERGENCIA.length))
+}
+
 /** Valor a gravar: só dígitos, null para vazio E para inválido; valide antes com `validarTelefone`. */
 export function normalizarTelefone(valor: unknown, opcoes: OpcoesTelefone = {}): string | null {
   const r = validarTelefone(valor, opcoes)

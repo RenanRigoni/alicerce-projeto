@@ -2,6 +2,7 @@ import { getTipoProfissionalConfig, isCodigoCboValido, isTipoProfissional, isUfB
 import { temPermissao } from '@/lib/permissoes/definicoes'
 import { enviarConviteAcesso, DOMINIO_EMAIL_INTERNO } from '@/lib/auth/convite'
 import { validarCep } from '@/lib/endereco/cep'
+import { validarTelefone } from '@/lib/telefone'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
@@ -142,6 +143,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: cepValidado.mensagem }, { status: 400 })
   }
 
+  // Telefone também antes de criar a conta no Auth. Só dígitos vão para o banco; antes o
+  // texto digitado entrava como veio, e há telefones de 12 dígitos gravados assim.
+  const telefoneValidado = validarTelefone(telefone)
+  if (!telefoneValidado.valido) {
+    return NextResponse.json({ error: telefoneValidado.mensagem }, { status: 400 })
+  }
+  const emergenciaValidada = validarTelefone(contato_emergencia_telefone)
+  if (!emergenciaValidada.valido) {
+    return NextResponse.json({ error: emergenciaValidada.mensagem }, { status: 400 })
+  }
+
   // O trigger handle_new_user só cobre nome NULL; string vazia passa e o perfil
   // fica sem nome, sumindo das buscas da recepção.
   const nomeEfetivo = typeof nome === 'string' && nome.trim() ? nome.trim() : null
@@ -154,7 +166,7 @@ export async function POST(request: NextRequest) {
   // either an email or phone" e a profissional simplesmente não era cadastrada.
   if (!emailEfetivo) {
     const cpfDigits = normalizarCpfCnpj(cpf_cnpj ?? '')
-    const telefoneDigits = typeof telefone === 'string' ? telefone.replace(/\D/g, '') : ''
+    const telefoneDigits = telefoneValidado.telefone ?? ''
     const temIdentificadorDeLogin =
       cpfDigits.length === 11 || (role === 'pai' && telefoneDigits.length >= 10)
 
@@ -198,7 +210,7 @@ export async function POST(request: NextRequest) {
     .from('profiles')
     .update({
       ...(nomeEfetivo ? { nome: nomeEfetivo } : {}),
-      ...(telefone?.trim() ? { telefone: telefone.trim() } : {}),
+      ...(telefoneValidado.telefone ? { telefone: telefoneValidado.telefone } : {}),
       ...(tipoProfissional ? { tipo_profissional: tipoProfissional } : {}),
       ...(conselhoTipo ? { conselho_tipo: conselhoTipo } : {}),
       ...(conselhoNumero ? { conselho_numero: conselhoNumero, crefito: conselhoNumero } : {}),
@@ -225,7 +237,7 @@ export async function POST(request: NextRequest) {
   if (role === 'pai') {
     const { error: detalhesErro } = await adminClient.from('responsaveis_detalhes').upsert({
       id: userId,
-      telefone_principal: telefone ? telefone.replace(/\D/g, '') : null,
+      telefone_principal: telefoneValidado.telefone,
       cep: cepValidado.cep,
       endereco: endereco?.trim() ?? null,
       bairro: bairro?.trim() ?? null,
@@ -234,7 +246,7 @@ export async function POST(request: NextRequest) {
       cidade: cidade?.trim() ?? null,
       estado: estado?.trim() ?? null,
       contato_emergencia: contato_emergencia_nome?.trim() ?? null,
-      contato_emergencia_telefone: contato_emergencia_telefone?.trim() ?? null,
+      contato_emergencia_telefone: emergenciaValidada.telefone,
     })
 
     // Mesmo tratamento do perfil: sem endereço a conta ficava criada e a tela

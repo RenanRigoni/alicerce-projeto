@@ -50,7 +50,7 @@ export default async function PacientePortalPage({
       .order('publicado_em', { ascending: false }),
     supabase
       .from('evolucoes')
-      .select('id, identificacao, status, publicado_em, conclusao, pdf_url, terapeuta_id, profiles(nome, tipo_profissional)')
+      .select('id, identificacao, status, publicado_em, criado_em, conclusao, pdf_url, terapeuta_id, retifica_id, profiles(nome, tipo_profissional)')
       .eq('paciente_id', id)
       .eq('status', 'publicado')
       .order('publicado_em', { ascending: false }),
@@ -135,8 +135,10 @@ export default async function PacientePortalPage({
     identificacao: e.identificacao ?? null,
     conclusao: e.conclusao ?? null,
     publicado_em: e.publicado_em ?? null,
+    criado_em: e.criado_em,
     pdf_url: e.pdf_url ?? null,
     terapeuta_id: e.terapeuta_id ?? null,
+    retifica_id: e.retifica_id ?? null,
     autor_nome: e.profiles?.nome ?? null,
     autor_tipo_profissional: e.profiles?.tipo_profissional ?? null,
   }))

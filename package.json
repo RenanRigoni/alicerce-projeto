@@ -21,7 +21,9 @@
     "test:cadastro-paciente": "tsx scripts/test-cadastro-paciente.ts",
     "test:busca-prontuario": "tsx scripts/test-busca-prontuario.ts",
     "test:alta-duplicada": "tsx scripts/test-alta-solicitar-duplicada.ts",
-    "test:dados-clinicos": "tsx scripts/test-dados-clinicos.ts"
+    "test:dados-clinicos": "tsx scripts/test-dados-clinicos.ts",
+    "test:retificacao": "tsx scripts/test-retificacao.ts",
+    "test:rota-relatorio": "tsx scripts/test-rota-relatorio.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

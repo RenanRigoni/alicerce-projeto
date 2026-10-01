@@ -20,6 +20,7 @@ import {
   camposDeEncaminhamento, camposDeEvolucaoOuRelatorio, camposDeFichaClinica, camposDeOrientacao,
   casaComBusca, filtrarPorBusca, resumirBusca, termosDaBusca, type AbaDoResultado,
 } from '@/lib/paciente/busca-prontuario'
+import { indexarRetificacoes, podeRetificar, type VinculoRetificacao } from '@/lib/paciente/retificacao'
 
 // ── Tipos ────────────────────────────────────────────────────
 
@@ -81,6 +82,8 @@ export interface Evolucao extends Relatorio {
   terapeuta_id: string | null
   autor_nome: string | null
   autor_tipo_profissional: string | null
+  /** Evolução que esta retifica. A original fica no prontuário, inalterada. */
+  retifica_id?: string | null
 }
 
 export interface Documento {
@@ -221,6 +224,9 @@ export function PerfilPacienteTabs({
   const [busca, setBusca] = useState('')
   const termosBusca = useMemo(() => termosDaBusca(busca), [busca])
   const buscaAtiva = termosBusca.length > 0
+  // Quem retifica quem. Montado sobre a lista INTEIRA, não a filtrada: senão a original sumiria
+  // do rótulo quando a busca escondesse ela e deixasse a retificação visível.
+  const retificacoes = useMemo(() => indexarRetificacoes(evolucoes), [evolucoes])
   const evolucoesVisiveis = useMemo(
     () => filtrarPorBusca(filtroEvo.evolucoesFiltradas, termosBusca, camposDeEvolucaoOuRelatorio),
     [filtroEvo.evolucoesFiltradas, termosBusca],
@@ -326,6 +332,21 @@ export function PerfilPacienteTabs({
   // Separado de `erroOri`: aquele só renderiza dentro do formulário de nova orientação, que pode
   // estar fechado. A recusa do "Excluir" tem de aparecer na lista, onde o botão está.
   const [erroExcluirOri, setErroExcluirOri] = useState('')
+  const [erroExcluirRel, setErroExcluirRel] = useState('')
+
+  // Só rascunho: relatório publicado foi entregue à família e a cópia tem de ficar arquivada.
+  // A policy "relatorios: exclusão terapeuta" e a rota recusam o publicado de todo jeito.
+  async function handleDeletarRelatorio(id: string) {
+    if (!confirm('Excluir este rascunho de relatório? Isso não pode ser desfeito.')) return
+    const res = await fetch(`/api/relatorio/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const j = await res.json().catch(() => null)
+      setErroExcluirRel(j?.error ?? 'Não foi possível excluir este rascunho.')
+      return
+    }
+    setErroExcluirRel('')
+    router.refresh()
+  }
 
   // Edição de orientação
   const [editandoOri, setEditandoOri] = useState<{ id: string; titulo: string; tipo: string; url_midia: string; conteudo: string } | null>(null)
@@ -832,6 +853,11 @@ export function PerfilPacienteTabs({
               </a>
             )}
           </div>
+          {erroExcluirRel && (
+            <Card>
+              <p className="text-sm" style={{ color: '#B91C1C' }}>{erroExcluirRel}</p>
+            </Card>
+          )}
           {relatoriosVisiveis.length > 0 ? (
             <div className="space-y-2">
               {relatoriosVisiveis.map(r => (
@@ -869,6 +895,15 @@ export function PerfilPacienteTabs({
                         >
                           Editar
                         </a>
+                      )}
+                      {role === 'terapeuta' && ehTerapeutaVinculado && r.status === 'rascunho' && paciente.status === 'ativo' && (
+                        <button
+                          onClick={() => handleDeletarRelatorio(r.id)}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg transition-opacity hover:opacity-70"
+                          style={{ border: '1px solid #FECACA', color: '#B91C1C', background: '#FEF2F2' }}
+                        >
+                          Excluir
+                        </button>
                       )}
                       {r.pdf_url && (
                         <a
@@ -980,6 +1015,7 @@ export function PerfilPacienteTabs({
             <div className="space-y-2">
               {evolucoesVisiveis.map(e => {
                 const autoria = autoriaEvolucao(e)
+                const vinculo = retificacoes.get(e.id)
                 return (
                 <Card key={e.id}>
                   <div className="flex items-start justify-between gap-3">
@@ -1002,7 +1038,19 @@ export function PerfilPacienteTabs({
                           {new Date(e.criado_em).toLocaleDateString('pt-BR')}
                         </span>
                         <Badge color={e.status === 'publicado' ? 'green' : 'yellow'}>{e.status}</Badge>
+                        {vinculo?.retifica && <Badge color="yellow">retificação</Badge>}
+                        {vinculo && vinculo.retificadaPor.length > 0 && <Badge color="yellow">retificada</Badge>}
                       </div>
+                      {vinculo?.retifica && (
+                        <p className="text-xs mt-1" style={{ color: 'var(--color-amber-deep)' }}>
+                          Retifica a {vinculo.retifica.rotulo}, que continua no prontuário.
+                        </p>
+                      )}
+                      {vinculo && vinculo.retificadaPor.length > 0 && (
+                        <p className="text-xs mt-1" style={{ color: 'var(--color-amber-deep)' }}>
+                          Retificada pela {vinculo.retificadaPor.map((r: VinculoRetificacao['retificadaPor'][number]) => r.rotulo).join(' e pela ')}.
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
@@ -1012,6 +1060,17 @@ export function PerfilPacienteTabs({
                       >
                         Ver
                       </button>
+                      {/* Publicada não se edita nem se apaga: corrigir é retificar, criando outra
+                          evolução ligada a esta. A original permanece. */}
+                      {role === 'terapeuta' && ehTerapeutaVinculado && podeRetificar(e) && paciente.status === 'ativo' && (
+                        <a
+                          href={`/terapia/paciente/${paciente.id}/nova-evolucao?retifica=${e.id}`}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg transition-colors"
+                          style={{ border: '1px solid var(--color-amber-main)', color: 'var(--color-amber-deep)' }}
+                        >
+                          Retificar
+                        </a>
+                      )}
                       {role === 'terapeuta' && e.status === 'rascunho' && (
                         <a
                           href={`/terapia/evolucao/${e.id}/editar`}

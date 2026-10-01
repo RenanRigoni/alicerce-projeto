@@ -1,18 +1,25 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { gerarHash } from '@/lib/hash/gerar-hash'
 import { getTipoProfissionalConfig } from '@/lib/profissionais'
+import { rotuloDaOriginal, tituloSugeridoDaRetificacao } from '@/lib/paciente/retificacao'
 
 export default function NovaEvolucaoPage() {
   const router = useRouter()
   const params = useParams()
   const pacienteId = params.id as string
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // `?retifica=<id>`: esta evolucao corrige outra. A original NAO e alterada nem apagada - a
+  // norma de prontuario eletronico so admite correcao por acrescimo. Ver lib/paciente/retificacao.ts.
+  const retificaId = useSearchParams().get('retifica')
+  const [original, setOriginal] = useState<{ id: string; identificacao: string | null; criado_em: string } | null>(null)
+  const [erroRetificacao, setErroRetificacao] = useState('')
 
   const [pacienteAtivo, setPacienteAtivo] = useState<boolean | null>(null)
   const [titulo, setTitulo] = useState('')
@@ -34,6 +41,36 @@ export default function NovaEvolucaoPage() {
     supabase.from('pacientes').select('status').eq('id', pacienteId).single()
       .then(({ data }) => setPacienteAtivo(data?.status === 'ativo'))
   }, [pacienteId])
+
+  useEffect(() => {
+    if (!retificaId) return
+    const supabase = createClient()
+    supabase.from('evolucoes')
+      .select('id, identificacao, conclusao, obs_clinicas, criado_em, paciente_id, status')
+      .eq('id', retificaId)
+      .maybeSingle()
+      .then(({ data }) => {
+        // Confere o paciente aqui tambem: o trigger validar_retificacao e a tranca de verdade,
+        // mas errar de paciente na URL tem de dar mensagem, nao erro cru do banco no fim do fluxo.
+        if (!data || data.paciente_id !== pacienteId) {
+          setErroRetificacao('A evolucao a retificar nao foi encontrada neste paciente.')
+          return
+        }
+        if (data.status !== 'publicado') {
+          setErroRetificacao('Rascunho se corrige editando, nao retificando.')
+          return
+        }
+        setOriginal({ id: data.id, identificacao: data.identificacao, criado_em: data.criado_em })
+        // Pre-enche com o texto da original: a retificacao fica sendo a versao corrigida
+        // completa, e quem ler o prontuario depois ve as duas inteiras em vez de um remendo.
+        setTitulo(tituloSugeridoDaRetificacao(data))
+        setPrevia(data.conclusao ?? '')
+        setAdicionais(data.obs_clinicas ?? '')
+      })
+  }, [retificaId, pacienteId])
+
+  /** Null quando nao e retificacao; o id da original quando e. Vai nos dois inserts. */
+  const vinculoRetificacao = original ? { retifica_id: original.id } : {}
 
   async function uploadArquivos(): Promise<{ path: string } | null> {
     if (arquivos.length === 0) return null
@@ -74,6 +111,7 @@ export default function NovaEvolucaoPage() {
       obs_clinicas: adicionais.trim() || null,
       pdf_url: upload?.path ?? null,
       status: 'rascunho',
+      ...vinculoRetificacao,
     })
 
     setSalvando(false)
@@ -135,6 +173,7 @@ export default function NovaEvolucaoPage() {
       pdf_url: finalPdfPath,
       assinado_em: agora,
       publicado_em: agora,
+      retifica_id: original?.id ?? null,
     })
 
     const { error } = await supabase.from('evolucoes').insert({
@@ -150,6 +189,7 @@ export default function NovaEvolucaoPage() {
       assinado_em: agora,
       publicado_em: agora,
       hash_integridade: hash,
+      ...vinculoRetificacao,
     })
 
     if (error) {
@@ -207,9 +247,28 @@ export default function NovaEvolucaoPage() {
           Voltar
         </a>
         <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
-          Nova evolucao
+          {retificaId ? 'Retificar evolucao' : 'Nova evolucao'}
         </h1>
       </div>
+
+      {erroRetificacao && (
+        <Card>
+          <p className="text-sm font-medium" style={{ color: '#B91C1C' }}>{erroRetificacao}</p>
+        </Card>
+      )}
+
+      {original && (
+        <Card>
+          <p className="text-sm" style={{ color: 'var(--color-ink-mid)' }}>
+            Retificando a <strong>{rotuloDaOriginal(original)}</strong>
+            {original.identificacao ? ` ("${original.identificacao}")` : ''}.
+          </p>
+          <p className="text-xs mt-1.5" style={{ color: 'var(--color-ink-faint)' }}>
+            A evolucao original continua no prontuario, inalterada, e as duas ficam visiveis para a
+            familia. O prontuario eletronico so admite correcao por acrescimo: nada e sobrescrito.
+          </p>
+        </Card>
+      )}
 
       <Card>
         <div className="space-y-5">

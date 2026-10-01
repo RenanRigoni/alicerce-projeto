@@ -1,6 +1,8 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Card } from '@/components/ui/Card'
+import { indexarRetificacoes } from '@/lib/paciente/retificacao'
 import {
   FiltroEvolucoes,
   autoriaEvolucao,
@@ -13,7 +15,10 @@ export interface EvolucaoPortal extends AutorEvolucao {
   identificacao: string | null
   conclusao: string | null
   publicado_em: string | null
+  criado_em: string
   pdf_url: string | null
+  /** Evolução que esta retifica. A família vê as duas: nada é sobrescrito nem escondido. */
+  retifica_id?: string | null
 }
 
 interface Props {
@@ -23,6 +28,9 @@ interface Props {
 
 export function ListaEvolucoesPortal({ pacienteId, evolucoes }: Props) {
   const filtro = useFiltroEvolucoes(evolucoes)
+  // Sobre a lista inteira, não a filtrada: senão o rótulo sumiria quando o filtro escondesse a
+  // original e deixasse a retificação visível.
+  const retificacoes = useMemo(() => indexarRetificacoes(evolucoes), [evolucoes])
 
   if (evolucoes.length === 0) {
     return (
@@ -58,6 +66,7 @@ export function ListaEvolucoesPortal({ pacienteId, evolucoes }: Props) {
       ) : (
         filtro.evolucoesFiltradas.map(e => {
           const autoria = autoriaEvolucao(e)
+          const vinculo = retificacoes.get(e.id)
           return (
             <Card key={e.id}>
               <div className="flex items-start justify-between gap-4">
@@ -80,6 +89,18 @@ export function ListaEvolucoesPortal({ pacienteId, evolucoes }: Props) {
                       ? new Date(e.publicado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
                       : ''}
                   </div>
+                  {/* Correção de evolução é por acréscimo: as duas versões ficam, e a família
+                      precisa saber qual lê qual em vez de achar que a clínica trocou o texto. */}
+                  {vinculo?.retifica && (
+                    <p className="text-xs mt-1.5" style={{ color: 'var(--color-amber-deep)' }}>
+                      Esta evolução corrige a {vinculo.retifica.rotulo}, que continua disponível.
+                    </p>
+                  )}
+                  {vinculo && vinculo.retificadaPor.length > 0 && (
+                    <p className="text-xs mt-1.5" style={{ color: 'var(--color-amber-deep)' }}>
+                      Há uma versão corrigida desta evolução, de {vinculo.retificadaPor.map(r => r.rotulo.replace('evolução de ', '')).join(' e ')}.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <a

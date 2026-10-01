@@ -54,7 +54,7 @@ export default async function AdminPacienteDetalhePage({
       .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
     podeVerClinico ? supabase
       .from('evolucoes')
-      .select('id, identificacao, obs_clinicas, testes, resultado_discussao, status, publicado_em, criado_em, conclusao, pdf_url, terapeuta_id, profiles(nome, tipo_profissional)')
+      .select('id, identificacao, obs_clinicas, testes, resultado_discussao, status, publicado_em, criado_em, conclusao, pdf_url, terapeuta_id, retifica_id, profiles(nome, tipo_profissional)')
       .eq('paciente_id', id)
       .order('criado_em', { ascending: false }) : Promise.resolve({ data: [] }),
     podeVerClinico ? supabase
@@ -117,6 +117,7 @@ export default async function AdminPacienteDetalhePage({
     conclusao: e.conclusao ?? null,
     pdf_url: e.pdf_url ?? null,
     terapeuta_id: e.terapeuta_id ?? null,
+    retifica_id: e.retifica_id ?? null,
     autor_nome: e.profiles?.nome ?? null,
     autor_tipo_profissional: e.profiles?.tipo_profissional ?? null,
   }))

@@ -33,7 +33,10 @@ export async function PATCH(
   const body = await request.json()
   const { identificacao, conclusao, obs_clinicas, pdf_url } = body
 
-  const { error } = await supabase
+  // `.select('id')` revela a escrita que a RLS descarta: a RESTRICTIVE somente_leitura_pos_alta
+  // barra o UPDATE de paciente inativo afetando 0 linhas SEM erro, e sem isso a rota respondia
+  // { success: true } sem ter salvo nada.
+  const { data: atualizados, error } = await supabase
     .from('relatorios')
     .update({
       ...(identificacao !== undefined ? { identificacao } : {}),
@@ -42,7 +45,14 @@ export async function PATCH(
       ...(pdf_url !== undefined ? { pdf_url } : {}),
     })
     .eq('id', id)
+    .select('id')
 
   if (error) return NextResponse.json({ error: 'Erro ao atualizar relatório' }, { status: 500 })
+  if (!atualizados || atualizados.length === 0) {
+    return NextResponse.json(
+      { error: 'Não foi possível salvar. Se o paciente recebeu alta, o prontuário é somente leitura.' },
+      { status: 409 }
+    )
+  }
   return NextResponse.json({ success: true })
 }

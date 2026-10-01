@@ -667,33 +667,68 @@ telefone, telas) e **não foi feito**. Enquanto isso:
   humana);
 - o login por telefone usa `responsaveis_detalhes.telefone_digits` (coluna gerada, só dígitos).
 
-### Pendências de decisão encontradas na revisão
+### O que se pode alterar e apagar em cada registro — fechado em 01/10/2026
 
-- **Orientação: a autora pode editar?** `orientacoes` não tem policy PERMISSIVE de UPDATE para
-  terapeuta (só a RESTRICTIVE pós-alta), então o UPDATE afeta 0 linhas. A rota agora devolve
-  erro em vez de "salvo". Se for permitir, só enquanto `assinado_em IS NULL`: a rota
-  recalcula `hash_integridade` com `assinado_em`, e editar uma orientação assinada mudaria o
-  conteúdo mantendo a assinatura. Se não for permitir, esconder o botão "Editar".
+Decidido pelo Renan com base nas normas aplicáveis à equipe: 3 terapeutas ocupacionais e 2
+fisioterapeutas sob **CREFITO/COFFITO**, 1 neuropsicóloga sob **CRP/CFP**, 1 nutricionista sob
+**CRN**, e 1 neuropsicopedagoga sem conselho federal.
 
-- **O painel de qualidade de dados fica só na home de admin e recepção, mas 6 das 8
-  terapeutas podem arrumar esses dados.** Medido em 01/10/2026: 6 terapeutas têm
-  `gerenciar_responsaveis` em `profiles.permissoes`, e são elas que falam com as famílias.
-  Copiar o painel para `/terapia/dashboard` **como está daria número errado**: numa transação
-  desfeita, com `auth.uid()` de uma dessas terapeutas, a RLS devolve 18 `profiles` de
-  `role='pai'` (só as famílias das pacientes dela) e **101** `responsaveis_detalhes` (todas).
-  `carregarLinhasQualidadeDados` parte dos perfis, então a contagem sairia parcial, sem
-  dizer que é parcial. Se for levar o painel para lá, a contagem precisa ser explicitamente
-  "entre as suas famílias" — não o mesmo número da recepção.
+O princípio que decide tudo vem da certificação **CFM/SBIS** de prontuário eletrônico, que é o
+padrão técnico brasileiro: o sistema tem de **impedir modificar** o que foi escrito e salvo após
+o atendimento — informação pode ser **acrescentada**, nunca alterada. Guarda: prontuário digital
+mínimo **20 anos** desde o último registro (Lei 13.787/2018); documentos escritos de psicologia e
+o material que os embasou, mínimo **5 anos** (CFP 006/2019 + 001/2009), com responsabilidade da
+profissional **junto com a clínica**; COFFITO 414/2012 põe a guarda na profissional ou na
+instituição. COFFITO 414/2012 e 424/2013 são **silenciosas** sobre correção de registro.
 
-- **`responsaveis_detalhes` é legível por qualquer terapeuta, inteira.** A policy de SELECT
-  é `(id = auth.uid()) OR get_my_role() = ANY (ARRAY['admin','recepcao','terapeuta'])`: cada
-  terapeuta lê telefone, endereço, CEP e contato de emergência das 101 famílias, inclusive
-  das que não são pacientes dela — enquanto `profiles` de `role='pai'` já restringe às 18
-  dela. A escrita está certa (só o próprio dono ou admin/recepção; a rota da terapeuta usa
-  `createAdminClient()` com a autorização conferida antes). É assimetria antiga, não foi
-  introduzida agora, e as 8 terapeutas são funcionárias da clínica — mas é mais dado de
-  contato do que o trabalho exige (minimização, LGPD art. 6º III). Decidir se a leitura passa
-  a exigir vínculo com a paciente, como `profiles` já faz.
+| Registro | Em produção | Editar | Apagar | Corrigir como |
+|---|---|---|---|---|
+| **Evolução** | 606 (589 publicadas, 17 rascunho) | só rascunho, pela autora | **ninguém, nunca** | **retificação**: evolução nova ligada à original, as duas ficam |
+| **Relatório** | 6, todos publicados | só rascunho, pela autora | **só rascunho**, pela autora | publicado: novo relatório |
+| **Orientação** | 0 | a autora, as dela | a autora, as dela | editar |
+| **Ficha clínica** | 0 | quem atende | — (é `upsert`, documento vivo) | editar |
+
+Por que relatório publicado não se apaga: **a cópia do documento emitido tem de ficar
+arquivada**. A família leva aquele relatório para a escola, para o plano de saúde, para o INSS.
+Se alguém questionar o documento depois e a clínica tiver apagado a cópia dela, não há o que
+mostrar — e a profissional e a clínica respondem juntas. Rascunho nunca saiu da clínica: não é
+documento, é trabalho em andamento, e nenhuma norma o protege.
+
+Por que orientação pode tudo: é dica que a profissional passa ao responsável pelo portal. Não é
+registro de atendimento nem documento emitido, então não entra na guarda obrigatória.
+
+Toda exclusão agora deixa rastro: os triggers `audit_orientacoes` e `audit_relatorios` passaram
+a cobrir DELETE e gravam `excluiu` em `audit_logs` com a autora e a data. `audit_logs.recurso_id`
+não tem FK, então o registro sobrevive à linha apagada. `audit_evolucoes` **não** cobre DELETE —
+não existe exclusão de evolução para auditar.
+
+Bug de falha silenciosa corrigido nas três rotas de edição: o UPDATE não tinha `.select()`, e a
+RESTRICTIVE `somente_leitura_pos_alta` descarta a escrita de paciente inativo afetando 0 linhas
+**sem erro** — a tela dizia "salvo" sem ter salvo. Agora devolve 409 explicando a alta.
+
+### Painel de qualidade de dados: fica só em admin e recepção — decidido em 01/10/2026
+
+6 das 8 terapeutas têm `gerenciar_responsaveis` e são elas que falam com as famílias, mas o
+painel não vai para `/terapia/dashboard`. Medido em transação desfeita, com `auth.uid()` de uma
+delas: a RLS devolve 18 `profiles` de `role='pai'` (só as famílias das pacientes dela), e
+`carregarLinhasQualidadeDados` parte dos perfis — a contagem sairia parcial sem dizer que é
+parcial. Número enganoso é pior que número ausente. Se um dia for para lá, o texto tem de dizer
+"entre as suas famílias", não repetir o número da recepção.
+
+### `responsaveis_detalhes`: leitura por vínculo — aplicado em 01/10/2026
+
+A policy de SELECT liberava a tabela inteira para qualquer terapeuta (telefone, endereço, CEP e
+contato de emergência das 101 famílias), enquanto `profiles` de `role='pai'` já restringia às
+famílias vinculadas. Corrigido: a leitura passou a exigir vínculo, espelhando `profiles`.
+Conferido depois de aplicar — cada terapeuta vê exatamente a mesma contagem nas duas tabelas
+(18/18, 0/0, 17/17, 21/21, 29/29, 0/0, 28/28, 38/38); admin e recepção, 101; cada responsável,
+só o próprio. Ver `20261001_responsaveis_detalhes_leitura_por_vinculo.sql`.
+
+### Ainda em aberto
+
+O botão "Editar" de evolução e de relatório aparece para qualquer terapeuta vinculada, não só
+para a autora, e a autoria é conferida só na rota (403 com mensagem clara). É o padrão que já
+existia antes; gatear na tela exige passar o id da usuária logada para `PerfilPacienteTabs`.
 
 ### Ficha de dados clínicos: resolvido em 01/10/2026
 

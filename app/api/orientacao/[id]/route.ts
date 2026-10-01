@@ -36,15 +36,22 @@ export async function PATCH(
     assinado_em: ori.assinado_em,
   })
 
-  const { error } = await supabase.from('orientacoes').update({
+  // `.select('id')` é o que revela o UPDATE descartado pela RLS: sem policy PERMISSIVE de UPDATE
+  // para a autora, o banco afeta 0 linhas SEM erro, e a rota respondia success:true sem ter salvo.
+  // (A policy continua não existindo: se a autora pode editar, e só enquanto assinado_em for nulo,
+  // é decisão pendente. Editar uma orientação já assinada mudaria o conteúdo e manteria a assinatura.)
+  const { data: atualizadas, error } = await supabase.from('orientacoes').update({
     titulo: titulo.trim(),
     tipo: tipoFinal,
     url_midia: url_midia?.trim() || null,
     conteudo: conteudo?.trim() || null,
     hash_integridade: hash,
-  }).eq('id', id)
+  }).eq('id', id).select('id')
 
   if (error) return NextResponse.json({ error: 'Erro ao atualizar orientação.' }, { status: 500 })
+  if (!atualizadas || atualizadas.length === 0) {
+    return NextResponse.json({ error: 'Não foi possível salvar as alterações desta orientação.' }, { status: 403 })
+  }
 
   return NextResponse.json({ success: true })
 }

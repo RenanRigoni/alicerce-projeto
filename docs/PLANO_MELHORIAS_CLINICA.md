@@ -669,11 +669,45 @@ telefone, telas) e **não foi feito**. Enquanto isso:
 
 ### Pendências de decisão encontradas na revisão
 
-- **Orientação: a autora pode editar?** `orientacoes` não tem policy PERMISSIVE de UPDATE para
-  terapeuta (só a RESTRICTIVE pós-alta), então o UPDATE afeta 0 linhas. A rota agora devolve
-  erro em vez de "salvo". Se for permitir, só enquanto `assinado_em IS NULL`: a rota
-  recalcula `hash_integridade` com `assinado_em`, e editar uma orientação assinada mudaria o
-  conteúdo mantendo a assinatura. Se não for permitir, esconder o botão "Editar".
+### Orientação não se edita nem se exclui: decidido em 01/10/2026
+
+Decisão do Renan: **tirar o botão "Editar"**. Corrigir = registrar nova orientação.
+
+A opção que eu havia sugerido antes — permitir editar enquanto `assinado_em IS NULL` — **não
+existe**. Fui ler `app/api/orientacao/route.ts`: o INSERT já grava `assinado_em: agora` e, na
+mesma requisição, chama `notificarResponsaveisDoPaciente`. Não há rascunho. Quando a terapeuta
+vê a orientação na lista, a família já recebeu notificação e já pode ter lido. Uma policy de
+UPDATE condicionada a `assinado_em IS NULL` nunca concederia nada.
+
+O que as normas pedem, conferido:
+
+- **COFFITO 414/2012** (obrigatoriedade do registro em prontuário, que é a resolução que trata
+  do prontuário) e **424/2013** (código de ética) são **silenciosas** sobre correção,
+  retificação ou rasura. Definem conteúdo mínimo, legibilidade, guarda e sigilo, e nada sobre
+  alterar registro já feito.
+- **Lei 13.787/2018** (prontuário digital) e **LGPD art. 18** (retificação) **não proíbem**
+  corrigir. Exigem rastreabilidade: quem alterou, quando, e a versão anterior precisa
+  sobreviver. A integridade por hash funciona justamente assim — alteração posterior à
+  assinatura invalida o resumo.
+- `orientacoes` **não guarda versão**. O UPDATE sobrescrevia `titulo` e `conteudo` e
+  recalculava `hash_integridade`, apagando o original sem deixar sinal. Era o oposto da regra.
+
+Além disso o UPDATE nunca funcionou: sem policy PERMISSIVE de UPDATE para terapeuta (só a
+RESTRICTIVE pós-alta, que restringe sem conceder), afetava 0 linhas sem erro. Nenhuma
+orientação foi editada na prática — a tela só dizia que sim.
+
+Feito: botão e modal fora da tela; `PATCH` e `DELETE` recusam com 409 e dizem o que fazer no
+lugar; a rota não importa mais o cliente do Supabase, então não tem como escrever.
+`test:rota-orientacao` guarda os dois 409, a ausência de import do banco e a ausência do modal
+(três mutações conferidas). Nenhuma policy de UPDATE foi criada.
+
+**Se um dia a edição voltar, o caminho é rascunho, não policy:** criar sem assinar e sem
+notificar, com um "Publicar" que assina e notifica. Aí a edição acontece antes da assinatura e
+o versionamento deixa de ser necessário.
+
+Pendente de decisão: o botão **"Excluir"** continua na tela. Ele nunca pode dar certo (a rota
+sempre recusa), mas agora mostra o motivo em vez de recarregar calado. Tirar também, ou deixar
+para a terapeuta aprender a regra?
 
 - **O painel de qualidade de dados fica só na home de admin e recepção, mas 6 das 8
   terapeutas podem arrumar esses dados.** Medido em 01/10/2026: 6 terapeutas têm

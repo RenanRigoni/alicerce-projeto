@@ -327,32 +327,6 @@ export function PerfilPacienteTabs({
   // estar fechado. A recusa do "Excluir" tem de aparecer na lista, onde o botão está.
   const [erroExcluirOri, setErroExcluirOri] = useState('')
 
-  // Edição de orientação
-  const [editandoOri, setEditandoOri] = useState<{ id: string; titulo: string; tipo: string; url_midia: string; conteudo: string } | null>(null)
-  const [salvandoEditOri, setSalvandoEditOri] = useState(false)
-  const [erroEditOri, setErroEditOri] = useState('')
-
-  async function handleSalvarEdicaoOri() {
-    if (!editandoOri) return
-    if (!editandoOri.titulo.trim()) { setErroEditOri('Título é obrigatório.'); return }
-    setErroEditOri('')
-    setSalvandoEditOri(true)
-    const res = await fetch(`/api/orientacao/${editandoOri.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titulo: editandoOri.titulo,
-        tipo: editandoOri.tipo,
-        url_midia: editandoOri.url_midia,
-        conteudo: editandoOri.conteudo,
-      }),
-    })
-    setSalvandoEditOri(false)
-    if (!res.ok) { const j = await res.json(); setErroEditOri(j.error ?? 'Erro ao salvar.'); return }
-    setEditandoOri(null)
-    router.refresh()
-  }
-
   async function handleDeletarOri(id: string) {
     if (!confirm('Excluir esta orientação?')) return
     const res = await fetch(`/api/orientacao/${id}`, { method: 'DELETE' })
@@ -1192,13 +1166,6 @@ export function PerfilPacienteTabs({
                     {ehTerapeutaVinculado && (
                       <>
                         <button
-                          onClick={() => setEditandoOri({ id: o.id, titulo: o.titulo, tipo: o.tipo ?? 'texto', url_midia: o.url_midia ?? '', conteudo: o.conteudo ?? '' })}
-                          className="text-xs font-medium px-2.5 py-1 rounded-lg transition-opacity hover:opacity-70"
-                          style={{ border: '1px solid var(--color-border)', color: 'var(--color-ink-soft)' }}
-                        >
-                          Editar
-                        </button>
-                        <button
                           onClick={() => handleDeletarOri(o.id)}
                           className="text-xs font-medium px-2.5 py-1 rounded-lg transition-opacity hover:opacity-70"
                           style={{ border: '1px solid #FECACA', color: '#B91C1C', background: '#FEF2F2' }}
@@ -1530,93 +1497,6 @@ export function PerfilPacienteTabs({
         </div>{/* fim conteúdo */}
       </div>{/* fim layout lateral */}
     </div>
-
-    {/* Modal: editar orientação */}
-    {editandoOri && (
-      <ModalPortal>
-      <div
-        className="fixed inset-0 flex items-center justify-center z-50 px-4 py-6 overflow-y-auto"
-        style={{ background: 'rgba(44,32,24,0.4)' }}
-      >
-        <div
-          className="rounded-2xl p-6 w-full max-w-lg space-y-4 my-auto"
-          style={{ background: 'var(--color-warm-white)', boxShadow: '0 20px 60px rgba(44,32,24,0.2)' }}
-        >
-          <h2 className="text-base font-semibold" style={{ fontFamily: 'var(--font-lora)', color: 'var(--color-ink)' }}>
-            Editar orientação
-          </h2>
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-ink-mid)' }}>Título</label>
-            <input
-              type="text"
-              value={editandoOri.titulo}
-              onChange={e => setEditandoOri(prev => prev && ({ ...prev, titulo: e.target.value }))}
-              className="input-base"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-ink-mid)' }}>Tipo</label>
-            <select
-              value={editandoOri.tipo}
-              onChange={e => setEditandoOri(prev => prev && ({ ...prev, tipo: e.target.value, url_midia: '', conteudo: '' }))}
-              className="input-base"
-            >
-              {['texto', 'video', 'pdf', 'imagem', 'guia'].map(t => (
-                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-              ))}
-            </select>
-          </div>
-
-          {['video', 'pdf', 'imagem'].includes(editandoOri.tipo) && (
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-ink-mid)' }}>URL</label>
-              <input
-                type="text"
-                value={editandoOri.url_midia}
-                onChange={e => setEditandoOri(prev => prev && ({ ...prev, url_midia: e.target.value }))}
-                className="input-base"
-                placeholder="https://..."
-              />
-            </div>
-          )}
-
-          {['texto', 'guia'].includes(editandoOri.tipo) && (
-            <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-ink-mid)' }}>Conteúdo</label>
-              <textarea
-                value={editandoOri.conteudo}
-                onChange={e => setEditandoOri(prev => prev && ({ ...prev, conteudo: e.target.value }))}
-                rows={5}
-                className="input-base resize-y"
-              />
-            </div>
-          )}
-
-          {erroEditOri && <p className="text-sm" style={{ color: '#B91C1C' }}>{erroEditOri}</p>}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              onClick={handleSalvarEdicaoOri}
-              disabled={salvandoEditOri}
-              className="flex-1 text-sm font-medium px-4 py-2 rounded-xl text-white transition-colors disabled:opacity-50"
-              style={{ background: 'var(--color-sage-main)' }}
-            >
-              {salvandoEditOri ? 'Salvando...' : 'Salvar alterações'}
-            </button>
-            <button
-              onClick={() => { setEditandoOri(null); setErroEditOri('') }}
-              className="text-sm px-4 py-2 rounded-xl transition-colors"
-              style={{ color: 'var(--color-ink-soft)' }}
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
-      </ModalPortal>
-    )}
 
     {/* Modal: ver relatório completo */}
     {modalRel && (

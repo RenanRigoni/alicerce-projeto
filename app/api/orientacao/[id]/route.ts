@@ -1,65 +1,44 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
-import { gerarHash } from '@/lib/hash/gerar-hash'
+import { NextResponse } from 'next/server'
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+// Orientação não se altera nem se exclui depois de criada. As duas rotas recusam, e o botão
+// "Editar" saiu da tela (components/paciente/PerfilPacienteTabs.tsx). Corrigir = nova orientação.
+//
+// Por quê, em ordem de peso:
+//
+// 1. A orientação nasce assinada. `app/api/orientacao/route.ts` grava `assinado_em: agora` no
+//    próprio INSERT e, na mesma requisição, notifica os responsáveis. Não existe rascunho:
+//    quando a terapeuta vê a orientação na lista, a família já foi avisada e já pode ter lido.
+//    Editar depois disso é mudar um documento assinado e entregue.
+//
+// 2. A Lei 13.787/2018 (prontuário digital) e a LGPD (art. 18, retificação) não proíbem
+//    corrigir — exigem que a correção deixe rastro: quem alterou, quando, e a versão anterior
+//    tem de sobreviver. `orientacoes` não guarda versão: o UPDATE sobrescrevia `titulo` e
+//    `conteudo` e recalculava `hash_integridade`, apagando o original sem deixar sinal. A
+//    integridade por hash funciona ao contrário disso: qualquer alteração posterior à
+//    assinatura invalida o resumo. Permitir a edição sem versionamento era o oposto da regra.
+//    (COFFITO 414/2012 e 424/2013 são silenciosas sobre correção de registro.)
+//
+// 3. O UPDATE nunca funcionou. `orientacoes` não tem policy PERMISSIVE de UPDATE para
+//    terapeuta — só a RESTRICTIVE pós-alta, que restringe sem conceder. Sob RLS, sem nenhuma
+//    PERMISSIVE que case, não há permissão: o UPDATE afetava 0 linhas SEM erro e a rota
+//    respondia `{ success: true }` sem ter salvo nada. Nenhuma orientação foi editada na
+//    prática; a tela só dizia que sim.
+//
+// Se um dia a edição voltar, o caminho é rascunho, não policy de UPDATE: criar sem assinar e
+// sem notificar, e um "Publicar" que assina e notifica. Aí a edição acontece antes da
+// assinatura e o rastro não é necessário.
 
-  const { data: ori } = await supabase
-    .from('orientacoes')
-    .select('terapeuta_id, paciente_id, assinado_em')
-    .eq('id', id)
-    .single()
+const MOTIVO_IMUTAVEL =
+  'O prontuário é imutável depois de criado (COFFITO Res. 424/2013). ' +
+  'Para corrigir, registre uma nova orientação.'
 
-  if (!ori) return NextResponse.json({ error: 'Orientação não encontrada' }, { status: 404 })
-  if (ori.terapeuta_id !== user.id) return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
-
-  const { titulo, tipo, url_midia, conteudo } = await request.json()
-  if (!titulo?.trim()) return NextResponse.json({ error: 'Título é obrigatório.' }, { status: 400 })
-
-  const tiposValidos = ['texto', 'video', 'pdf', 'imagem', 'guia']
-  const tipoFinal = tiposValidos.includes(tipo) ? tipo : 'texto'
-
-  const hash = await gerarHash({
-    paciente_id: ori.paciente_id,
-    terapeuta_id: user.id,
-    titulo: titulo.trim(),
-    tipo: tipoFinal,
-    conteudo: conteudo?.trim() ?? null,
-    url_midia: url_midia?.trim() ?? null,
-    assinado_em: ori.assinado_em,
-  })
-
-  // `.select('id')` é o que revela o UPDATE descartado pela RLS: sem policy PERMISSIVE de UPDATE
-  // para a autora, o banco afeta 0 linhas SEM erro, e a rota respondia success:true sem ter salvo.
-  // (A policy continua não existindo: se a autora pode editar, e só enquanto assinado_em for nulo,
-  // é decisão pendente. Editar uma orientação já assinada mudaria o conteúdo e manteria a assinatura.)
-  const { data: atualizadas, error } = await supabase.from('orientacoes').update({
-    titulo: titulo.trim(),
-    tipo: tipoFinal,
-    url_midia: url_midia?.trim() || null,
-    conteudo: conteudo?.trim() || null,
-    hash_integridade: hash,
-  }).eq('id', id).select('id')
-
-  if (error) return NextResponse.json({ error: 'Erro ao atualizar orientação.' }, { status: 500 })
-  if (!atualizadas || atualizadas.length === 0) {
-    return NextResponse.json({ error: 'Não foi possível salvar as alterações desta orientação.' }, { status: 403 })
-  }
-
-  return NextResponse.json({ success: true })
+export async function PATCH() {
+  return NextResponse.json({ error: MOTIVO_IMUTAVEL }, { status: 409 })
 }
 
 export async function DELETE() {
-  // COFFITO Res. 424/2013: registros clínicos são imutáveis após criação.
   return NextResponse.json(
-    { error: 'Orientações não podem ser excluídas após criação. O prontuário é imutável (COFFITO Res. 424/2013).' },
+    { error: 'Orientações não podem ser excluídas após criação. ' + MOTIVO_IMUTAVEL },
     { status: 409 }
   )
 }

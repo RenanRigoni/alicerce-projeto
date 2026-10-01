@@ -638,12 +638,47 @@ Criar bucket **privado** `modelos-avaliacao`.
   layouts dos três grupos de rota.
 - ~~**Busca de texto dentro do prontuário**~~ — **entregue na Etapa F** (2026-09-30): campo
   de busca no perfil do paciente, filtrando no navegador o que a página já carregou
-  (evoluções, relatórios, orientações e encaminhamentos; sem acento e sem diferença de
-  maiúscula; todas as colunas de texto). O termo não vai ao servidor, à URL, ao
-  armazenamento nem a log. Sem endpoint, sem índice de texto, sem `tsvector`.
+  (evoluções, relatórios, orientações, encaminhamentos e, desde 2026-10-01, a ficha de
+  dados clínicos; sem acento e sem diferença de maiúscula; todas as colunas de texto). O
+  termo não vai ao servidor, à URL, ao armazenamento nem a log. Sem endpoint, sem índice
+  de texto, sem `tsvector`.
 - **Busca de texto ENTRE pacientes (global).** Fora de escopo de propósito: daria a quem
   tem `ver_todos_pacientes` (5 das 8 terapeutas) uma varredura sobre as anotações clínicas
   de toda a clínica. Feature diferente, que precisaria de decisão própria.
+
+---
+
+## Dívidas registradas (NÃO resolvidas; ficam para outra rodada)
+
+### Dívida 6 — o telefone do responsável vive em dois lugares
+
+`profiles.telefone` e `responsaveis_detalhes.telefone_principal` guardam o telefone da mesma
+pessoa. **6 responsáveis têm valores divergentes** nos dois campos (medido em 2026-10-01,
+sobre 105 responsáveis) e ninguém sabe qual é o verdadeiro; 14 estão ruins nos dois ao mesmo
+tempo e 19 (18%) têm pelo menos um que não completa chamada.
+
+Unificar numa fonte só é mudança de modelo de dados (migration, rotas que gravam, login por
+telefone, telas) e **não foi feito**. Enquanto isso:
+
+- o painel "Dados para conferir" da home de admin/recepção expõe a divergência
+  (`/admin/responsaveis?problema=telefone-divergente`) e a recepção confirma com a família;
+- nenhum registro existente foi corrigido ou normalizado: telefone de família, quem confirma
+  é a recepção, ninguém deduz (prefixar o 9 é a regra da ANATEL, mas continua sendo decisão
+  humana);
+- o login por telefone usa `responsaveis_detalhes.telefone_digits` (coluna gerada, só dígitos).
+
+### Pendências de decisão encontradas na revisão
+
+- **Orientação: a autora pode editar?** `orientacoes` não tem policy PERMISSIVE de UPDATE para
+  terapeuta (só a RESTRICTIVE pós-alta), então o UPDATE afeta 0 linhas. A rota agora devolve
+  erro em vez de "salvo". Se for permitir, só enquanto `assinado_em IS NULL`: a rota
+  recalcula `hash_integridade` com `assinado_em`, e editar uma orientação assinada mudaria o
+  conteúdo mantendo a assinatura. Se não for permitir, esconder o botão "Editar".
+- **Ficha de dados clínicos: `hash_integridade` não existe na tabela.** O upsert de
+  `AbaDadosClinicos` envia `hash_integridade`, mas `pacientes_dados_clinicos` não tem essa
+  coluna (tem `atualizado_em` e `atualizado_por`). Dependendo da versão do PostgREST o hash é
+  descartado em silêncio ou o salvamento falha; a tabela está com 0 linhas. Decidir entre
+  criar a coluna (como `evolucoes` e `relatorios` têm) ou parar de enviar o campo.
 
 ---
 

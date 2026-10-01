@@ -7,6 +7,8 @@ import { gerarSessoes } from '@/lib/agenda/sessoes'
 import { datasFeriadosParaBloqueio } from '@/lib/agenda/feriados'
 import { CAMPANHAS } from '@/lib/campanhas-saude'
 import { getPerfilPermissoesAtual } from '@/lib/permissoes/verificar'
+import { PainelQualidadeDados } from '@/components/admin/PainelQualidadeDados'
+import { carregarLinhasQualidadeDados } from '@/lib/qualidade-dados/carregar'
 
 const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
 const tipoLabel: Record<string, string> = { devolutiva: 'Devolutiva', reuniao: 'Reunião', reposicao: 'Reposição', bloqueio: 'Indisponível', outro: 'Outro' }
@@ -52,6 +54,11 @@ export default async function AdminDashboard() {
 
   const nomeMes  = MESES[mesAtualBRT - 1]
   const campanha = CAMPANHAS[agoraBRT.getUTCMonth()]
+
+  // Dados de contato para conferir: só para quem pode arrumá-los (gerenciar_responsaveis).
+  const qualidadeDados = podeGerenciarResponsaveis
+    ? carregarLinhasQualidadeDados(supabase, { incluirPacientes: podeVerPacientes })
+    : Promise.resolve([])
 
   const [
     { count: totalPacientes },
@@ -314,6 +321,8 @@ export default async function AdminDashboard() {
           </ul>
         </div>
       )}
+
+      <PainelQualidadeDados linhas={await qualidadeDados} />
 
       {/* Cards de totais */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

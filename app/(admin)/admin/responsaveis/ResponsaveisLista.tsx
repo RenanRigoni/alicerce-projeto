@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { casaComFiltro, type DiagnosticoContato, type FiltroResponsavel } from '@/lib/qualidade-dados/responsaveis'
 
 type StatusPaciente = 'ativo' | 'alta' | 'desativado'
 const statusLabel: Record<StatusPaciente, string> = { ativo: 'Ativo', alta: 'Alta', desativado: 'Inativo' }
@@ -15,10 +16,23 @@ interface Responsavel {
   ativo: boolean
   telefone: string | null
   cidade: string | null
+  diagnostico: DiagnosticoContato
+  telefonesDivergentes: { perfil: string; principal: string } | null
   pacientes: Array<{ id: string; nome: string; codigo_interno: string | null; status: StatusPaciente }>
 }
 
-export function ResponsaveisLista({ todos, podeVerPacientes }: { todos: Responsavel[]; podeVerPacientes: boolean }) {
+const tituloDoFiltro: Record<FiltroResponsavel, string> = {
+  telefone: 'com telefone que não completa chamada',
+  'telefone-divergente': 'com telefones diferentes nos dois cadastros',
+  cep: 'com CEP incompleto ou inválido',
+}
+
+export function ResponsaveisLista({ todos, podeVerPacientes, filtroProblema }: {
+  todos: Responsavel[]
+  podeVerPacientes: boolean
+  /** Vem do painel de qualidade de dados da home: mostra TODOS os que têm o problema, com ou sem paciente ativo. */
+  filtroProblema: FiltroResponsavel | null
+}) {
   const [filtros, setFiltros] = useState<Set<StatusPaciente>>(new Set(['ativo']))
 
   function toggleFiltro(status: StatusPaciente) {
@@ -30,9 +44,13 @@ export function ResponsaveisLista({ todos, podeVerPacientes }: { todos: Responsa
     })
   }
 
-  const lista = todos
-    .map(r => ({ ...r, pacientes: r.pacientes.filter(p => filtros.has(p.status)) }))
-    .filter(r => r.pacientes.length > 0)
+  // Com filtro de problema o filtro de status não vale: o painel conta todos os responsáveis, inclusive
+  // os sem paciente ativo, e a lista tem de mostrar os mesmos.
+  const lista = filtroProblema
+    ? todos.filter(r => casaComFiltro(r.diagnostico, filtroProblema))
+    : todos
+        .map(r => ({ ...r, pacientes: r.pacientes.filter(p => filtros.has(p.status)) }))
+        .filter(r => r.pacientes.length > 0)
 
   return (
     <div className="space-y-6">
@@ -42,11 +60,11 @@ export function ResponsaveisLista({ todos, podeVerPacientes }: { todos: Responsa
             Responsáveis
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-ink-soft)' }}>
-            {lista.length} responsável{lista.length !== 1 ? 'is' : ''} encontrado{lista.length !== 1 ? 's' : ''}
+            {lista.length} {lista.length !== 1 ? 'responsáveis encontrados' : 'responsável encontrado'}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
+          <div className={filtroProblema ? 'hidden' : 'flex items-center gap-2'}>
             {(['ativo', 'desativado', 'alta'] as StatusPaciente[]).map(s => (
               <button
                 key={s}
@@ -74,9 +92,21 @@ export function ResponsaveisLista({ todos, podeVerPacientes }: { todos: Responsa
         </div>
       </div>
 
+      {filtroProblema && (
+        <div
+          className="rounded-xl px-4 py-3 text-sm flex items-center justify-between gap-3 flex-wrap"
+          style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)', color: 'var(--color-amber-deep)' }}
+        >
+          <span>Mostrando só os responsáveis {tituloDoFiltro[filtroProblema]}, com ou sem paciente ativo.</span>
+          <Link href="/admin/responsaveis" className="font-medium underline-offset-2 hover:underline">Ver todos</Link>
+        </div>
+      )}
+
       {lista.length === 0 ? (
         <Card>
-          <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhum responsável encontrado.</p>
+          <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
+            {filtroProblema ? 'Nenhum responsável com esse problema. Tudo conferido.' : 'Nenhum responsável encontrado.'}
+          </p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -98,6 +128,18 @@ export function ResponsaveisLista({ todos, podeVerPacientes }: { todos: Responsa
                     {r.telefone && <span className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{r.telefone}</span>}
                     {r.cidade && <span className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>{r.cidade}</span>}
                   </div>
+                  {r.diagnostico.motivos.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {r.diagnostico.motivos.map(m => (
+                        <li key={m} className="text-xs" style={{ color: 'var(--color-amber-deep)' }}>⚠ {m}</li>
+                      ))}
+                      {r.telefonesDivergentes && (
+                        <li className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
+                          Perfil: {r.telefonesDivergentes.perfil} · Dados do responsável: {r.telefonesDivergentes.principal}
+                        </li>
+                      )}
+                    </ul>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5 items-end">
                   {r.pacientes.map(p => {

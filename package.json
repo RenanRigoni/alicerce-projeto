@@ -16,6 +16,7 @@
     "test:encaminhamentos": "tsx scripts/test-encaminhamentos.ts",
     "test:masks": "tsx scripts/test-masks.ts",
     "test:telefone": "tsx scripts/test-telefone.ts",
+    "test:qualidade-dados": "tsx scripts/test-qualidade-dados.ts",
     "test:rota-orientacao": "tsx scripts/test-rota-orientacao.ts",
     "test:cadastro-paciente": "tsx scripts/test-cadastro-paciente.ts",
     "test:busca-prontuario": "tsx scripts/test-busca-prontuario.ts",

@@ -21,9 +21,12 @@ interface Paciente {
 export function PacientesLista({
   todos,
   podeCadastrarPacientes,
+  semResponsavel = false,
 }: {
   todos: Paciente[]
   podeCadastrarPacientes: boolean
+  /** Vem do painel de qualidade de dados da home: a lista já chega só com os ativos sem responsável. */
+  semResponsavel?: boolean
 }) {
   const [filtros, setFiltros] = useState<Set<StatusPaciente>>(new Set(['ativo']))
   const [busca, setBusca] = useState('')
@@ -38,10 +41,12 @@ export function PacientesLista({
   }
 
   const lista = todos.filter(p =>
-    filtros.has(p.status) &&
+    (semResponsavel || filtros.has(p.status)) &&
     (!busca.trim() || p.nome.toLowerCase().includes(busca.trim().toLowerCase()))
   )
-  const filtroLabel = filtros.size === 3
+  const filtroLabel = semResponsavel
+    ? 'Pacientes ativos sem responsável vinculado'
+    : filtros.size === 3
     ? 'Todos os pacientes'
     : Array.from(filtros).map(s => statusLabel[s]).join(' + ')
 
@@ -62,7 +67,7 @@ export function PacientesLista({
             className="input-base text-sm"
             style={{ width: 200 }}
           />
-          <div className="flex items-center gap-2">
+          <div className={semResponsavel ? 'hidden' : 'flex items-center gap-2'}>
             {(['ativo', 'desativado', 'alta'] as StatusPaciente[]).map(s => (
               <button
                 key={s}
@@ -91,6 +96,16 @@ export function PacientesLista({
           )}
         </div>
       </div>
+
+      {semResponsavel && (
+        <div
+          className="rounded-xl px-4 py-3 text-sm flex items-center justify-between gap-3 flex-wrap"
+          style={{ background: 'var(--color-amber-light)', border: '1px solid var(--color-amber-border)', color: 'var(--color-amber-deep)' }}
+        >
+          <span>Abra o paciente e vincule um responsável na aba Responsáveis.</span>
+          <Link href="/admin/pacientes" className="font-medium underline-offset-2 hover:underline">Ver todos</Link>
+        </div>
+      )}
 
       <Card>
         {lista.length === 0 ? (

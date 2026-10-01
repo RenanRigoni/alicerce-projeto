@@ -155,7 +155,7 @@ const AVISO_SEM_NONO = 'Celular sem o nono dígito — esse número não complet
 const AVISO_SUSPEITO = 'Número fora do padrão — confira os dígitos e confirme com a família.'
 
 function mensagemTamanho(digitos: number, aceitaSemDdd: boolean): string {
-  const esperado = aceitaSemDdd ? 'de 8 a 11 dígitos' : 'DDD + número, 10 ou 11 dígitos'
+  const esperado = aceitaSemDdd ? '8 a 11 dígitos (o DDD é opcional)' : 'DDD + número, 10 ou 11 dígitos'
   if (digitos === 0) return `Telefone inválido — use apenas números (${esperado}).`
   if (digitos > MAX_DIGITOS_TELEFONE) {
     const sobram = digitos - MAX_DIGITOS_TELEFONE

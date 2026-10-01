@@ -1,4 +1,4 @@
-import { somenteDigitosTelefone } from '@/lib/telefone'
+import { somenteDigitosTelefone, validarTelefone } from '@/lib/telefone'
 
 // Nome, CRM e telefone do médico são todos opcionais; a CHECK do banco e
 // validarEncaminhamento exigem ao menos um dos três.
@@ -136,11 +136,11 @@ export function validarEncaminhamento(form: FormEncaminhamento): ValidacaoEncami
     return { valido: false, erro: 'UF do CRM inválida.' }
   }
 
-  // Dígitos crus, sem o corte de 11 da máscara: 13 dígitos colados têm de dar erro, não ser truncados.
-  const telefone = form.medico_telefone.replace(/\D/g, '')
-  if (form.medico_telefone.trim() && telefone.length !== 10 && telefone.length !== 11) {
-    return { valido: false, erro: 'Telefone do médico deve ter DDD e número (10 ou 11 dígitos).' }
-  }
+  // 8 ou 9 dígitos (número local, sem DDD) ou 10 ou 11 (com DDD): a recepção é local e o papel
+  // do médico pode trazer só "3822-1234". 12+ dígitos colados dão erro, não são truncados.
+  const validacaoTelefone = validarTelefone(form.medico_telefone, { aceitaSemDdd: true })
+  if (!validacaoTelefone.valido) return { valido: false, erro: validacaoTelefone.mensagem }
+  const telefone = validacaoTelefone.telefone
 
   const data = form.data_encaminhamento.trim()
   if (data && !dataValida(data)) {

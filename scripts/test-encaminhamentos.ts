@@ -5,6 +5,7 @@ import {
   prepararEncaminhamentoDoCadastro, sugestoesDeMedicos, validarEncaminhamento,
   type Encaminhamento, type FormEncaminhamento,
 } from '../lib/paciente/encaminhamentos'
+import { validarTelefone } from '../lib/telefone'
 
 const form = (parcial: Partial<FormEncaminhamento>): FormEncaminhamento => ({ ...FORM_VAZIO, ...parcial })
 
@@ -41,17 +42,30 @@ assert.equal(
   ERRO_AO_MENOS_UM, 'os outros campos sozinhos não contam',
 )
 
-// ── telefone: opcional, 10 (fixo) ou 11 (celular) dígitos, guardado só com dígitos ──
+// ── telefone: opcional; 8 ou 9 dígitos (número local, sem DDD) ou 10 ou 11 (com DDD); guardado só com dígitos ──
 assert.equal(dadosValidos({ medico_telefone: '(34) 3333-4444' }).medico_telefone, '3433334444')
 assert.equal(dadosValidos({ medico_nome: 'A', medico_telefone: '34991234567' }).medico_telefone, '34991234567')
+// os quatro tamanhos válidos (a recepção é local: o papel do médico pode trazer só "3822-1234")
+for (const t of ['38221234', '998221234', '3438221234', '34998221234']) {
+  assert.equal(dadosValidos({ medico_telefone: t }).medico_telefone, t, `${t.length} dígitos`)
+}
+assert.equal(dadosValidos({ medico_telefone: '3822-1234' }).medico_telefone, '38221234', 'com máscara, sem DDD')
 assert.equal(dadosValidos({ medico_nome: 'A', medico_telefone: '' }).medico_telefone, null)
 assert.equal(dadosValidos({ medico_nome: 'A', medico_telefone: '   ' }).medico_telefone, null)
-const ERRO_TELEFONE = 'Telefone do médico deve ter DDD e número (10 ou 11 dígitos).'
-assert.equal(erroDe({ medico_nome: 'A', medico_telefone: '123' }), ERRO_TELEFONE)
-assert.equal(erroDe({ medico_nome: 'A', medico_telefone: '349912345' }), ERRO_TELEFONE, '9 dígitos')
-assert.equal(erroDe({ medico_nome: 'A', medico_telefone: '3499123456789' }), ERRO_TELEFONE, '13 dígitos colados não são truncados para 11')
-assert.equal(erroDe({ medico_nome: 'A', medico_telefone: 'abc' }), ERRO_TELEFONE, 'só letras: nenhum dígito')
-assert.equal(erroDe({ medico_telefone: '123' }), ERRO_TELEFONE, 'telefone inválido sozinho dá o erro do telefone, não o de "ao menos um"')
+// 12+ e tamanhos intermediários (1 a 7) continuam recusados; a mensagem vem do validador compartilhado
+const erroTelefone = (t: string) => {
+  const r = validarTelefone(t, { aceitaSemDdd: true })
+  assert.equal(r.valido, false)
+  return r.mensagem
+}
+assert.equal(erroDe({ medico_nome: 'A', medico_telefone: '123' }), erroTelefone('123'))
+assert.equal(erroDe({ medico_nome: 'A', medico_telefone: '3822123' }), erroTelefone('3822123'), '7 dígitos')
+assert.equal(erroDe({ medico_nome: 'A', medico_telefone: '349988225491' }), erroTelefone('349988225491'), '12 dígitos')
+assert.equal(erroDe({ medico_nome: 'A', medico_telefone: '3499123456789' }), erroTelefone('3499123456789'), '13 dígitos colados não são truncados para 11')
+assert.equal(erroDe({ medico_nome: 'A', medico_telefone: 'abc' }), erroTelefone('abc'), 'só letras: nenhum dígito')
+assert.equal(erroDe({ medico_telefone: '123' }), erroTelefone('123'), 'telefone inválido sozinho dá o erro do telefone, não o de "ao menos um"')
+assert.match(erroTelefone('349988225491'), /a mais/)
+assert.match(erroTelefone('3822123'), /incompleto/)
 
 // ── CRM: opcional, só números; o que vier formatado é limpo ──
 assert.equal(dadosValidos({ medico_nome: 'A', medico_crm: '12345' }).medico_crm, '12345')
@@ -126,7 +140,8 @@ const soNome = prepararEncaminhamentoDoCadastro({ medico_nome: 'Dra. Ana' })
 assert.equal(soNome.ok && soNome.dados?.medico_nome, 'Dra. Ana')
 // conteúdo sem nenhum dos três (ex.: só o motivo): erro claro, nada de gravar calado nem de perder o texto
 assert.deepEqual(prepararEncaminhamentoDoCadastro({ motivo: 'atraso de fala' }), { ok: false, erro: ERRO_AO_MENOS_UM })
-assert.deepEqual(prepararEncaminhamentoDoCadastro({ medico_telefone: '123' }), { ok: false, erro: ERRO_TELEFONE })
+assert.deepEqual(prepararEncaminhamentoDoCadastro({ medico_telefone: '123' }), { ok: false, erro: erroTelefone('123') })
+assert.equal(prepararEncaminhamentoDoCadastro({ medico_telefone: '3822-1234' }).ok, true, 'cadastro do paciente aceita telefone sem DDD')
 // entrada que não veio da nossa tela (corpo da requisição é texto livre)
 assert.deepEqual(prepararEncaminhamentoDoCadastro('texto'), { ok: false, erro: 'Encaminhamento inválido.' })
 assert.deepEqual(prepararEncaminhamentoDoCadastro([]), { ok: false, erro: 'Encaminhamento inválido.' })

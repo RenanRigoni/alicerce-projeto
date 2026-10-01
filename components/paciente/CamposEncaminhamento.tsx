@@ -2,7 +2,8 @@
 
 import { useEffect, useId, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { mascaraTelefone } from '@/lib/masks'
+import { formatarTelefone, somenteDigitosTelefone } from '@/lib/telefone'
+import { CampoTelefone } from '@/components/ui/CampoTelefone'
 import {
   LIMITES, UFS,
   escaparLike, formatarCrm, mascaraCrm, sugestoesDeMedicos,
@@ -47,7 +48,7 @@ export function CamposEncaminhamento({ form, onChange, detalhesAbertos = false }
       medico_nome: s.medico_nome ?? '',
       medico_crm: s.medico_crm ?? '',
       medico_crm_uf: s.medico_crm_uf ?? '',
-      medico_telefone: mascaraTelefone(s.medico_telefone ?? ''),
+      medico_telefone: somenteDigitosTelefone(s.medico_telefone),
       especialidade: s.especialidade ?? '',
     })
     setSugestoes([])
@@ -80,7 +81,7 @@ export function CamposEncaminhamento({ form, onChange, detalhesAbertos = false }
             <div className="flex flex-wrap gap-2">
               {sugestoesVisiveis.map(s => {
                 const crm = formatarCrm(s.medico_crm, s.medico_crm_uf)
-                const detalhe = [crm && `CRM ${crm}`, s.medico_telefone && mascaraTelefone(s.medico_telefone), s.especialidade]
+                const detalhe = [crm && `CRM ${crm}`, s.medico_telefone && formatarTelefone(s.medico_telefone), s.especialidade]
                   .filter(Boolean).join(' · ')
                 return (
                   <button
@@ -130,15 +131,11 @@ export function CamposEncaminhamento({ form, onChange, detalhesAbertos = false }
           <label htmlFor={`${id}-tel`} className="block text-sm font-medium mb-1.5" style={rotulo}>
             Telefone do médico{opcional}
           </label>
-          <input
+          <CampoTelefone
             id={`${id}-tel`}
-            type="tel"
             value={form.medico_telefone}
-            onChange={e => onChange({ medico_telefone: mascaraTelefone(e.target.value) })}
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="(00) 00000-0000"
-            className="input-base"
+            onChange={medico_telefone => onChange({ medico_telefone })}
+            aceitaSemDdd
           />
         </div>
       </div>

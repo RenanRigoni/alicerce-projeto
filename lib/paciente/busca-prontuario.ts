@@ -1,4 +1,4 @@
-import { mascaraTelefone } from '@/lib/masks'
+import { formatarTelefone } from '@/lib/telefone'
 import { formatarCrm } from '@/lib/paciente/encaminhamentos'
 
 /**
@@ -75,7 +75,7 @@ export function camposDeEncaminhamento(item: TextoDeEncaminhamento): Texto[] {
     item.medico_crm,
     formatarCrm(item.medico_crm ?? null, item.medico_crm_uf ?? null), // "12345/MG"
     item.medico_telefone,
-    item.medico_telefone ? mascaraTelefone(item.medico_telefone) : null, // "(34) 3333-4444", como aparece na tela
+    item.medico_telefone ? formatarTelefone(item.medico_telefone) : null, // "(34) 3333-4444", como aparece na tela
     item.especialidade,
     item.motivo,
     item.observacoes,

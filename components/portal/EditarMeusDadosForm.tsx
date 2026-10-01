@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
 import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
-import { mascaraTelefone } from '@/lib/masks'
+import { formatarTelefone, somenteDigitosTelefone, validarTelefone } from '@/lib/telefone'
+import { CampoTelefone } from '@/components/ui/CampoTelefone'
 import { useCep } from '@/lib/endereco/use-cep'
 
 interface Props {
@@ -35,9 +36,9 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
 
   const [form, setForm] = useState({
     nome:                nome ?? '',
-    telefone_principal:  telefone ?? '',
+    telefone_principal:  somenteDigitosTelefone(telefone),
     emergencia_nome:     emergenciaInicial.nome,
-    emergencia_telefone: emergenciaInicial.telefone,
+    emergencia_telefone: somenteDigitosTelefone(emergenciaInicial.telefone),
     endereco:            endereco ?? '',
     cidade:              cidade ?? '',
     cep:                 mascaraCep(cep ?? ''),
@@ -55,8 +56,8 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  function handleTelefone(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm(prev => ({ ...prev, [e.target.name]: mascaraTelefone(e.target.value) }))
+  function handleTelefone(campo: 'telefone_principal' | 'emergencia_telefone') {
+    return (digitos: string) => setForm(prev => ({ ...prev, [campo]: digitos }))
   }
 
   function handleCEP(e: React.ChangeEvent<HTMLInputElement>) {
@@ -68,10 +69,14 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
     setErro('')
     const erroCep = campoCep.validarParaSalvar(form.cep)
     if (erroCep) { setErro(erroCep); return }
+    for (const t of [form.telefone_principal, form.emergencia_telefone]) {
+      const v = validarTelefone(t)
+      if (!v.valido) { setErro(v.mensagem); return }
+    }
     setSalvando(true)
 
     const emergenciaNome = form.emergencia_nome.trim()
-    const emergenciaTel  = form.emergencia_telefone.trim()
+    const emergenciaTel  = formatarTelefone(form.emergencia_telefone)
     const contato_emergencia_final = emergenciaNome && emergenciaTel
       ? `${emergenciaNome} — ${emergenciaTel}`
       : emergenciaNome || emergenciaTel || ''
@@ -152,19 +157,12 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
 
           <div>
             <label style={labelStyle}>Telefone principal</label>
-            <input
-              name="telefone_principal"
-              value={form.telefone_principal}
-              onChange={handleTelefone}
-              placeholder="(34) 99999-9999"
-              inputMode="numeric"
-              style={inputStyle}
-            />
+            <CampoTelefone value={form.telefone_principal} onChange={handleTelefone('telefone_principal')} style={inputStyle} />
           </div>
 
           <div>
             <label style={labelStyle}>Contato de emergência</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
               <input
                 name="emergencia_nome"
                 value={form.emergencia_nome}
@@ -172,14 +170,7 @@ export function EditarMeusDadosForm({ nome, telefone, contato_emergencia, endere
                 placeholder="Nome"
                 style={inputStyle}
               />
-              <input
-                name="emergencia_telefone"
-                value={form.emergencia_telefone}
-                onChange={handleTelefone}
-                placeholder="(34) 99999-9999"
-                inputMode="numeric"
-                style={inputStyle}
-              />
+              <CampoTelefone value={form.emergencia_telefone} onChange={handleTelefone('emergencia_telefone')} style={inputStyle} />
             </div>
           </div>
 

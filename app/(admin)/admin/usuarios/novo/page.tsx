@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useCep } from '@/lib/endereco/use-cep'
 import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
+import { CampoTelefone } from '@/components/ui/CampoTelefone'
+import { validarTelefone } from '@/lib/telefone'
 import { StatusConvite, type DadosConvite } from '@/components/admin/StatusConvite'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -132,6 +134,10 @@ export default function NovoUsuarioPage() {
     if (form.role === 'pai') {
       const erroCep = campoCep.validarParaSalvar(form.cep)
       if (erroCep) { setErro(erroCep); return }
+      for (const t of [form.telefone, form.contato_emergencia_telefone]) {
+        const v = validarTelefone(t)
+        if (!v.valido) { setErro(v.mensagem); return }
+      }
     }
 
     setCarregando(true)
@@ -372,7 +378,7 @@ export default function NovoUsuarioPage() {
                     <label className="block text-sm font-medium mb-1.5" style={L}>
                       Telefone principal
                     </label>
-                    <input name="telefone" value={form.telefone} onChange={handleChange} placeholder="(00) 00000-0000" className="input-base" />
+                    <CampoTelefone value={form.telefone} onChange={telefone => setForm(prev => ({ ...prev, telefone }))} />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -498,7 +504,7 @@ export default function NovoUsuarioPage() {
                     <label className="block text-sm font-medium mb-1.5" style={L}>
                       Telefone do contato
                     </label>
-                    <input name="contato_emergencia_telefone" value={form.contato_emergencia_telefone} onChange={handleChange} placeholder="(00) 00000-0000" className="input-base" />
+                    <CampoTelefone value={form.contato_emergencia_telefone} onChange={contato_emergencia_telefone => setForm(prev => ({ ...prev, contato_emergencia_telefone }))} />
                   </div>
                 </div>
               </div>

@@ -4,7 +4,9 @@ import {
   TIPOS_PROFISSIONAIS, UFS_BRASIL,
   getTipoProfissionalConfig, isCodigoCboValido, normalizarCodigoCbo,
 } from '@/lib/profissionais'
-import { mascaraCpfCnpj, mascaraTelefone } from '@/lib/masks'
+import { mascaraCpfCnpj } from '@/lib/masks'
+import { formatarTelefone, somenteDigitosTelefone, validarTelefone } from '@/lib/telefone'
+import { CampoTelefone } from '@/components/ui/CampoTelefone'
 import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
 import { useCep } from '@/lib/endereco/use-cep'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
@@ -93,7 +95,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
   const [form, setForm] = useState({
     nome:              usuario.nome ?? '',
     email:             usuario.email ?? '',
-    telefone:          mascaraTelefone(usuario.telefone ?? ''),
+    telefone:          somenteDigitosTelefone(usuario.telefone),
     cpf_cnpj:          mascaraCpfCnpj(usuario.cpf_cnpj ?? ''),
     data_nascimento:   usuario.data_nascimento ?? '',
     sexo:              usuario.sexo ?? '',
@@ -105,14 +107,14 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
     especialidade:     usuario.especialidade ?? '',
     biografia:         usuario.biografia ?? '',
     // pai
-    telefone_principal:   mascaraTelefone(detalhes?.telefone_principal ?? ''),
+    telefone_principal:   somenteDigitosTelefone(detalhes?.telefone_principal),
     endereco:             detalhes?.endereco ?? '',
     numero:               detalhes?.numero ?? '',
     complemento:          detalhes?.complemento ?? '',
     cidade:               detalhes?.cidade ?? '',
     cep:                  mascaraCep(detalhes?.cep ?? ''),
     emergencia_nome:      emergenciaInicial.nome,
-    emergencia_telefone:  mascaraTelefone(emergenciaInicial.telefone),
+    emergencia_telefone:  somenteDigitosTelefone(emergenciaInicial.telefone),
   })
 
   const tipoConfig = getTipoProfissionalConfig(form.tipo_profissional)
@@ -128,9 +130,8 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
-  function handleTel(field: string) {
-    return (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm(prev => ({ ...prev, [field]: mascaraTelefone(e.target.value) }))
+  function handleTel(field: 'telefone' | 'telefone_principal' | 'emergencia_telefone') {
+    return (digitos: string) => setForm(prev => ({ ...prev, [field]: digitos }))
   }
 
   async function salvar(e: React.FormEvent) {
@@ -142,10 +143,20 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
       if (erroCep) { setErro(erroCep); return }
     }
 
+    // O servidor recusa o mesmo que a tela; aqui só antecipa. Telefone de quem não é
+    // responsável fica de fora: o campo some e o servidor não o grava.
+    const telefonesDaTela = usuario.role === 'pai'
+      ? [form.telefone_principal, form.emergencia_telefone]
+      : [form.telefone]
+    for (const t of telefonesDaTela) {
+      const v = validarTelefone(t)
+      if (!v.valido) { setErro(v.mensagem); return }
+    }
+
     setSalvando(true)
 
     const emergenciaNome = form.emergencia_nome.trim()
-    const emergenciaTel  = form.emergencia_telefone.trim()
+    const emergenciaTel  = formatarTelefone(form.emergencia_telefone)
     const contato_emergencia = emergenciaNome && emergenciaTel
       ? `${emergenciaNome} — ${emergenciaTel}`
       : emergenciaNome || emergenciaTel || null
@@ -227,7 +238,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
           {usuario.role !== 'pai' && (
             <div>
               <Label>Telefone</Label>
-              <input name="telefone" value={form.telefone} onChange={handleTel('telefone')} placeholder="(00) 00000-0000" inputMode="numeric" className={inputCls} style={inputStyle} />
+              <CampoTelefone value={form.telefone} onChange={handleTel('telefone')} className={inputCls} style={inputStyle} />
             </div>
           )}
 
@@ -343,7 +354,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
 
             <div>
               <Label>Telefone principal</Label>
-              <input name="telefone_principal" value={form.telefone_principal} onChange={handleTel('telefone_principal')} placeholder="(34) 99999-9999" inputMode="numeric" className={inputCls} style={inputStyle} />
+              <CampoTelefone value={form.telefone_principal} onChange={handleTel('telefone_principal')} className={inputCls} style={inputStyle} />
             </div>
 
             <div>
@@ -388,7 +399,7 @@ export function EditarUsuarioForm({ usuario, detalhes }: Props) {
 
             <div>
               <Label>Contato de emergência — telefone</Label>
-              <input name="emergencia_telefone" value={form.emergencia_telefone} onChange={handleTel('emergencia_telefone')} placeholder="(34) 99999-9999" inputMode="numeric" className={inputCls} style={inputStyle} />
+              <CampoTelefone value={form.emergencia_telefone} onChange={handleTel('emergencia_telefone')} className={inputCls} style={inputStyle} />
             </div>
 
           </div>

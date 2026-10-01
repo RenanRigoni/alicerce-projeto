@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { mascaraTelefone } from '@/lib/masks'
+import { formatarTelefone } from '@/lib/telefone'
 import { CamposEncaminhamento } from '@/components/paciente/CamposEncaminhamento'
 import {
   FORM_VAZIO, formDoEncaminhamento, formatarCrm, validarEncaminhamento,
@@ -202,7 +202,7 @@ export function BlocoEncaminhamentos({ pacienteId, encaminhamentos, idsNaBusca =
                         </div>
                         <div className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                           {crm ? `CRM ${crm}` : <span style={{ color: 'var(--color-ink-faint)' }}>CRM não informado</span>}
-                          {e.medico_telefone && ` · ${mascaraTelefone(e.medico_telefone)}`}
+                          {e.medico_telefone && ` · ${formatarTelefone(e.medico_telefone)}`}
                           {e.especialidade && ` · ${e.especialidade}`}
                         </div>
                       </div>

@@ -94,7 +94,7 @@ const existente: Encaminhamento = {
   especialidade: 'Neurologia', data_encaminhamento: '2026-08-01', motivo: 'atraso de fala', observacoes: null,
   criado_em: '2026-08-02T10:00:00Z', atualizado_em: null,
 }
-assert.equal(formDoEncaminhamento(existente).medico_telefone, '(34) 3333-4444', 'a tela mostra o telefone com máscara')
+assert.equal(formDoEncaminhamento(existente).medico_telefone, '3433334444', 'o formulário guarda só dígitos; o CampoTelefone é quem mascara')
 assert.deepEqual(dadosValidos(formDoEncaminhamento(existente)), {
   medico_nome: 'Dr. João', medico_crm: '999', medico_crm_uf: 'SP', medico_telefone: '3433334444', especialidade: 'Neurologia',
   data_encaminhamento: '2026-08-01', motivo: 'atraso de fala', observacoes: null,

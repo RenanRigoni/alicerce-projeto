@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Loader2, Pencil, X, Lock, Camera, Trash2 } from 'lucide-react'
 import { UFS_BRASIL, getTipoProfissionalConfig } from '@/lib/profissionais'
 import Image from 'next/image'
-import { mascaraTelefone } from '@/lib/masks'
+import { formatarTelefone, somenteDigitosTelefone, validarTelefone } from '@/lib/telefone'
+import { CampoTelefone } from '@/components/ui/CampoTelefone'
 
 interface Props {
   userId: string
@@ -81,7 +82,7 @@ export function MeuPerfilForm(props: Props) {
   const [fotoUrl, setFotoUrl]             = useState(props.fotoUrl)
   const [nome, setNome]                   = useState(props.nome)
   const [emailVal, setEmailVal]           = useState(props.email ?? '')
-  const [telefone, setTelefone]           = useState(props.telefone ?? '')
+  const [telefone, setTelefone]           = useState(somenteDigitosTelefone(props.telefone))
   const [dataNasc, setDataNasc]           = useState(props.dataNascimento ?? '')
   const [rg, setRg]                       = useState(props.rg ?? '')
   const [sexo, setSexo]                   = useState(props.sexo ?? '')
@@ -107,7 +108,7 @@ export function MeuPerfilForm(props: Props) {
   function cancelar() {
     setNome(props.nome)
     setEmailVal(props.email ?? '')
-    setTelefone(props.telefone ?? '')
+    setTelefone(somenteDigitosTelefone(props.telefone))
     setDataNasc(props.dataNascimento ?? '')
     setRg(props.rg ?? '')
     setSexo(props.sexo ?? '')
@@ -171,6 +172,8 @@ export function MeuPerfilForm(props: Props) {
   }
 
   function salvar() {
+    const validacaoTelefone = validarTelefone(telefone)
+    if (!validacaoTelefone.valido) { showToast(validacaoTelefone.mensagem); return }
     startTransition(async () => {
       try {
         const fd = new FormData()
@@ -187,7 +190,8 @@ export function MeuPerfilForm(props: Props) {
           fd.append('especialidade', especialidade)
           fd.append('biografia', biografia)
         }
-        await salvarMeuPerfil(fd)
+        const resultado = await salvarMeuPerfil(fd)
+        if (resultado.erro) { showToast(resultado.erro); return }
 
         // Email change via auth (sends confirmation to new address)
         const emailMudou = emailVal.trim() && emailVal.trim() !== props.email
@@ -327,8 +331,8 @@ export function MeuPerfilForm(props: Props) {
 
             <Campo label="Telefone" editando={editando}>
               {editando
-                ? <input value={telefone} onChange={e => setTelefone(mascaraTelefone(e.target.value))} placeholder="(00) 00000-0000" inputMode="numeric" className={inputCls} style={inputActiveStyle} />
-                : <Val empty="Não informado">{telefone}</Val>}
+                ? <CampoTelefone value={telefone} onChange={setTelefone} className={inputCls} style={inputActiveStyle} />
+                : <Val empty="Não informado">{formatarTelefone(telefone)}</Val>}
             </Campo>
 
             <Campo label="Data de nascimento" editando={editando}>

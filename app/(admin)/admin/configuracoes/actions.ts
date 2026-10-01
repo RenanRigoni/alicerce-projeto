@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { validarCep } from '@/lib/endereco/cep'
+import { validarTelefone } from '@/lib/telefone'
 
 export interface ResultadoSalvarClinica {
   erro?: string
@@ -13,6 +14,8 @@ export async function salvarDadosClinica(formData: FormData): Promise<ResultadoS
   // um throw aqui derrubaria a tela inteira por causa de um campo.
   const cep = validarCep(formData.get('cep'))
   if (!cep.valido) return { erro: cep.mensagem }
+  const telefone = validarTelefone(formData.get('telefone'))
+  if (!telefone.valido) return { erro: telefone.mensagem }
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -23,7 +26,7 @@ export async function salvarDadosClinica(formData: FormData): Promise<ResultadoS
       tipo_pessoa:   formData.get('tipo_pessoa')   || 'PJ',
       cpf_cnpj:      formData.get('cpf_cnpj')      || null,
       email:         formData.get('email')          || null,
-      telefone:      formData.get('telefone')       || null,
+      telefone:      telefone.telefone,
       cep:           cep.cep,
       logradouro:    formData.get('logradouro')     || null,
       numero:        formData.get('numero')         || null,

@@ -1,4 +1,4 @@
-import { mascaraTelefone } from '@/lib/masks'
+import { somenteDigitosTelefone } from '@/lib/telefone'
 
 // Nome, CRM e telefone do médico são todos opcionais; a CHECK do banco e
 // validarEncaminhamento exigem ao menos um dos três.
@@ -33,7 +33,7 @@ export const LIMITES = {
   observacoes: 4000,
 } as const
 
-// O que a tela mantém em estado: tudo texto, como vem dos inputs.
+// O que a tela mantém em estado: tudo texto, como vem dos inputs (o telefone, só dígitos).
 export interface FormEncaminhamento {
   medico_nome: string
   medico_crm: string
@@ -71,7 +71,7 @@ export function formDoEncaminhamento(e: Encaminhamento): FormEncaminhamento {
     medico_nome: e.medico_nome ?? '',
     medico_crm: e.medico_crm ?? '',
     medico_crm_uf: e.medico_crm_uf ?? '',
-    medico_telefone: mascaraTelefone(e.medico_telefone ?? ''),
+    medico_telefone: somenteDigitosTelefone(e.medico_telefone),
     especialidade: e.especialidade ?? '',
     data_encaminhamento: e.data_encaminhamento ?? '',
     motivo: e.motivo ?? '',

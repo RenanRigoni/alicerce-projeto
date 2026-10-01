@@ -6,6 +6,8 @@ import { CheckCircle, Loader2 } from 'lucide-react'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
 import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
 import { useCep } from '@/lib/endereco/use-cep'
+import { CampoTelefone } from '@/components/ui/CampoTelefone'
+import { somenteDigitosTelefone, validarTelefone } from '@/lib/telefone'
 
 interface Config {
   nome_fantasia: string | null
@@ -93,7 +95,7 @@ function TabDados({ config }: { config: Config | null }) {
     tipo_pessoa:   config?.tipo_pessoa   ?? 'PJ',
     cpf_cnpj:      config?.cpf_cnpj      ?? '',
     email:         config?.email          ?? '',
-    telefone:      config?.telefone      ?? '',
+    telefone:      somenteDigitosTelefone(config?.telefone),
     cep:           mascaraCep(config?.cep ?? ''),
     logradouro:    config?.logradouro    ?? '',
     numero:        config?.numero        ?? '',
@@ -127,6 +129,8 @@ function TabDados({ config }: { config: Config | null }) {
     setErro('')
     const erroCep = campoCep.validarParaSalvar(form.cep)
     if (erroCep) { setErro(erroCep); return }
+    const telefone = validarTelefone(form.telefone)
+    if (!telefone.valido) { setErro(telefone.mensagem); return }
 
     const fd = new FormData(e.currentTarget)
     startTransition(async () => {
@@ -165,7 +169,7 @@ function TabDados({ config }: { config: Config | null }) {
         </div>
         <div>
           <Label>Telefone</Label>
-          <Input name="telefone" value={form.telefone} onChange={e => set('telefone', e.target.value)} placeholder="(00) 00000-0000" />
+          <CampoTelefone name="telefone" value={form.telefone} onChange={digitos => set('telefone', digitos)} />
         </div>
       </div>
 

@@ -14,6 +14,7 @@
     "test:rotas-cep": "tsx scripts/test-rotas-cep.ts",
     "test:encaminhamentos": "tsx scripts/test-encaminhamentos.ts",
     "test:masks": "tsx scripts/test-masks.ts",
+    "test:telefone": "tsx scripts/test-telefone.ts",
     "test:cadastro-paciente": "tsx scripts/test-cadastro-paciente.ts",
     "test:busca-prontuario": "tsx scripts/test-busca-prontuario.ts",
     "test:alta-duplicada": "tsx scripts/test-alta-solicitar-duplicada.ts"

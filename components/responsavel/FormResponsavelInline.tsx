@@ -7,6 +7,8 @@ import { AvisoCep } from '@/components/endereco/AvisoCep'
 import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
 import { useCep } from '@/lib/endereco/use-cep'
 import { mascaraCpf } from '@/lib/masks'
+import { validarTelefone } from '@/lib/telefone'
+import { CampoTelefone } from '@/components/ui/CampoTelefone'
 import { UFS_BRASIL } from '@/lib/profissionais'
 import type { ResponsavelSelecionado } from './BuscaResponsavel'
 
@@ -69,6 +71,12 @@ export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCanc
     const erroCep = campoCep.validarParaSalvar(form.cep)
     if (erroCep) {
       setErro(erroCep)
+      return
+    }
+
+    const telefone = validarTelefone(form.telefone)
+    if (!telefone.valido) {
+      setErro(telefone.mensagem)
       return
     }
 
@@ -144,10 +152,10 @@ export function FormResponsavelInline({ pacienteId, onCriado, onConcluir, onCanc
         <input name="nome" value={form.nome} onChange={handle} required placeholder="Nome do responsável" className="input-base" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-3">
         <div>
           <label className="block text-sm font-medium mb-1.5" style={LABEL}>Telefone</label>
-          <input name="telefone" value={form.telefone} onChange={handle} placeholder="(00) 00000-0000" inputMode="tel" className="input-base" />
+          <CampoTelefone value={form.telefone} onChange={telefone => setForm(prev => ({ ...prev, telefone }))} />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1.5" style={LABEL}>CPF</label>

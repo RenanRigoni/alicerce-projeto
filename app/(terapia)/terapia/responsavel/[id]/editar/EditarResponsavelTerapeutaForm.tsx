@@ -6,7 +6,8 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { AvisoCep } from '@/components/endereco/AvisoCep'
 import { mascaraCep, mascaraCepDoEvento } from '@/lib/endereco/cep'
-import { mascaraTelefone } from '@/lib/masks'
+import { formatarTelefone, somenteDigitosTelefone, validarTelefone } from '@/lib/telefone'
+import { CampoTelefone } from '@/components/ui/CampoTelefone'
 import { useCep } from '@/lib/endereco/use-cep'
 
 const labelStyle = { color: 'var(--color-ink-mid)' }
@@ -27,12 +28,12 @@ export function EditarResponsavelTerapeutaForm({ responsavel }: { responsavel: a
 
   const [form, setForm] = useState({
     nome:               responsavel.nome ?? '',
-    telefone_principal: responsavel.telefone_principal ?? '',
+    telefone_principal: somenteDigitosTelefone(responsavel.telefone_principal),
     endereco:           responsavel.endereco ?? '',
     cidade:             responsavel.cidade ?? '',
     cep:                mascaraCep(responsavel.cep ?? ''),
     emergencia_nome:    emergenciaInicial.nome,
-    emergencia_telefone: emergenciaInicial.telefone,
+    emergencia_telefone: somenteDigitosTelefone(emergenciaInicial.telefone),
   })
   const campoCep = useCep({
     cepInicial: responsavel.cep,
@@ -47,8 +48,8 @@ export function EditarResponsavelTerapeutaForm({ responsavel }: { responsavel: a
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  function handleTelefone(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm(prev => ({ ...prev, [e.target.name]: mascaraTelefone(e.target.value) }))
+  function handleTelefone(campo: 'telefone_principal' | 'emergencia_telefone') {
+    return (digitos: string) => setForm(prev => ({ ...prev, [campo]: digitos }))
   }
 
   function handleCEP(e: React.ChangeEvent<HTMLInputElement>) {
@@ -60,11 +61,15 @@ export function EditarResponsavelTerapeutaForm({ responsavel }: { responsavel: a
     if (!form.nome.trim()) { setErro('Nome é obrigatório.'); return }
     const erroCep = campoCep.validarParaSalvar(form.cep)
     if (erroCep) { setErro(erroCep); return }
+    for (const t of [form.telefone_principal, form.emergencia_telefone]) {
+      const v = validarTelefone(t)
+      if (!v.valido) { setErro(v.mensagem); return }
+    }
     setErro('')
     setSalvando(true)
 
     const emergenciaNome = form.emergencia_nome.trim()
-    const emergenciaTel  = form.emergencia_telefone.trim()
+    const emergenciaTel  = formatarTelefone(form.emergencia_telefone)
     const contato_emergencia = emergenciaNome && emergenciaTel
       ? `${emergenciaNome} — ${emergenciaTel}`
       : emergenciaNome || emergenciaTel || null
@@ -109,14 +114,7 @@ export function EditarResponsavelTerapeutaForm({ responsavel }: { responsavel: a
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Telefone principal</label>
-            <input
-              name="telefone_principal"
-              value={form.telefone_principal}
-              onChange={handleTelefone}
-              placeholder="(34) 99999-9999"
-              inputMode="numeric"
-              className="input-base"
-            />
+            <CampoTelefone value={form.telefone_principal} onChange={handleTelefone('telefone_principal')} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -146,7 +144,7 @@ export function EditarResponsavelTerapeutaForm({ responsavel }: { responsavel: a
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={labelStyle}>Contato de emergência</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
               <input
                 name="emergencia_nome"
                 value={form.emergencia_nome}
@@ -154,14 +152,7 @@ export function EditarResponsavelTerapeutaForm({ responsavel }: { responsavel: a
                 placeholder="Nome"
                 className="input-base"
               />
-              <input
-                name="emergencia_telefone"
-                value={form.emergencia_telefone}
-                onChange={handleTelefone}
-                placeholder="(34) 99999-9999"
-                inputMode="numeric"
-                className="input-base"
-              />
+              <CampoTelefone value={form.emergencia_telefone} onChange={handleTelefone('emergencia_telefone')} />
             </div>
           </div>
 

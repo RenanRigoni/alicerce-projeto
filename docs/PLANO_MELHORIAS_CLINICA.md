@@ -674,6 +674,27 @@ telefone, telas) e **não foi feito**. Enquanto isso:
   erro em vez de "salvo". Se for permitir, só enquanto `assinado_em IS NULL`: a rota
   recalcula `hash_integridade` com `assinado_em`, e editar uma orientação assinada mudaria o
   conteúdo mantendo a assinatura. Se não for permitir, esconder o botão "Editar".
+
+- **O painel de qualidade de dados fica só na home de admin e recepção, mas 6 das 8
+  terapeutas podem arrumar esses dados.** Medido em 01/10/2026: 6 terapeutas têm
+  `gerenciar_responsaveis` em `profiles.permissoes`, e são elas que falam com as famílias.
+  Copiar o painel para `/terapia/dashboard` **como está daria número errado**: numa transação
+  desfeita, com `auth.uid()` de uma dessas terapeutas, a RLS devolve 18 `profiles` de
+  `role='pai'` (só as famílias das pacientes dela) e **101** `responsaveis_detalhes` (todas).
+  `carregarLinhasQualidadeDados` parte dos perfis, então a contagem sairia parcial, sem
+  dizer que é parcial. Se for levar o painel para lá, a contagem precisa ser explicitamente
+  "entre as suas famílias" — não o mesmo número da recepção.
+
+- **`responsaveis_detalhes` é legível por qualquer terapeuta, inteira.** A policy de SELECT
+  é `(id = auth.uid()) OR get_my_role() = ANY (ARRAY['admin','recepcao','terapeuta'])`: cada
+  terapeuta lê telefone, endereço, CEP e contato de emergência das 101 famílias, inclusive
+  das que não são pacientes dela — enquanto `profiles` de `role='pai'` já restringe às 18
+  dela. A escrita está certa (só o próprio dono ou admin/recepção; a rota da terapeuta usa
+  `createAdminClient()` com a autorização conferida antes). É assimetria antiga, não foi
+  introduzida agora, e as 8 terapeutas são funcionárias da clínica — mas é mais dado de
+  contato do que o trabalho exige (minimização, LGPD art. 6º III). Decidir se a leitura passa
+  a exigir vínculo com a paciente, como `profiles` já faz.
+
 ### Ficha de dados clínicos: resolvido em 01/10/2026
 
 A ficha **nunca** pôde ser salva. O upsert de `AbaDadosClinicos` enviava `hash_integridade`,

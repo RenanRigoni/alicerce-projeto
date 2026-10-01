@@ -674,11 +674,33 @@ telefone, telas) e **não foi feito**. Enquanto isso:
   erro em vez de "salvo". Se for permitir, só enquanto `assinado_em IS NULL`: a rota
   recalcula `hash_integridade` com `assinado_em`, e editar uma orientação assinada mudaria o
   conteúdo mantendo a assinatura. Se não for permitir, esconder o botão "Editar".
-- **Ficha de dados clínicos: `hash_integridade` não existe na tabela.** O upsert de
-  `AbaDadosClinicos` envia `hash_integridade`, mas `pacientes_dados_clinicos` não tem essa
-  coluna (tem `atualizado_em` e `atualizado_por`). Dependendo da versão do PostgREST o hash é
-  descartado em silêncio ou o salvamento falha; a tabela está com 0 linhas. Decidir entre
-  criar a coluna (como `evolucoes` e `relatorios` têm) ou parar de enviar o campo.
+### Ficha de dados clínicos: resolvido em 01/10/2026
+
+A ficha **nunca** pôde ser salva. O upsert de `AbaDadosClinicos` enviava `hash_integridade`,
+coluna que `pacientes_dados_clinicos` não tem, e o PostgREST recusava a gravação inteira:
+
+```
+HTTP 400 {"code":"PGRST204","message":"Could not find the 'hash_integridade' column
+          of 'pacientes_dados_clinicos' in the schema cache"}
+```
+
+Não era descarte silencioso: o PostgREST valida as chaves contra o cache de schema **antes**
+de tocar o banco, então a requisição morria no 400 e a tela só dizia "Erro ao salvar. Tente
+novamente." Nada no SQL denunciava — a tabela apenas ficava com 0 linhas. Medido em produção
+mandando o mesmo corpo como anon: com o campo dá 400 PGRST204; sem o campo dá 401 `42501`
+(RLS), ou seja, passa da validação de schema. Nada foi gravado nos dois testes.
+
+**Decisão: parar de enviar o campo, sem criar a coluna.** A ficha é um documento vivo
+(`upsert` por `paciente_id`, sobrescrito a cada edição), então um hash recalculado em toda
+gravação não prova integridade de nada — diferente de `evolucoes` e `relatorios`, que são
+imutáveis depois de assinados. Autoria e data já ficam em `atualizado_por`/`atualizado_em`,
+e a trilha de alteração agora existe pelo trigger `audit_dados_clinicos`, que passou a
+gravar com a migration da auditoria.
+
+O payload saiu da tela para `lib/paciente/dados-clinicos.ts`, com a lista de colunas reais
+e `colunasDesconhecidas()`; `test:dados-clinicos` reprova qualquer chave fora da tabela
+(três mutações conferidas: campo de volta na tela, detector neutralizado, `paciente_id`
+removido do payload).
 
 ---
 

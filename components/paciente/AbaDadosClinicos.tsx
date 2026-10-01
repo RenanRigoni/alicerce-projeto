@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { gerarHash } from '@/lib/hash/gerar-hash'
+import { montarPayloadDadosClinicos } from '@/lib/paciente/dados-clinicos'
 import type { DadosClinicos } from './PerfilPacienteTabs'
 import { BlocoEncaminhamentos } from './BlocoEncaminhamentos'
 import type { Encaminhamento } from '@/lib/paciente/encaminhamentos'
@@ -148,26 +148,27 @@ export function AbaDadosClinicos({
     const agora = new Date().toISOString()
     const { data: user } = await supabase.auth.getUser()
 
-    const hash = await gerarHash({
-      paciente_id: pacienteId,
-      editado_por: user.user?.id,
-      ...form,
-      editado_em: agora,
+    // SEM hash_integridade: `pacientes_dados_clinicos` não tem essa coluna, e mandá-la fazia o
+    // PostgREST recusar TODO salvamento com 400 PGRST204 — a ficha nunca pôde ser salva.
+    // A coluna não foi criada de propósito: a ficha é um documento vivo (upsert por paciente_id),
+    // então um hash recalculado a cada gravação não prova integridade de nada. Quem alterou e
+    // quando fica em `atualizado_por`/`atualizado_em` e na trilha do trigger `audit_dados_clinicos`.
+    const payload = montarPayloadDadosClinicos(form, {
+      pacienteId,
+      agora,
+      usuarioId: user.user?.id,
     })
-
-    const payload = {
-      ...form,
-      atualizado_em: agora,
-      atualizado_por: user.user?.id,
-      hash_integridade: hash,
-    }
 
     const { error } = await supabase
       .from('pacientes_dados_clinicos')
-      .upsert({ paciente_id: pacienteId, ...payload }, { onConflict: 'paciente_id' })
+      .upsert(payload, { onConflict: 'paciente_id' })
 
     setSalvando(false)
-    if (error) { setErro('Erro ao salvar. Tente novamente.'); return }
+    if (error) {
+      console.error('Falha ao salvar a ficha de dados clínicos:', error.code, error.message)
+      setErro('Erro ao salvar. Tente novamente.')
+      return
+    }
 
     setAtualizadoEm(agora)
     setEditando(false)

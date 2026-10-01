@@ -44,7 +44,7 @@ export function BuscaProntuario({ valor, onChange, resumo, onIrParaAba }: Props)
       <div role="status" aria-live="polite" className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
         {resumo && resumo.total === 0 && (
           <span>
-            Nenhum item encontrado em relatórios, evoluções, orientações ou encaminhamentos. O prontuário
+            Nenhum item encontrado em relatórios, evoluções, orientações, encaminhamentos ou na ficha de dados clínicos. O prontuário
             está completo — o que some é só o filtro da busca.
           </span>
         )}

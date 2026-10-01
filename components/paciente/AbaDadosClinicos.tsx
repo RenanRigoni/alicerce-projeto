@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -16,6 +17,8 @@ interface Props {
   encaminhamentos: Encaminhamento[]
   /** Busca ativa no prontuário: só estes encaminhamentos aparecem. null = sem busca. */
   idsEncaminhamentosNaBusca?: Set<string> | null
+  /** Busca ativa: a ficha só aparece se casou. null = sem busca. */
+  fichaNaBusca?: boolean | null
   podeVerEncaminhamentos: boolean
   podeGerenciarEncaminhamentos: boolean
   prontuarioEncerrado: boolean
@@ -123,8 +126,9 @@ function SecaoClinicos({ titulo, keys, form, camposMap }: {
 
 export function AbaDadosClinicos({
   pacienteId, dadosIniciais, podeEditar,
-  encaminhamentos, idsEncaminhamentosNaBusca = null, podeVerEncaminhamentos, podeGerenciarEncaminhamentos, prontuarioEncerrado,
+  encaminhamentos, idsEncaminhamentosNaBusca = null, fichaNaBusca = null, podeVerEncaminhamentos, podeGerenciarEncaminhamentos, prontuarioEncerrado,
 }: Props) {
+  const router = useRouter()
   const [editando, setEditando] = useState(false)
   const [form, setForm] = useState<Form>(formFromDados(dadosIniciais))
   const [salvando, setSalvando] = useState(false)
@@ -167,6 +171,8 @@ export function AbaDadosClinicos({
 
     setAtualizadoEm(agora)
     setEditando(false)
+    // A busca no prontuário lê a ficha que a página carregou: sem recarregar, ela procuraria no texto antigo.
+    router.refresh()
   }
 
   function handleCancelar() {
@@ -178,6 +184,7 @@ export function AbaDadosClinicos({
   // Modo leitura
   if (!editando) {
     const temDados = camposClinicos.some(c => form[c.key])
+    const fichaFiltradaPelaBusca = temDados && fichaNaBusca === false
     return (
       <div className="space-y-3">
         <div className="pb-3">
@@ -207,7 +214,11 @@ export function AbaDadosClinicos({
           </div>
         )}
 
-        {!temDados ? (
+        {fichaFiltradaPelaBusca ? (
+          <p className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+            A ficha de dados clínicos está preenchida, mas não contém o texto buscado.
+          </p>
+        ) : !temDados ? (
           <Card>
             <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>
               {podeEditar

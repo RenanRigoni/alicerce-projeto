@@ -17,8 +17,8 @@ import type { Responsavel } from '@/lib/paciente/responsaveis-vinculo'
 import type { Encaminhamento } from '@/lib/paciente/encaminhamentos'
 import { BuscaProntuario } from './BuscaProntuario'
 import {
-  camposDeEncaminhamento, camposDeEvolucaoOuRelatorio, camposDeOrientacao,
-  filtrarPorBusca, resumirBusca, termosDaBusca, type AbaDoResultado,
+  camposDeEncaminhamento, camposDeEvolucaoOuRelatorio, camposDeFichaClinica, camposDeOrientacao,
+  casaComBusca, filtrarPorBusca, resumirBusca, termosDaBusca, type AbaDoResultado,
 } from '@/lib/paciente/busca-prontuario'
 
 // ── Tipos ────────────────────────────────────────────────────
@@ -237,12 +237,18 @@ export function PerfilPacienteTabs({
     () => filtrarPorBusca(encaminhamentos, termosBusca, camposDeEncaminhamento),
     [encaminhamentos, termosBusca],
   )
+  // A ficha de dados clínicos é um registro só: ou casa inteira, ou some. Sem ficha preenchida, nada casa.
+  const fichaCasa = useMemo(
+    () => buscaAtiva && dadosClinicos !== null && casaComBusca(termosBusca, camposDeFichaClinica(dadosClinicos)),
+    [buscaAtiva, dadosClinicos, termosBusca],
+  )
   const resumoBusca = buscaAtiva
     ? resumirBusca({
         relatorios: relatoriosVisiveis.length,
         evolucoes: evolucoesVisiveis.length,
         orientacoes: orientacoesVisiveis.length,
         encaminhamentos: encaminhamentosVisiveis.length,
+        ficha: fichaCasa ? 1 : 0,
       })
     : null
 
@@ -427,7 +433,7 @@ export function PerfilPacienteTabs({
   // pessoa ver onde está o resultado e não achar que o prontuário esvaziou.
   const abaCounts: Partial<Record<Aba, number>> = buscaAtiva
     ? {
-        'Dados Clínicos': encaminhamentosVisiveis.length,
+        'Dados Clínicos': encaminhamentosVisiveis.length + (fichaCasa ? 1 : 0),
         'Relatórios': relatoriosVisiveis.length,
         'Evolução': evolucoesVisiveis.length,
         'Orientações': orientacoesVisiveis.length,
@@ -789,6 +795,7 @@ export function PerfilPacienteTabs({
           podeEditar={podeEditarClinicos}
           encaminhamentos={encaminhamentos}
           idsEncaminhamentosNaBusca={buscaAtiva ? new Set(encaminhamentosVisiveis.map(e => e.id)) : null}
+          fichaNaBusca={buscaAtiva ? fichaCasa : null}
           podeVerEncaminhamentos={podeVerEncaminhamentos}
           podeGerenciarEncaminhamentos={isAdminOuRecepcao}
           prontuarioEncerrado={paciente.status !== 'ativo'}

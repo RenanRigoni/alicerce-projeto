@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
-  camposDeEncaminhamento, camposDeEvolucaoOuRelatorio, camposDeOrientacao,
+  CAMPOS_FICHA_NA_BUSCA,
+  camposDeEncaminhamento, camposDeEvolucaoOuRelatorio, camposDeFichaClinica, camposDeOrientacao,
   casaComBusca, filtrarPorBusca, normalizarBusca, resumirBusca, termosDaBusca,
 } from '../lib/paciente/busca-prontuario'
 
@@ -100,9 +101,59 @@ assert.equal(acharEnc('777'), 1, 'item sem nome')
 assert.equal(acharEnc('cardiologia'), 0)
 assert.equal(acharEnc(''), 3)
 
+// ── ficha de dados clínicos: 1 registro por paciente, todos os campos de texto + a data como aparece na tela ──
+const CAMPOS_DA_FICHA = [
+  'hipotese_diagnostica', 'diagnostico', 'objetivos_terapeuticos', 'plano_terapeutico', 'demandas_prioritarias',
+  'obs_clinicas_gerais', 'estrategias_utilizadas', 'orientacoes_para_casa', 'evolucao_resumida', 'metas_curto_prazo',
+  'metas_medio_prazo', 'sensibilidades_restricoes', 'nivel_suporte', 'obs_comportamento_regulacao',
+  'informacoes_escolares', 'pontos_atencao_equipe',
+] as const
+const ficha = (parcial: Record<string, string | null>) => {
+  const vazia: Record<string, string | null> = { data_avaliacao_inicial: null }
+  for (const c of CAMPOS_DA_FICHA) vazia[c] = null
+  return { ...vazia, ...parcial } as Parameters<typeof camposDeFichaClinica>[0]
+}
+const achouNaFicha = (f: ReturnType<typeof ficha>, termo: string) => casaComBusca(busca(termo), camposDeFichaClinica(f))
+
+// cada campo, sozinho, é achado (o campo vazio hoje em produção é exatamente o que a busca não pode ignorar)
+for (const campo of CAMPOS_DA_FICHA) {
+  const marca = `zq${campo.replace(/_/g, '')}`
+  assert.equal(achouNaFicha(ficha({ [campo]: `texto ${marca} final` }), marca), true, `ficha.${campo}`)
+  assert.equal(achouNaFicha(ficha({}), marca), false, `ficha vazia não casa ${campo}`)
+}
+assert.equal(achouNaFicha(ficha({ diagnostico: 'Transtorno do Espectro Autista' }), 'espectro autista'), true)
+assert.equal(achouNaFicha(ficha({ informacoes_escolares: 'Cursa o 3º ano; adaptação curricular' }), 'adaptacao'), true, 'sem acento')
+assert.equal(achouNaFicha(ficha({ metas_curto_prazo: 'Atingir 50% da meta' }), '50%'), true)
+assert.equal(achouNaFicha(ficha({ diagnostico: 'TEA' }), 'tdah'), false)
+// a data aparece como na tela (dd/mm/aaaa); quem busca o ano ou a data completa acha
+assert.equal(achouNaFicha(ficha({ data_avaliacao_inicial: '2026-03-15' }), '15/03/2026'), true, 'data como na tela')
+assert.equal(achouNaFicha(ficha({ data_avaliacao_inicial: '2026-03-15' }), '2026'), true)
+assert.equal(achouNaFicha(ficha({ data_avaliacao_inicial: '2026-03-15' }), '16/03/2026'), false)
+// nenhum campo, nenhum casamento atravessando dois campos
+assert.equal(achouNaFicha(ficha({ diagnostico: 'ab', plano_terapeutico: 'cd' }), 'abcd'), false)
+// busca vazia: a ficha casa (filtro desligado)
+assert.equal(achouNaFicha(ficha({}), ''), true)
+
+// a lista de campos da busca tem de acompanhar a ficha: campo novo na tela sem entrar aqui = busca que mente
+const interfaceDados = /export interface DadosClinicos \{([^}]*)\}/.exec(readFileSync('components/paciente/PerfilPacienteTabs.tsx', 'utf8'))
+assert.ok(interfaceDados, 'interface DadosClinicos encontrada')
+const camposDaTela = [...interfaceDados[1].matchAll(/^\s*(\w+):/gm)].map(m => m[1]).filter(c => c !== 'atualizado_em').sort()
+assert.deepEqual([...CAMPOS_FICHA_NA_BUSCA].sort(), camposDaTela, 'CAMPOS_FICHA_NA_BUSCA cobre todos os campos de DadosClinicos')
+const camposDoFormulario = [...readFileSync('components/paciente/AbaDadosClinicos.tsx', 'utf8').matchAll(/\{ key: '(\w+)',\s+label/g)].map(m => m[1]).sort()
+assert.deepEqual([...CAMPOS_FICHA_NA_BUSCA].sort(), camposDoFormulario, 'e todos os campos do formulário da ficha')
+
 // ── resumo: quantos e em qual aba ──
-assert.deepEqual(resumirBusca({ relatorios: 0, evolucoes: 0, orientacoes: 0, encaminhamentos: 0 }), { total: 0, porAba: [] })
-assert.deepEqual(resumirBusca({ relatorios: 1, evolucoes: 3, orientacoes: 0, encaminhamentos: 1 }), {
+assert.deepEqual(resumirBusca({ relatorios: 0, evolucoes: 0, orientacoes: 0, encaminhamentos: 0, ficha: 0 }), { total: 0, porAba: [] })
+assert.deepEqual(resumirBusca({ relatorios: 0, evolucoes: 0, orientacoes: 0, encaminhamentos: 0, ficha: 1 }), {
+  total: 1,
+  porAba: [{ aba: 'Dados Clínicos', n: 1, rotulo: 'ficha de dados clínicos' }],
+}, 'só a ficha casou: conta como 1 item na aba Dados Clínicos')
+assert.deepEqual(resumirBusca({ relatorios: 0, evolucoes: 0, orientacoes: 0, encaminhamentos: 2, ficha: 1 }), {
+  total: 3,
+  porAba: [{ aba: 'Dados Clínicos', n: 3, rotulo: 'ficha e 2 encaminhamentos' }],
+}, 'ficha e encaminhamentos moram na mesma aba: um só item no resumo, sem chave repetida')
+assert.deepEqual(resumirBusca({ relatorios: 0, evolucoes: 0, orientacoes: 0, encaminhamentos: 1, ficha: 1 }).porAba[0].rotulo, 'ficha e 1 encaminhamento')
+assert.deepEqual(resumirBusca({ relatorios: 1, evolucoes: 3, orientacoes: 0, encaminhamentos: 1, ficha: 0 }), {
   total: 5,
   porAba: [
     { aba: 'Relatórios', n: 1, rotulo: '1 relatório' },
@@ -110,7 +161,7 @@ assert.deepEqual(resumirBusca({ relatorios: 1, evolucoes: 3, orientacoes: 0, enc
     { aba: 'Dados Clínicos', n: 1, rotulo: '1 encaminhamento' },
   ],
 })
-assert.equal(resumirBusca({ relatorios: 0, evolucoes: 0, orientacoes: 2, encaminhamentos: 0 }).porAba[0].rotulo, '2 orientações')
+assert.equal(resumirBusca({ relatorios: 0, evolucoes: 0, orientacoes: 2, encaminhamentos: 0, ficha: 0 }).porAba[0].rotulo, '2 orientações')
 
 // ── o termo nunca sai da tela (o que a pessoa procura é clínico) ──
 const proibidos: Array<[string, RegExp]> = [

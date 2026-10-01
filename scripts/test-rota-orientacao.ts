@@ -52,7 +52,7 @@ async function main() {
   // UPDATE descartado pela RLS: 0 linhas, sem erro → a rota NÃO pode dizer que salvou
   linhasDoUpdate = { data: [], error: null }
   let res = await PATCH(requisicao(corpo), contexto)
-  let json = await res.json()
+  const json = await res.json()
   assert.notEqual(json.success, true, 'não pode devolver success:true com 0 linhas afetadas')
   assert.equal(res.status, 403)
   assert.equal(json.error, 'Não foi possível salvar as alterações desta orientação.')

@@ -323,6 +323,9 @@ export function PerfilPacienteTabs({
   const oriInputRef = useRef<HTMLInputElement>(null)
   const [salvandoOri, setSalvandoOri] = useState(false)
   const [erroOri, setErroOri] = useState('')
+  // Separado de `erroOri`: aquele só aparece dentro do formulário de nova orientação, que pode
+  // estar fechado. A recusa do "Excluir" tem de aparecer na lista, onde o botão está.
+  const [erroExcluirOri, setErroExcluirOri] = useState('')
 
   // Edição de orientação
   const [editandoOri, setEditandoOri] = useState<{ id: string; titulo: string; tipo: string; url_midia: string; conteudo: string } | null>(null)
@@ -352,7 +355,15 @@ export function PerfilPacienteTabs({
 
   async function handleDeletarOri(id: string) {
     if (!confirm('Excluir esta orientação?')) return
-    await fetch(`/api/orientacao/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/orientacao/${id}`, { method: 'DELETE' })
+    // A rota SEMPRE recusa (409: registro clínico não se exclui). Sem ler a resposta, a tela
+    // confirmava, recarregava, a orientação continuava lá e ninguém dizia por quê.
+    if (!res.ok) {
+      const j = await res.json().catch(() => null)
+      setErroExcluirOri(j?.error ?? 'Não foi possível excluir esta orientação.')
+      return
+    }
+    setErroExcluirOri('')
     router.refresh()
   }
 
@@ -1140,6 +1151,12 @@ export function PerfilPacienteTabs({
                   {salvandoOri ? 'Salvando...' : 'Salvar orientação'}
                 </Button>
               </div>
+            </Card>
+          )}
+
+          {erroExcluirOri && (
+            <Card>
+              <p className="text-sm" style={{ color: '#B91C1C' }}>{erroExcluirOri}</p>
             </Card>
           )}
 

@@ -87,6 +87,7 @@ export const PERMISSOES_APLICAVEIS_POR_ROLE: Record<string, readonly Permissao[]
     'gerenciar_responsaveis',
     'vincular_terapeutas',
     'criar_agendamentos',
+    'editar_agendamentos_alheios',
     'gerenciar_feriados',
     'criar_comunicados',
     'gerenciar_usuarios',
@@ -138,6 +139,9 @@ export const DEFAULTS_POR_ROLE: Record<string, Partial<Record<Permissao, boolean
     gerenciar_responsaveis:      true,
     vincular_terapeutas:         true,
     criar_agendamentos:          true,
+    // A recepção monta a agenda de todas as profissionais, então também desfaz.
+    // Sem isto ela criava um agendamento e não tinha como apagar.
+    editar_agendamentos_alheios: true,
     gerenciar_feriados:          true,
     criar_comunicados:           true,
     gerenciar_usuarios:          true,

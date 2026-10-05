@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 
 export async function registrarAcao(
-  acao: 'visualizou' | 'enviou' | 'alterou' | 'assinou' | 'baixou',
+  acao: 'visualizou' | 'enviou' | 'alterou' | 'assinou' | 'baixou' | 'excluiu',
   recursoTipo: string,
   recursoId: string
 ) {

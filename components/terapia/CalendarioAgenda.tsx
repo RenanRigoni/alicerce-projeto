@@ -42,6 +42,15 @@ interface Props {
   /** Libera tocar em horário vago para agendar e desmarcar atendimentos */
   podeMontarAgenda?: boolean
   pacientesAgendaveis?: PacienteAgendavel[]
+  /**
+   * Libera só o desmarcar, sem o agendar-no-slot-vago. A agenda geral precisa disso:
+   * a recepção remove atendimento de qualquer profissional, mas não monta agenda
+   * tocando num horário vago (esse fluxo é da profissional, na agenda dela).
+   * Omitido, segue `podeMontarAgenda`.
+   */
+  podeDesmarcar?: boolean
+  /** Rota do DELETE. A agenda geral usa a sua, que confere `editar_agendamentos_alheios`. */
+  desmarcarEndpoint?: string
 }
 
 interface ConflitoBloqueio {
@@ -623,7 +632,7 @@ function ModalEvento({
   removerBloqueioLoading,
   removerBloqueioErro,
   pacienteHref = '/terapia/paciente',
-  podeMontarAgenda = false,
+  podeDesmarcar = false,
   onDesmarcar,
   desmarcarLoading = false,
   desmarcarErro = null,
@@ -637,7 +646,7 @@ function ModalEvento({
   removerBloqueioLoading: boolean
   removerBloqueioErro: string | null
   pacienteHref?: string
-  podeMontarAgenda?: boolean
+  podeDesmarcar?: boolean
   onDesmarcar?: (alvo: 'avulso' | 'ocorrencia' | 'recorrente') => void
   desmarcarLoading?: boolean
   desmarcarErro?: string | null
@@ -797,7 +806,7 @@ function ModalEvento({
           )}
 
           {/* Desmarcar — o que aparece depende de ser sessão fixa ou avulsa */}
-          {podeMontarAgenda && evento.paciente && evento.tipo !== 'bloqueio' && (
+          {podeDesmarcar && evento.paciente && evento.tipo !== 'bloqueio' && (
             <div className="pt-1 space-y-2">
               {desmarcarErro && (
                 <div className="text-xs rounded-xl px-3 py-2" style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', border: '1px solid var(--color-danger-border)' }}>
@@ -1155,8 +1164,11 @@ export function CalendarioAgenda({
   onFiltroChange,
   podeMontarAgenda = false,
   pacientesAgendaveis = [],
+  podeDesmarcar,
+  desmarcarEndpoint = '/api/terapeuta/agenda',
 }: Props) {
   const router = useRouter()
+  const liberaDesmarcar = podeDesmarcar ?? podeMontarAgenda
 
   const [view, setView] = useState<ViewType>('semana')
   const [dataBase, setDataBase] = useState(new Date())
@@ -1201,18 +1213,22 @@ export function CalendarioAgenda({
     setDesmarcarLoading(true)
     setDesmarcarErro(null)
     try {
+      // `terapeuta_id` só importa na agenda geral, onde a recepção mexe na agenda de
+      // outra profissional. A rota da própria profissional ignora e usa o usuário logado.
+      const dona = { terapeuta_id: evento.terapeutaId ?? null }
       const corpo =
         alvo === 'avulso'
-          ? { alvo, id: evento.id }
+          ? { alvo, id: evento.id, ...dona }
           : alvo === 'ocorrencia'
-            ? { alvo, paciente_id: evento.paciente?.id, data_hora: evento.data_hora }
+            ? { alvo, paciente_id: evento.paciente?.id, data_hora: evento.data_hora, ...dona }
             : {
                 alvo,
                 paciente_id: evento.paciente?.id,
                 horario: { dia: diaDaSemanaBRT(evento.data_hora), hora: horaBRT(evento.data_hora) },
+                ...dona,
               }
 
-      const res = await fetch('/api/terapeuta/agenda', {
+      const res = await fetch(desmarcarEndpoint, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(corpo),
@@ -1859,7 +1875,7 @@ export function CalendarioAgenda({
           removerBloqueioLoading={removerBloqueioLoading}
           removerBloqueioErro={removerBloqueioErro}
           pacienteHref={pacienteHref}
-          podeMontarAgenda={podeMontarAgenda}
+          podeDesmarcar={liberaDesmarcar}
           onDesmarcar={alvo => handleDesmarcar(eventoAberto, alvo)}
           desmarcarLoading={desmarcarLoading}
           desmarcarErro={desmarcarErro}

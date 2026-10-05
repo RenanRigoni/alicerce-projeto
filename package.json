@@ -23,7 +23,8 @@
     "test:alta-duplicada": "tsx scripts/test-alta-solicitar-duplicada.ts",
     "test:dados-clinicos": "tsx scripts/test-dados-clinicos.ts",
     "test:retificacao": "tsx scripts/test-retificacao.ts",
-    "test:rota-relatorio": "tsx scripts/test-rota-relatorio.ts"
+    "test:rota-relatorio": "tsx scripts/test-rota-relatorio.ts",
+    "test:rota-agenda-geral": "tsx scripts/test-rota-agenda-geral.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

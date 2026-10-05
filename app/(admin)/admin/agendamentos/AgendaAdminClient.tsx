@@ -21,6 +21,8 @@ interface Props {
   proximos: AgendamentoItem[]
   terapeutasFiltro: Array<{ id: string; nome: string }>
   passados: ItemPassado[]
+  /** `editar_agendamentos_alheios`: libera remover atendimento de qualquer profissional. */
+  podeDesmarcar?: boolean
 }
 
 function formatarDataHora(iso: string) {
@@ -29,7 +31,7 @@ function formatarDataHora(iso: string) {
     + ' · ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-export function AgendaAdminClient({ eventos, feriados, proximos, terapeutasFiltro, passados }: Props) {
+export function AgendaAdminClient({ eventos, feriados, proximos, terapeutasFiltro, passados, podeDesmarcar = false }: Props) {
   const [filtroTerapeutaId, setFiltroTerapeutaId] = useState('todos')
   const [filtroPacienteId, setFiltroPacienteId] = useState('todos')
 
@@ -69,6 +71,8 @@ export function AgendaAdminClient({ eventos, feriados, proximos, terapeutasFiltr
         hideFab
         terapeutasFiltro={terapeutasFiltro}
         onFiltroChange={handleFiltroChange}
+        podeDesmarcar={podeDesmarcar}
+        desmarcarEndpoint="/api/agendamento"
       />
 
       {/* Lista próximos 14 dias */}

@@ -144,9 +144,14 @@ export default async function AgendamentosPage() {
         confirmacao,
         terapeutaId: s.terapeutaId,
         terapeutaNome: s.terapeutaNome,
+        // Sem a origem o modal não sabe o que oferecer: projetada do horário fixo
+        // vira "desmarcar só este dia" / "apagar a recorrência"; linha gravada vira
+        // "remover este atendimento".
+        origem: 'recorrente' as const,
       }
     }),
     ...(especiais ?? []).filter((a: any) => !ehAvulsoDuplicado(a)).map((a: any) => ({
+      origem: 'agendamento' as const,
       id: a.id,
       tipo: a.tipo as string,
       titulo: a.titulo as string,
@@ -248,6 +253,7 @@ export default async function AgendamentosPage() {
         proximos={proximos}
         terapeutasFiltro={terapeutasFiltroList}
         passados={passadosList}
+        podeDesmarcar={perfil.efetivas.editar_agendamentos_alheios === true}
       />
     </div>
   )

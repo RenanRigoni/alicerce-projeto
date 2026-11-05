@@ -13,7 +13,16 @@ import { carregarLinhasQualidadeDados } from '@/lib/qualidade-dados/carregar'
 const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
 const tipoLabel: Record<string, string> = { devolutiva: 'Devolutiva', reuniao: 'Reunião', reposicao: 'Reposição', bloqueio: 'Indisponível', outro: 'Outro' }
 
+const EVOLUCOES_RECENTES_LIMITE = 8
+
 function dd(n: number) { return String(n).padStart(2, '0') }
+
+function formatarDataHoraBRT(iso: string) {
+  return new Date(iso).toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+  })
+}
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
@@ -67,6 +76,8 @@ export default async function AdminDashboard() {
     { data: altasPendentes },
     { data: altasRecentes },
     { data: relatóriosRecentes },
+    { data: evolucoesRecentes },
+    { count: evolucoesSemana },
     { data: feriados },
     { data: configAgenda },
     { data: comunicados },
@@ -113,6 +124,19 @@ export default async function AdminDashboard() {
           .order('criado_em', { ascending: false })
           .limit(5)
       : Promise.resolve({ data: [] }),
+    podeVerRelatorios
+      ? supabase
+          .from('evolucoes')
+          .select('id, paciente_id, status, criado_em, pacientes!inner(nome), profiles(nome)')
+          .order('criado_em', { ascending: false })
+          .limit(EVOLUCOES_RECENTES_LIMITE)
+      : Promise.resolve({ data: [] }),
+    podeVerRelatorios
+      ? supabase
+          .from('evolucoes')
+          .select('*', { count: 'exact', head: true })
+          .gte('criado_em', semanaInicio.toISOString())
+      : Promise.resolve({ count: 0 }),
     (podeGerenciarFeriados || podeCriarAgendamentos)
       ? supabase
           .from('feriados')
@@ -499,6 +523,58 @@ export default async function AdminDashboard() {
                 </li>
               ))}
             </ul>
+          </Card>
+        </div>
+      )}
+
+      {/* Evoluções recentes */}
+      {podeVerRelatorios && (
+        <div>
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <h2
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: 'var(--color-ink-soft)' }}
+            >
+              Evoluções recentes
+            </h2>
+            <span className="text-xs" style={{ color: 'var(--color-ink-faint)' }}>
+              {evolucoesSemana ?? 0} nesta semana
+            </span>
+          </div>
+          <Card>
+            {evolucoesRecentes && evolucoesRecentes.length > 0 ? (
+              <ul className="space-y-1">
+                {evolucoesRecentes.map((e: any) => (
+                  <li key={e.id}>
+                    <Link
+                      href={`/admin/pacientes/${e.paciente_id}`}
+                      className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 -mx-3 transition-colors hover:bg-[var(--color-rose-blush)]"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>
+                          {e.pacientes?.nome ?? '—'}
+                        </div>
+                        <div className="text-xs mt-0.5 truncate" style={{ color: 'var(--color-ink-soft)' }}>
+                          {e.profiles?.nome?.trim() ?? 'Profissional não identificado'}
+                          <span style={{ color: 'var(--color-ink-faint)' }}> · {formatarDataHoraBRT(e.criado_em)}</span>
+                        </div>
+                      </div>
+                      <span
+                        className="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 mt-0.5"
+                        style={e.status === 'publicado'
+                          ? { background: 'var(--color-sage-light)', color: 'var(--color-sage-deep)' }
+                          : { background: 'var(--color-amber-light)', color: 'var(--color-amber-deep)' }
+                        }
+                      >
+                        {e.status}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--color-ink-faint)' }}>Nenhuma evolução ainda.</p>
+            )}
           </Card>
         </div>
       )}
